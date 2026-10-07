@@ -8,6 +8,7 @@
   - 시험 도구: `lambda_patch/test/gen_synthetic_dumps.m`, `lambda_patch/test/run_synthetic_test.m`, `synthetic_dumps/`
   - 모델 스크립트: `lambda_patch/model/` (이 문서의 수치를 다시 만드는 Python 스크립트)
   - 해설 웹 페이지: `docs/index.html` (GitHub Pages용)
+  - 검증 계획: `lambda_patch/TEST_PLAN.md` (합성 2열·5열, LLS 2열, 5열 bring-up과 최종 검증의 단계별 덤프 세트, 명령, 합격 기준)
 
 ---
 
@@ -135,7 +136,7 @@ momPi[k] += z * z;           // z^2 (복소)
 | `h0_pfa_analyze.m` | 원본 수정판 | MD 표에 κ 열, Λ 표(공식 문턱, 탭 꼬리 비율), Λ 그림, 캐시 키 버전 |
 | `h1_pd_analyze.m` | 신규 | H1 Pd와 95% 신뢰구간, 검출 위치 정확도, MD 대 Λ의 L90/L99 |
 | `test/gen_synthetic_dumps.m` | 신규 | 파형 모델로 5열(또는 2열) 합성 덤프 생성 |
-| `test/run_synthetic_test.m` | 신규 | 합성 덤프로 9단계 43개 항목 자동 확인 |
+| `test/run_synthetic_test.m` | 신규 | 합성 덤프로 자동 확인 (5열: 9단계 43개 항목, 2열: 5단계 29개 항목) |
 
 원본(`../rif_cir_analyze.m`, `../h0_pfa_analyze.m`)은 수정하지 않았습니다.
 
@@ -278,13 +279,20 @@ AWGN은 세기당 10,002개, 멀티패스는 4,002개입니다(`model/h1_pos_for
 
 ## 7. 검증 절차
 
+단계별 덤프 세트, 명령, 기대값과 합격 기준은 `TEST_PLAN.md`에 정리했습니다. 이 절은 요약입니다.
+
 ### 7.1 MATLAB 패치 단독 시험 (C++ 수정 전)
 
 ```matlab
 addpath('<...>/lambda_patch/test');
-gen_synthetic_dumps('D:/rif_test');          % 7,620개, 수 분 (또는 미리 만든 synthetic_dumps/ 사용)
+gen_synthetic_dumps('D:/rif_test');          % 5열 7,620개, 수 분 (또는 미리 만든 synthetic_dumps/ 사용)
 res = run_synthetic_test('D:/rif_test');     % 9단계, 43개 항목 [OK]/[CHECK]
+
+gen_synthetic_dumps('D:/rif_test2', 'Cols', 2);   % 같은 시드의 2열 세트 (현재 LLS 형식), h0 / h0_mp20 / h1만
+res2 = run_synthetic_test('D:/rif_test2');        % 형식 자동 인식: 2열 5단계, 29개 항목 (MD 규칙, kappa, CIR 추정 Λ̂)
 ```
+
+같은 프리셋과 시드로 만든 2열과 5열 세트는 CIR이 비트 단위로 같습니다. 따라서 두 실행의 MD 규칙 Pfa, kappa, CIR 추정 Λ̂ 결과는 정확히 같아야 합니다. 2열 세트에서는 원시 샘플 Λ, PerClass, 스케일 검사, 형식 혼합 검사가 빠집니다.
 
 미리 만든 `synthetic_dumps/`에 대해 같은 계산을 Python으로 따라 한 결과(`model/verify_dumps.py`), 43개 항목이 모두 기대 범위 안에 들었습니다.
 

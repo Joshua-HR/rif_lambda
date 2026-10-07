@@ -1,5 +1,5 @@
 function res = run_synthetic_test(root, show)
-%RUN_SYNTHETIC_TEST  Smoke test of lambda_patch on synthetic 5-column RIF CIR dumps.
+%RUN_SYNTHETIC_TEST  Smoke test of lambda_patch on synthetic RIF CIR dumps (5-column or 2-column).
 %
 %   The dump folders under root come from gen_synthetic_dumps.m (or the pre-generated
 %   synthetic_dumps/ folder), a waveform model, not the UWB simulator:
@@ -19,6 +19,13 @@ function res = run_synthetic_test(root, show)
 %   res = run_synthetic_test                    % root = <project>/synthetic_dumps, with figures
 %   res = run_synthetic_test('D:/rif_test')     % dumps made by gen_synthetic_dumps('D:/rif_test')
 %   res = run_synthetic_test(root, false)       % no figures
+%
+%   The dump format is detected from h0/c32_m82_j1/bin:
+%     5 columns (gen_synthetic_dumps(root)):            steps 1-9, 43 checks
+%     2 columns (gen_synthetic_dumps(root, 'Cols', 2)): the current LLS format; 5 steps, 29 checks on the
+%       MD rule, kappa and the CIR-only Lambda-hat ('Moments', 'cir'). Made with the same root and seeds,
+%       the 2-column set has the same CIR as the 5-column set, so the MD-rule, kappa and Lambda-hat numbers
+%       of the two runs must be identical.
 %
 %   Every check prints [OK] or [CHECK] with the expected range. The ranges are wide enough for the
 %   statistical spread of these sample sizes; a single CHECK slightly outside is not necessarily a bug.
@@ -48,6 +55,13 @@ end
 res = struct('name', {}, 'value', {}, 'lo', {}, 'hi', {}, 'ok', {});
 plt = 'none';
 if show, plt = 'both'; end
+ncol = dump_cols(fullfile(root, 'h0', 'c32_m82_j1', 'bin'));
+fprintf('dump format: %d columns\n', ncol);
+if ncol == 2
+    res = suite_2col(root, show, plt, res);
+    summary(res);
+    return;
+end
 
 % ------------------------------------------------------------------ 1) one folder
 banner('1) rif_cir_analyze on one H0 folder (-82 dBm, job 1)');
@@ -168,6 +182,92 @@ R1c = h1_pd_analyze(fullfile(root, 'h1'), 'Moments', 'cir', 'Plot', false);
 res = chk(res, 'cir h1: L90 loss vs dumped Q/Pi [dB]', R1c.L90(1, 2) - R1.L90(1, 2), 1.0, 4.0);
 
 % ------------------------------------------------------------------ summary
+summary(res);
+end
+
+
+% ======================================================================
+function res = suite_2col(root, show, plt, res)
+% 2-column dumps (current LLS format): MD rule, kappa and the CIR-only Lambda-hat
+banner('2-column set: 1) one H0 folder (-82 dBm, job 1)');
+r = rif_cir_analyze(fullfile(root, 'h0', 'c32_m82_j1', 'bin'), 'Quiet', true, 'Plot', plt, 'Index', 1);
+res = chk(res, '2col -82 dBm: no Q/Pi columns (hasMom false)', double(r.hasMom), 0, 0);
+res = chk(res, '2col -82 dBm: raw Lambda not computed (Lmax NaN)', double(all(isnan(r.Lmax))), 1, 1);
+res = chk(res, '2col -82 dBm: MD rule false-alarm rate', mean(r.valid), 0.02, 0.09);
+res = chk(res, '2col -82 dBm: kappa median', median(r.kappa), 0.6, 0.95);
+rc = rif_cir_analyze(fullfile(root, 'h0', 'c32_m82_j1', 'bin'), 'Quiet', true, 'Plot', 'none', 'Moments', 'cir');
+res = chk(res, '2col -82 dBm: Lambda-hat computed from the CIR', double(strcmp(rc.lamMode, 'cir')), 1, 1);
+res = chk(res, '2col -82 dBm: fewest noise taps per phase', min(rc.nCir), 24, 25);
+res = chk(res, '2col -82 dBm: Lambda-hat false-alarm rate', mean(rc.validL), 0, 0.006);
+
+banner('2-column set: 2) h0_pfa_analyze on h0/, MD rule (raw Lambda skipped)');
+R0 = h0_pfa_analyze(fullfile(root, 'h0'), 'Suggest', false, 'Rebuild', true, 'Plot', show);
+res = chk(res, '2col h0: raw Lambda skipped (EL empty)', double(isempty(R0.EL)), 1, 1);
+pw = [R0.cond.pow];
+mdRange = [0 0.006; 0.005 0.035; 0.028 0.078; 0 0.009];      % rows: 120, 88, 82, 40 dBm
+kpRange = [0.20 0.55; 0.35 0.85; 0.60 0.95; 0.90 1.00];
+plist = [120 88 82 40];
+for q = 1:numel(plist)
+    c = find(pw == plist(q), 1);
+    if isempty(c)
+        res = chk(res, sprintf('2col h0 -%d dBm: condition found', plist(q)), 0, 1, 1);
+        continue;
+    end
+    tag = sprintf('2col h0 -%d dBm', plist(q));
+    res = chk(res, [tag ': MD rule Pfa'], R0.E.pfa(c), mdRange(q, 1), mdRange(q, 2));
+    res = chk(res, [tag ': kappa median'], median(R0.cond(c).kappa), kpRange(q, 1), kpRange(q, 2));
+end
+
+banner('2-column set: 3) h0_pfa_analyze on h0/ with ''Moments'', ''cir''');
+R0c = h0_pfa_analyze(fullfile(root, 'h0'), 'Suggest', false, 'Moments', 'cir', 'Plot', show);
+res = chk(res, '2col h0 cir: Lambda-hat table produced', double(~isempty(R0c.EL)), 1, 1);
+if ~isempty(R0c.EL)
+    res = chk(res, '2col h0 cir: worst Lambda-hat Pfa over conditions', max(R0c.EL.pfa), 0, 0.005);
+    res = chk(res, '2col h0 cir: smallest tail ratio t=10', min(R0c.EL.tailRatio(:, 1)), 0.5, 1.3);
+    res = chk(res, '2col h0 cir: largest tail ratio t=10', max(R0c.EL.tailRatio(:, 1)), 0.7, 1.3);
+end
+
+banner('2-column set: 4) multipath H0 (h0_mp20/)');
+Rm = h0_pfa_analyze(fullfile(root, 'h0_mp20'), 'Suggest', false, 'Moments', 'cir', 'Rebuild', true, 'Plot', false);
+res = chk(res, '2col mp20: median D [dB] (below the 10 dB gate)', median(Rm.cond(1).D), 2, 10);
+res = chk(res, '2col mp20: MD rule Pfa', Rm.E.pfa(1), 0.015, 0.08);
+if ~isempty(Rm.EL)
+    res = chk(res, '2col mp20 cir: Lambda-hat Pfa', Rm.EL.pfa(1), 0, 0.005);
+end
+
+banner('2-column set: 5) H1 (h1/): MD rule and Lambda-hat');
+R1 = h1_pd_analyze(fullfile(root, 'h1'), 'Plot', false);
+res = chk(res, '2col h1: L90 MD rule [dBm]', R1.L90(1, 1), -113, -109.5);
+res = chk(res, '2col h1: raw Lambda not available (Pd = 0)', max(R1.table(:, 5)), 0, 0);
+R1c = h1_pd_analyze(fullfile(root, 'h1'), 'Moments', 'cir', 'Plot', show);
+res = chk(res, '2col h1 cir: L90 Lambda-hat minus L90 MD [dB]', R1c.L90(1, 2) - R1c.L90(1, 1), 0, 3.5);
+pdL = arrayfun(@(x) x.Pd(2), R1c.cond);
+accL = arrayfun(@(x) x.PosAcc(2), R1c.cond);
+res = chk(res, '2col h1 cir: worst position accuracy where Pd >= 0.1', min(accL(pdL >= 0.1)), 0.95, 1);
+c110 = find([R1c.cond.dBm] == -110, 1);
+if ~isempty(c110)
+    cc = R1c.cond(c110);
+    res = chk(res, '2col h1 cir -110 dBm: Pd inside its 95% CI', double(cc.PdLo(2) <= cc.Pd(2) && cc.Pd(2) <= cc.PdHi(2)), 1, 1);
+    res = chk(res, '2col h1 cir -110 dBm: CI width', cc.PdHi(2) - cc.PdLo(2), 0.005, 0.16);
+end
+end
+
+
+% ======================================================================
+function nc = dump_cols(folder)
+f = dir(fullfile(folder, '*_RifCir_AccNum_*.txt'));
+if isempty(f)
+    error('run_synthetic_test:nodump', 'No dump files in "%s".', folder);
+end
+fid = fopen(fullfile(folder, f(1).name), 'r');
+A = fscanf(fid, '%f');
+fclose(fid);
+nc = numel(A) / 256;
+end
+
+
+% ======================================================================
+function summary(res)
 banner('summary');
 nOk = sum([res.ok]);
 fprintf('  %d / %d checks OK\n', nOk, numel(res));

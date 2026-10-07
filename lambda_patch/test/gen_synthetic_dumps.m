@@ -16,6 +16,10 @@ function gen_synthetic_dumps(root, varargin)
 %                                              about 95 MB, a few minutes)
 %   gen_synthetic_dumps(root, 'Scale', 0.2)    same layout with 20% of the fragments (quick run;
 %                                              run_synthetic_test may then print some CHECKs)
+%   gen_synthetic_dumps(root, 'Cols', 2)       same h0 / h0_mp20 / h1 folders as 2-column "re im" dumps,
+%                                              like the current LLS; the 5-column-only folders (h0_2col,
+%                                              scale_test, mixed_test) are skipped. With the same root
+%                                              layout and seeds, the CIR is identical to the 5-column set
 %   gen_synthetic_dumps(outDir, 'Preset', 'none', Name, Value, ...)    one folder, for example
 %       gen_synthetic_dumps('D:/rif/h0x/c64_m85_j1/bin', 'Preset', 'none', 'N', 64, ...
 %                           'Power', -85, 'Key', 'wrong', 'Count', 1000, 'Seed', 11);
@@ -33,12 +37,12 @@ function gen_synthetic_dumps(root, varargin)
 %       'Ppm'         0.25     carrier frequency offset [ppm] at 7987.2 MHz
 %       'Trms'        0        multipath rms delay [taps, about 1 ns]; 0 = AWGN
 %       'KdB'         0        LOS-to-diffuse power ratio [dB] for multipath
-%       'Cols'        5        5 = "re im Q PiRe PiIm", 2 = "re im" (old format)
+%       'Cols'        5        5 = "re im Q PiRe PiIm", 2 = "re im" (old format); also for 'test'
 %       'QScale'      1        multiply Q and Pi (scale_test uses 64)
 %       'FirstTwoCol' false    write the first file with 2 columns (mixed_test)
 %       'FrameOffset' 0        index of the first fragment
 %
-%   'test' preset layout (all 32 symbols, CFO 0.25 ppm)
+%   'test' preset layout (all 32 symbols, CFO 0.25 ppm; the last three only with 'Cols', 5)
 %       h0/c32_m{120,88,82,40}_j{1,2}/bin   H0, 500 fragments per job
 %       h0_mp20/c32_m40_j{1,2}/bin          H0 -40 dBm, multipath tau_rms 20, K = -6 dB, 500 per job
 %       h1/c32_m{106..116}_j1/bin           H1, 200 fragments each
@@ -59,7 +63,7 @@ p.addParameter('Seed', 1, @isnumeric);
 p.addParameter('Ppm', 0.25, @isnumeric);
 p.addParameter('Trms', 0, @isnumeric);
 p.addParameter('KdB', 0, @isnumeric);
-p.addParameter('Cols', 5, @isnumeric);
+p.addParameter('Cols', 5, @(x) isnumeric(x) && isscalar(x) && any(x == [2 5]));
 p.addParameter('QScale', 1, @isnumeric);
 p.addParameter('FirstTwoCol', false, @(x) islogical(x) || isnumeric(x));
 p.addParameter('FrameOffset', 0, @isnumeric);
@@ -75,28 +79,33 @@ switch lower(o.Preset)
         list(end + 1, :) = {o.root, base};
     case 'test'
         sc = @(n) max(2, round(n * o.Scale));
+        cols = o.Cols;                              % seeds do not depend on cols: same CIR in both formats
         sd = 1000;
         for j = 1:2
             for pw = [120 88 82 40]
                 sd = sd + 1;
                 list(end + 1, :) = {fullfile(o.root, 'h0', sprintf('c32_m%d_j%d', pw, j), 'bin'), ...
-                                    mk(base, -pw, 'wrong', sc(500), sd, 0, 0, 5, 1, false)}; %#ok<AGROW>
+                                    mk(base, -pw, 'wrong', sc(500), sd, 0, 0, cols, 1, false)}; %#ok<AGROW>
             end
             sd = sd + 1;
             list(end + 1, :) = {fullfile(o.root, 'h0_mp20', sprintf('c32_m40_j%d', j), 'bin'), ...
-                                mk(base, -40, 'wrong', sc(500), sd, 20, -6, 5, 1, false)}; %#ok<AGROW>
+                                mk(base, -40, 'wrong', sc(500), sd, 20, -6, cols, 1, false)}; %#ok<AGROW>
         end
         for pw = 106:116
             sd = sd + 1;
             list(end + 1, :) = {fullfile(o.root, 'h1', sprintf('c32_m%d_j1', pw), 'bin'), ...
-                                mk(base, -pw, 'right', sc(200), sd, 0, 0, 5, 1, false)}; %#ok<AGROW>
+                                mk(base, -pw, 'right', sc(200), sd, 0, 0, cols, 1, false)}; %#ok<AGROW>
         end
-        list(end + 1, :) = {fullfile(o.root, 'h0_2col', 'c32_m82_j1', 'bin'), ...
-                            mk(base, -82, 'wrong', sc(300), sd + 1, 0, 0, 2, 1, false)};
-        list(end + 1, :) = {fullfile(o.root, 'scale_test', 'c32_m82_j1', 'bin'), ...
-                            mk(base, -82, 'wrong', sc(100), sd + 2, 0, 0, 5, 64, false)};
-        list(end + 1, :) = {fullfile(o.root, 'mixed_test', 'c32_m82_j1', 'bin'), ...
-                            mk(base, -82, 'wrong', 20, sd + 3, 0, 0, 5, 1, true)};
+        if cols == 5
+            list(end + 1, :) = {fullfile(o.root, 'h0_2col', 'c32_m82_j1', 'bin'), ...
+                                mk(base, -82, 'wrong', sc(300), sd + 1, 0, 0, 2, 1, false)};
+            list(end + 1, :) = {fullfile(o.root, 'scale_test', 'c32_m82_j1', 'bin'), ...
+                                mk(base, -82, 'wrong', sc(100), sd + 2, 0, 0, 5, 64, false)};
+            list(end + 1, :) = {fullfile(o.root, 'mixed_test', 'c32_m82_j1', 'bin'), ...
+                                mk(base, -82, 'wrong', 20, sd + 3, 0, 0, 5, 1, true)};
+        else
+            fprintf('2-column test set: h0_2col, scale_test and mixed_test are 5-column checks and are skipped.\n');
+        end
     otherwise
         error('gen_synthetic_dumps:preset', 'Unknown preset "%s" (use ''test'' or ''none'').', o.Preset);
 end
