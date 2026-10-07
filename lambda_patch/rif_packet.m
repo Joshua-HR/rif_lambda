@@ -17,8 +17,9 @@ function P = rif_packet(R, varargin)
 %       'PfaTarget'     1e-6      packet false-acceptance target (not used by 'strict')
 %       'KofN'          []        'kofn': fragments that must pass ([] = FragPerPacket - 2, at least 1)
 %       'PfaFragment'   1e-3      'strict': design Pfa of the fragment threshold
-%       'Floor'         1         'soft': every fragment needs Lam >= Floor on the selected path, so a packet
-%                                 with an empty (jammed / replaced) fragment is discarded; 0 = off
+%       'Floor'         1         'soft': every fragment needs Lam >= Floor on the selected path; 0 = off.
+%                                 An empty (jammed / replaced) fragment has Lam ~ chi2(2) there, so its packet is
+%                                 discarded with probability 1 - exp(-Floor/2): 39% (1), 63% (2), 86% (4)
 %       'Drift'         0         'soft': peak-drift hypotheses [taps per fragment], e.g. -0.5:1/7:0.5.
 %                                 Fragment f of a path starting at tap j uses tap j + round(d (f - 1)).
 %       'Margin'        1.5       threshold margin (design for target / Margin)

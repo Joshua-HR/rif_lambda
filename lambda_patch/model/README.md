@@ -18,7 +18,7 @@ numpy 없이 표준 라이브러리와 `multiprocessing`(6 프로세스)만 씁�
 | `gen_dumps.py` | 합성 5열 덤프 생성: `python3 gen_dumps.py <root>` (`<root> h1_drift`: 그 폴더만 추가) | `synthetic_dumps/` | 약 6분 |
 | `verify_dumps.py` | MATLAB 패치 계산의 파이썬 판: `python3 verify_dumps.py <root>` | `run_synthetic_test` 기대값 | 수 초 |
 | `make_2col.py` | 5열 세트에서 같은 CIR의 2열 세트 만들기: `python3 make_2col.py ../../synthetic_dumps ../../synthetic_dumps_2col` | `synthetic_dumps_2col/` | 수 초 |
-| `web_results.py` | 5열·2열 세트 분석 결과 JSON (`export_web_results.m`과 같은 형식): `python3 web_results.py ../../synthetic_dumps ../../synthetic_dumps_2col out.json` | 웹 9장 "1단계 결과" 기본 데이터 | 약 10초 |
+| `web_results.py` | 5열·2열 세트 분석 결과 JSON (`export_web_results.m`과 같은 형식): `python3 web_results.py ../../synthetic_dumps ../../synthetic_dumps_2col out.json` | 웹 10장 "1단계 결과" 기본 데이터 | 약 10초 |
 | `packet.py` | `rif_packet.m`과 `check_packet_assumptions.m`의 파이썬 판 (패킷 판정, 이동 기울기, AGC, 독립성) | `run_synthetic_test` 10단계 기대값 | 수 초 |
 | `medium_level.py` | FiRa medium(패킷 10⁻⁶) 결합 규칙별 패킷 Pd와 H0 근거: `KF=8 python3 medium_level.py h1 4000 -122 -106 out.json`, `... h0 4000 out.json` | 설계 문서 9.3 첫 표 | 약 3분 + 1분 |
 | `policy_k8.py` | 8개 RIF 정책 비교 (strict, soft, 일관성 하한): `python3 policy_k8.py 3000 -121 -104 out.json` | 설계 문서 9.3 정책 표 | 약 2분 |

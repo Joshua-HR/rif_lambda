@@ -1,6 +1,6 @@
 function txt = export_web_results(root5, root2, outFile, varargin)
 %EXPORT_WEB_RESULTS  Analyse a 5-column and a 2-column synthetic dump set and write the results as JSON
-%   for the web page (docs/index.html, section 9, results figure of step 1: 5-column vs 2-column).
+%   for the web page (docs/index.html, section 10, results figure of step 1: 5-column vs 2-column).
 %
 %   The two roots come from the 'test' preset of gen_synthetic_dumps (same seeds, hence the same CIR):
 %       gen_synthetic_dumps('D:/rif_test5');  gen_synthetic_dumps('D:/rif_test2', 'Cols', 2);

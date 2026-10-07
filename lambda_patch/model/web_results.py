@@ -1,5 +1,5 @@
 # Python mirror of export_web_results.m: analyse a 5-column and a 2-column synthetic set with the
-# MATLAB patch's computations (verify_dumps.py) and write the JSON shown in docs/index.html section 9
+# MATLAB patch's computations (verify_dumps.py) and write the JSON shown in docs/index.html section 10
 # ("1단계 결과: 5열 대 2열"). The page embeds this output as its default data; a JSON written by
 # lambda_patch/test/export_web_results.m in MATLAB has the same layout and can replace it.
 #   python3 web_results.py <root5> <root2> <out.json>
