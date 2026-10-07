@@ -1,35 +1,57 @@
 function R = h1_pd_analyze(root, varargin)
-%H1_PD_ANALYZE  Detection probability of the MD rule and the Lambda detector from matched-key (H1) runs.
+%H1_PD_ANALYZE  Detection probability, its confidence interval and the detection-position accuracy of
+%   the MD rule and the Lambda detector from matched-key (H1) runs.
 %
 %   Folder layout as h0_pfa_analyze:  <root>/c<len>_m<power>_j<job>[/bin]/*_RifCir_AccNum_*.txt
 %   (matched Tx/Rx STS seeds, SignalPower swept e.g. -100 ... -120 dBm in 1 dB steps).
-%   Jobs of one (len, power) are pooled. Reports Pd per condition and the 90% / 99% detection
-%   levels L90 / L99 [dBm] (linear interpolation of Pd versus power) for the MD rule (valid)
-%   and the Lambda detector (validL).
+%   Jobs of one (len, power) are pooled. Per condition and detector (MD rule = valid, Lambda = validL):
+%       Pd       detected fragments / all fragments, with an exact two-sided Clopper-Pearson interval
+%       PosAcc   share of the detected fragments whose peak tap kpk (argmax |C|^2 in W_s) lies within
+%                PeakTap +- Tol ("detected at the right place")
+%       PdLoc    fragments detected at the right place / all fragments  (= Pd * PosAcc)
+%   and the 90% / 99% detection levels [dBm] (linear interpolation versus power) for Pd (L90, L99)
+%   and for PdLoc (L90loc, L99loc).
 %
 %   R = h1_pd_analyze(root)
 %   R = h1_pd_analyze(root, Name, Value, ...)
 %       'Pfa'       1e-3    design Pfa of the Lambda detector (use the same value as for H0)
 %       'Margin'    1.5     Lambda threshold margin
 %       'PerClass'  false   one Q/Pi per comb phase (HW-like)
+%       'PeakTap'   127     tap of the true peak (127 at distance 0 in the LLS)
+%       'Tol'       2       position tolerance [taps]; 1 tap ~ 1 ns ~ 0.3 m
+%       'Conf'      0.95    two-sided confidence of the Pd interval
 %       'Sig', 'Noise', 'Period'  as in rif_cir_analyze
 %       'Plot'      true
+%
+%   Returned struct
+%       table   [len, dBm, n, Pd(MD), Pd(Lambda)] per condition (as before)
+%       cond(c) len, dBm, n, and 1x2 vectors [MD Lambda]: k, kLoc, Pd, PdLo, PdHi, PdLoc, PosAcc;
+%               errMD, errL = |kpk - PeakTap| of every detected fragment
+%       len     lengths; L90, L99, L90loc, L99loc: rows = lengths, columns = [MD Lambda]
+%       opt     options
 
 p = inputParser;
 p.addRequired('root', @ischar);
 p.addParameter('Pfa', 1e-3, @isnumeric);
 p.addParameter('Margin', 1.5, @isnumeric);
 p.addParameter('PerClass', false, @(x) islogical(x) || isnumeric(x));
+p.addParameter('PeakTap', 127, @isnumeric);
+p.addParameter('Tol', 2, @isnumeric);
+p.addParameter('Conf', 0.95, @isnumeric);
 p.addParameter('Sig', [119 175], @isnumeric);
 p.addParameter('Noise', [16 96], @isnumeric);
 p.addParameter('Period', 8, @isnumeric);
 p.addParameter('Plot', true, @(x) islogical(x) || isnumeric(x));
 p.parse(root, varargin{:});
 o = p.Results;
+if o.PeakTap < o.Sig(1) || o.PeakTap > o.Sig(2)
+    warning('h1_pd_analyze:peak', 'PeakTap %d lies outside the signal window [%d %d].', o.PeakTap, o.Sig(1), o.Sig(2));
+end
 
+% ---------------------------------------------------------------- read job folders
 d = dir(o.root);
 d = d([d.isdir]);
-rows = zeros(0, 5);                         % len, pow, n, k(MD), k(Lambda)
+F = struct('len', {}, 'pow', {}, 'valid', {}, 'validL', {}, 'kpk', {});
 fprintf('\nreading job folders under %s\n', o.root);
 for i = 1:numel(d)
     t = regexp(d(i).name, '^c(\d+)_m(\d+)_j(\d+)$', 'tokens', 'once');
@@ -42,57 +64,145 @@ for i = 1:numel(d)
     if ~r.hasMom
         fprintf('   WARNING: %s has no Q/Pi columns; Pd(Lambda) is reported as 0\n', d(i).name);
     end
-    rows(end + 1, :) = [str2double(t{1}), str2double(t{2}), numel(r.valid), sum(r.valid), sum(r.validL)]; %#ok<AGROW>
+    F(end + 1) = struct('len', str2double(t{1}), 'pow', str2double(t{2}), 'valid', logical(r.valid), ...
+                        'validL', logical(r.validL), 'kpk', r.kpk); %#ok<AGROW>
     fprintf('   %-16s %6d fragments\n', d(i).name, numel(r.valid));
 end
-if isempty(rows)
+if isempty(F)
     error('h1_pd_analyze:nojob', 'No job folder c<len>_m<power>_j<job> with dump files found in "%s".', o.root);
 end
 
-% pool jobs per (len, power)
-[keys, ~, g] = unique(rows(:, 1:2), 'rows');
-nK = size(keys, 1);
-tab = zeros(nK, 5);                         % len, power [dBm], n, Pd(MD), Pd(Lambda)
-for c = 1:nK
-    s = sum(rows(g == c, 3:5), 1);
-    tab(c, :) = [keys(c, 1), -keys(c, 2), s(1), s(2) / s(1), s(3) / s(1)];
-end
-
-fprintf('\n  len  P[dBm]       n    Pd(MD)  Pd(Lambda)\n');
-fprintf('  %3d  %6d  %6d   %7.3f   %7.3f\n', tab.');
-
-lens = unique(tab(:, 1)).';
-R = struct('table', tab, 'len', lens, 'L90', NaN(numel(lens), 2), 'L99', NaN(numel(lens), 2), 'opt', o);
-fprintf('\n  len   L90 MD / Lambda [dBm]    L99 MD / Lambda [dBm]    Lambda gain at L90\n');
-for q = 1:numel(lens)
-    tq = sortrows(tab(tab(:, 1) == lens(q), :), 2);      % ascending power
-    for a = 1:2
-        R.L90(q, a) = level_at(tq(:, 2), tq(:, 3 + a), 0.90);
-        R.L99(q, a) = level_at(tq(:, 2), tq(:, 3 + a), 0.99);
+% ---------------------------------------------------------------- pool jobs per (len, power)
+lens = [F.len]; pows = [F.pow];
+keys = unique([lens(:) pows(:)], 'rows');
+C = struct('len', {}, 'dBm', {}, 'n', {}, 'k', {}, 'kLoc', {}, 'Pd', {}, 'PdLo', {}, 'PdHi', {}, ...
+           'PdLoc', {}, 'PosAcc', {}, 'errMD', {}, 'errL', {});
+for c = 1:size(keys, 1)
+    sel = find(lens == keys(c, 1) & pows == keys(c, 2));
+    v = false(1, 0); vL = false(1, 0); kp = zeros(1, 0);
+    for s = sel
+        v = [v, F(s).valid(:).']; vL = [vL, F(s).validL(:).']; kp = [kp, F(s).kpk(:).']; %#ok<AGROW>
     end
-    fprintf('  %3d   %7.2f / %7.2f        %7.2f / %7.2f        %+5.2f dB\n', lens(q), R.L90(q, 1), R.L90(q, 2), ...
-            R.L99(q, 1), R.L99(q, 2), R.L90(q, 1) - R.L90(q, 2));
+    n = numel(v);
+    ok = abs(kp - o.PeakTap) <= o.Tol;
+    k = [sum(v), sum(vL)];
+    kLoc = [sum(v & ok), sum(vL & ok)];
+    lo = zeros(1, 2); hi = zeros(1, 2);
+    for a = 1:2
+        [lo(a), hi(a)] = cp_interval(k(a), n, o.Conf);
+    end
+    acc = kLoc ./ k;
+    acc(k == 0) = NaN;
+    C(c).len = keys(c, 1); C(c).dBm = -keys(c, 2); C(c).n = n;
+    C(c).k = k; C(c).kLoc = kLoc; C(c).Pd = k / n; C(c).PdLo = lo; C(c).PdHi = hi;
+    C(c).PdLoc = kLoc / n; C(c).PosAcc = acc;
+    C(c).errMD = abs(kp(v) - o.PeakTap); C(c).errL = abs(kp(vL) - o.PeakTap);
 end
-fprintf('  (NaN: Pd does not cross the level inside the swept power range)\n\n');
 
+% ---------------------------------------------------------------- per-condition table
+tab = [[C.len].', [C.dBm].', [C.n].', reshape([C.Pd], 2, []).'];
+fprintf('\n  Pd with %.0f%% Clopper-Pearson interval;  position ok = peak tap within %d +- %d taps\n', ...
+        100 * o.Conf, o.PeakTap, o.Tol);
+fprintf('  len  P[dBm]      n   Pd(MD)  [   lo     hi ]   Pd(Lam) [   lo     hi ]   pos.acc MD / Lam   PdLoc MD / Lam\n');
+for c = 1:numel(C)
+    fprintf('  %3d  %6g  %5d   %6.3f  [%6.3f %6.3f]   %6.3f  [%6.3f %6.3f]   %6.3f / %6.3f    %6.3f / %6.3f\n', ...
+            C(c).len, C(c).dBm, C(c).n, C(c).Pd(1), C(c).PdLo(1), C(c).PdHi(1), C(c).Pd(2), C(c).PdLo(2), ...
+            C(c).PdHi(2), C(c).PosAcc(1), C(c).PosAcc(2), C(c).PdLoc(1), C(c).PdLoc(2));
+end
+
+% ---------------------------------------------------------------- detection levels per length
+ul = unique([C.len]);
+R = struct('table', tab, 'cond', {C}, 'len', ul, 'L90', NaN(numel(ul), 2), 'L99', NaN(numel(ul), 2), ...
+           'L90loc', NaN(numel(ul), 2), 'L99loc', NaN(numel(ul), 2), 'opt', o);
+fprintf('\n  len   L90 MD / Lam [dBm]    L99 MD / Lam [dBm]    L90 position ok MD / Lam    Lam gain at L90\n');
+for q = 1:numel(ul)
+    [pw, Pd, ~, ~, PdLoc] = series(C, ul(q));
+    for a = 1:2
+        R.L90(q, a) = level_at(pw, Pd(:, a), 0.90);
+        R.L99(q, a) = level_at(pw, Pd(:, a), 0.99);
+        R.L90loc(q, a) = level_at(pw, PdLoc(:, a), 0.90);
+        R.L99loc(q, a) = level_at(pw, PdLoc(:, a), 0.99);
+    end
+    fprintf('  %3d   %7.2f / %7.2f     %7.2f / %7.2f     %7.2f / %7.2f            %+5.2f dB\n', ul(q), ...
+            R.L90(q, 1), R.L90(q, 2), R.L99(q, 1), R.L99(q, 2), R.L90loc(q, 1), R.L90loc(q, 2), ...
+            R.L90(q, 1) - R.L90(q, 2));
+end
+fprintf('  (NaN: the level is not crossed inside the swept power range)\n\n');
+
+% ---------------------------------------------------------------- plots
 if logical(o.Plot)
-    figure('Color', 'w', 'Name', 'H1 Pd');
-    hold on; grid on; box on;
-    cm = lines(numel(lens));
-    h = zeros(numel(lens), 1); nm = cell(numel(lens), 1);
-    for q = 1:numel(lens)
-        tq = sortrows(tab(tab(:, 1) == lens(q), :), 2);
-        plot(tq(:, 2), tq(:, 4), '--o', 'Color', cm(q, :), 'MarkerSize', 4);
-        h(q) = plot(tq(:, 2), tq(:, 5), '-s', 'Color', cm(q, :), 'MarkerSize', 4, 'MarkerFaceColor', cm(q, :));
-        nm{q} = sprintf('%d sym', lens(q));
+    figure('Color', 'w', 'Name', 'H1 Pd and detection position', 'Position', [80 80 1150 460]);
+    cm = lines(numel(ul));
+    subplot(1, 2, 1); hold on; grid on; box on;
+    h = zeros(numel(ul), 1); nm = cell(numel(ul), 1);
+    for q = 1:numel(ul)
+        [pw, Pd, Lo, Hi] = series(C, ul(q));
+        errorbar(pw, Pd(:, 1), Pd(:, 1) - Lo(:, 1), Hi(:, 1) - Pd(:, 1), '--o', 'Color', cm(q, :), 'MarkerSize', 4);
+        h(q) = errorbar(pw, Pd(:, 2), Pd(:, 2) - Lo(:, 2), Hi(:, 2) - Pd(:, 2), '-s', 'Color', cm(q, :), ...
+                        'MarkerSize', 4, 'MarkerFaceColor', cm(q, :));
+        nm{q} = sprintf('%d sym', ul(q));
     end
     line(xlim, [0.9 0.9], 'Color', [0.5 0.5 0.5], 'LineStyle', ':');
     line(xlim, [0.99 0.99], 'Color', [0.5 0.5 0.5], 'LineStyle', ':');
-    ylim([0 1]);
+    ylim([0 1.02]);
     xlabel('SignalPower [dBm]'); ylabel('Pd per fragment');
-    title('dashed: MD rule (valid), solid: \Lambda detector (validL)');
+    title(sprintf('Pd with %.0f%% CI   (dashed: MD rule, solid: \\Lambda)', 100 * o.Conf));
     legend(h, nm, 'Location', 'southeast');
+
+    subplot(1, 2, 2); hold on; grid on; box on;
+    for q = 1:numel(ul)
+        [pw, ~, ~, ~, ~, Acc] = series(C, ul(q));
+        plot(pw, Acc(:, 1), '--o', 'Color', cm(q, :), 'MarkerSize', 4);
+        plot(pw, Acc(:, 2), '-s', 'Color', cm(q, :), 'MarkerSize', 4, 'MarkerFaceColor', cm(q, :));
+    end
+    ylim([0 1.02]);
+    xlabel('SignalPower [dBm]'); ylabel('share of detections at the right tap');
+    title(sprintf('detection position: peak tap within %d \\pm %d', o.PeakTap, o.Tol));
 end
+end
+
+
+% ======================================================================
+function [pw, Pd, Lo, Hi, PdLoc, Acc] = series(C, len)
+% conditions of one length, sorted by ascending power; matrices have columns [MD Lambda]
+cs = find([C.len] == len);
+[pw, ord] = sort([C(cs).dBm]);
+cs = cs(ord);
+pw = pw(:);
+Pd    = reshape([C(cs).Pd], 2, []).';
+Lo    = reshape([C(cs).PdLo], 2, []).';
+Hi    = reshape([C(cs).PdHi], 2, []).';
+PdLoc = reshape([C(cs).PdLoc], 2, []).';
+Acc   = reshape([C(cs).PosAcc], 2, []).';
+end
+
+
+% ======================================================================
+function [lo, hi] = cp_interval(k, n, conf)
+% exact two-sided Clopper-Pearson interval of a binomial proportion k/n
+a = (1 - conf) / 2;
+if k == 0
+    lo = 0;
+else
+    lo = bisect(@(x) betainc(x, k, n - k + 1), a);          % P(X >= k | x) = a
+end
+if k == n
+    hi = 1;
+else
+    hi = bisect(@(x) betainc(x, k + 1, n - k), 1 - a);      % P(X <= k | x) = a
+end
+end
+
+
+% ======================================================================
+function x = bisect(f, target)
+% f increasing on [0, 1]; returns x with f(x) = target
+lo = 0; hi = 1;
+for it = 1:60
+    mid = 0.5 * (lo + hi);
+    if f(mid) > target, hi = mid; else lo = mid; end
+end
+x = 0.5 * (lo + hi);
 end
 
 

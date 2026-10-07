@@ -587,6 +587,31 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r3-tbl"></table></div></details>
   </figure>
 
+  <figure class="plate" id="r4">
+    <h3>H1 검출: Pd 신뢰구간과 검출 위치 정확도 (32심볼)</h3>
+    <div class="split">
+      <div class="main stack" style="flex-basis:360px">
+        <div class="ctl-label">Pd와 95% 신뢰구간 · AWGN · 세기당 10,002개</div>
+        <div class="legend">
+          <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="s2f"/></svg>MD 규칙</span>
+          <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="s1f"/></svg>Λ</span>
+        </div>
+        <svg class="chart" id="r4a" viewBox="0 0 520 330" role="img" aria-label="맞는 키 세기에 따른 MD 규칙과 Λ의 검출 확률과 95% 신뢰구간"></svg>
+      </div>
+      <div class="main stack" style="flex-basis:360px">
+        <div class="ctl-label">검출 위치 정확도 · Λ 검출 중 피크가 첫 경로(127) ± 2탭인 비율</div>
+        <div class="legend">
+          <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="inks" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="inkf"/></svg>AWGN</span>
+          <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="ink2s" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="ink2f"/></svg>멀티패스 τrms 10 ns</span>
+          <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="muteds" stroke-width="2"/><path d="M8 1.5 L12.5 10 L3.5 10 Z" class="mutedf"/></svg>멀티패스 τrms 20 ns · 확산 우세</span>
+        </div>
+        <svg class="chart" id="r4b" viewBox="0 0 520 330" role="img" aria-label="세기와 채널에 따른 Λ 검출의 위치 정확도"></svg>
+      </div>
+    </div>
+    <figcaption>왼쪽: 세로 막대가 95% Clopper-Pearson 신뢰구간이며, 표본이 많아 대부분 표식보다 짧습니다(값은 마우스를 올리거나 표로 보기). −118~−110 dBm에서 두 판정기의 구간이 겹치지 않아 Λ가 MD 규칙보다 검출을 잘한다는 차이가 통계적으로 분명합니다. L90은 MD −111.3, Λ −112.0 dBm입니다. 오른쪽: AWGN에서는 검출된 프래그먼트의 피크가 거의 항상 진짜 위치에 있습니다(감도 아래에서도 98% 이상). 잡음 탭이 문턱을 넘는 일은 Pfa 수준으로 드물기 때문입니다. 멀티패스에서는 가장 센 경로가 첫 경로가 아닌 경우가 있어, 신호가 강해도 위치 정확도가 τrms 10 ns에서 약 97%, 확산이 우세한 τrms 20 ns에서 약 61%에 머뭅니다. 판정(valid)이 맞아도 피크 위치를 ToA로 쓰면 안 되고 첫 경로 탐색이 따로 필요합니다. 멀티패스의 세기는 LOS 경로 기준이라 총 수신 에너지는 더 큽니다(멀티패스는 세기당 4,002개). 같은 지표를 <code>h1_pd_analyze</code>가 시뮬레이터 덤프에서 계산합니다.</figcaption>
+    <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r4-tbl"></table></div></details>
+  </figure>
+
   <figure class="plate">
     <h3>MMS 패킷 단위 소프트 결합 (선택 단계)</h3>
     <div class="stats">
@@ -630,11 +655,11 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
   <div class="prose stack">
     <h3>단계</h3>
     <ol>
-      <li><strong>MATLAB 패치 단독 시험:</strong> <code>lambda_patch/test/gen_synthetic_dumps.m</code>으로 파형 모델 덤프(5열)를 만들고 <code>run_synthetic_test.m</code>으로 8단계 31개 항목을 확인합니다. C++ 수정 없이 MATLAB 쪽 동작을 먼저 검증할 수 있습니다.</li>
+      <li><strong>MATLAB 패치 단독 시험:</strong> <code>lambda_patch/test/gen_synthetic_dumps.m</code>으로 파형 모델 덤프(5열)를 만들고 <code>run_synthetic_test.m</code>으로 8단계 35개 항목을 확인합니다. C++ 수정 없이 MATLAB 쪽 동작을 먼저 검증할 수 있습니다.</li>
       <li><strong>지금, 기존 2열 덤프로:</strong> κ(비원형 지수)를 확인하고, <code>run_h0.sh</code>에 중간 세기(c32_m70~m100, 2~3 dB 간격)를 추가해 MD 규칙의 실패를 실제 시뮬레이터에서 재현합니다.</li>
       <li><strong>C++:</strong> 상관기와 같은 루프, 같은 샘플로 Q와 Π를 누적해 덤프를 5열로 늘립니다(아래 코드).</li>
       <li><strong>H0 검증:</strong> <code>h0_pfa_analyze(root, 'Suggest', false)</code>. MD 표와 Λ 표가 함께 나옵니다.</li>
-      <li><strong>H1 감도:</strong> <code>h1_pd_analyze(rootH1)</code>로 L90/L99를 비교합니다.</li>
+      <li><strong>H1 감도:</strong> <code>h1_pd_analyze(rootH1)</code>로 Pd와 95% 신뢰구간, 검출 위치 정확도(피크가 기대 탭 ± 2 이내인 비율), L90/L99를 비교합니다.</li>
       <li><strong>HW 근사:</strong> <code>'PerClass', true</code>로 클래스당 누산기 8개면 충분한지 확인합니다.</li>
     </ol>
   </div>
@@ -683,12 +708,12 @@ momPi[k] += z * z;          // z^2 (복소)
 <pre class="code">% 원본 스크립트가 없는 폴더에서 실행 (현재 폴더의 함수가 path보다 우선)
 addpath('&lt;repo&gt;/lambda_patch/test');
 gen_synthetic_dumps('D:/rif_test');                % 합성 덤프 7,620개
-res  = run_synthetic_test('D:/rif_test');          % lambda_patch를 path 맨 앞에 추가, 31개 항목 [OK]/[CHECK]
+res  = run_synthetic_test('D:/rif_test');          % lambda_patch를 path 맨 앞에 추가, 35개 항목 [OK]/[CHECK]
 
 addpath('&lt;repo&gt;/lambda_patch', '-begin');      % 시뮬레이터 덤프 분석
 R0   = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false);                     % MD 표 + kappa (+ 5열이면 Λ 표)
 R0hw = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false, 'PerClass', true);   % HW 근사
-R1   = h1_pd_analyze('&lt;H1 root&gt;');                                         % L90/L99, MD 대 Λ
+R1   = h1_pd_analyze('&lt;H1 root&gt;');                                         % Pd·95% CI·위치 정확도, L90/L99
 r    = rif_cir_analyze('&lt;폴더&gt;', 'Index', 3, 'Plot', 'detail');              % 프래그먼트 하나 자세히</pre>
   </div>
 </section>
@@ -734,6 +759,10 @@ r    = rif_cir_analyze('&lt;폴더&gt;', 'Index', 3, 'Plot', 'detail');         
     {N:128,score:-109.8, safe:-111.22, md:-116.56, lam:-117.17},
     {N:256,score:-110.0, safe:-110.88, md:-116.19, lam:-116.85}
   ];
+  /* H1: [dBm, n, kMD, kLocMD, loMD, hiMD, kL, kLocL, loL, hiL]  (AWGN, 32 symbols)            */
+  /*     multipath rows carry the channel name first                                         */
+  var H1AW = [[-118,10002,440,433,0.04006,0.0482,573,567,0.05281,0.06202],[-117,10002,845,834,0.0791,0.09011,1076,1068,0.10157,0.11382],[-116,10002,1442,1429,0.13734,0.15121,1973,1963,0.1895,0.2052],[-115,10002,2562,2556,0.24762,0.26482,3474,3467,0.338,0.35675],[-114,10002,4274,4267,0.41759,0.43708,5422,5416,0.53227,0.55189],[-113,10002,6199,6193,0.61018,0.6293,7403,7397,0.73144,0.74873],[-112,10002,8146,8146,0.80668,0.82201,9074,9074,0.90136,0.91284],[-111,10002,9370,9370,0.93187,0.9415,9753,9753,0.97186,0.97807],[-110,10002,9882,9882,0.98567,0.99004,9984,9984,0.99716,0.99893],[-109,10002,9993,9993,0.99829,0.99959,10001,10001,0.99944,1.0],[-108,10002,10002,10002,0.99963,1.0,10002,10002,0.99963,1.0],[-107,10002,10002,10002,0.99963,1.0,10002,10002,0.99963,1.0],[-106,10002,10002,10002,0.99963,1.0,10002,10002,0.99963,1.0],[-105,10002,10002,10002,0.99963,1.0,10002,10002,0.99963,1.0],[-104,10002,10002,10002,0.99963,1.0,10002,10002,0.99963,1.0]];
+  var H1MP = [["tau10",-118,4002,240,207,0.05281,0.06778,316,275,0.07079,0.08775],["tau10",-116,4002,769,677,0.18005,0.20471,1027,907,0.24315,0.27045],["tau10",-114,4002,1923,1694,0.46492,0.49612,2401,2099,0.58458,0.61518],["tau10",-112,4002,3308,3016,0.81449,0.8382,3651,3306,0.9031,0.92088],["tau10",-110,4002,3904,3662,0.97024,0.98008,3965,3716,0.98728,0.99348],["tau10",-108,4002,3995,3789,0.9964,0.9993,4000,3794,0.9982,0.99994],["tau10",-106,4002,4001,3843,0.99861,0.99999,4002,3844,0.99908,1.0],["tau10",-104,4002,4002,3839,0.99908,1.0,4002,3839,0.99908,1.0],["tau10",-102,4002,4002,3863,0.99908,1.0,4002,3863,0.99908,1.0],["tau10",-100,4002,4002,3876,0.99908,1.0,4002,3876,0.99908,1.0],["tau10",-98,4002,4002,3885,0.99908,1.0,4002,3885,0.99908,1.0],["tau20",-118,4002,615,293,0.14263,0.16522,800,366,0.18761,0.21263],["tau20",-116,4002,1542,691,0.37019,0.40059,2017,920,0.48838,0.51961],["tau20",-114,4002,2843,1353,0.69607,0.72441,3300,1583,0.81244,0.83626],["tau20",-112,4002,3754,1932,0.93011,0.9453,3938,2020,0.97962,0.98766],["tau20",-110,4002,3983,2159,0.9926,0.99714,3997,2168,0.99709,0.99959],["tau20",-108,4002,4002,2252,0.99908,1.0,4002,2252,0.99908,1.0],["tau20",-106,4002,4002,2346,0.99908,1.0,4002,2346,0.99908,1.0],["tau20",-104,4002,4002,2408,0.99908,1.0,4002,2408,0.99908,1.0],["tau20",-102,4002,4002,2422,0.99908,1.0,4002,2422,0.99908,1.0],["tau20",-100,4002,4002,2439,0.99908,1.0,4002,2439,0.99908,1.0],["tau20",-98,4002,4002,2461,0.99908,1.0,4002,2461,0.99908,1.0]];
 
   /* ------------------------------------------------------------------ helpers */
   var SVGNS = 'http://www.w3.org/2000/svg';
@@ -1476,11 +1505,121 @@ r    = rif_cir_analyze('&lt;폴더&gt;', 'Index', 3, 'Plot', 'detail');         
     });
   }
 
+  /* ------------------------------------------------------------------ R4: H1 Pd with CI and detection position */
+  function pct(x) { return (100 * x).toFixed(1) + '%'; }
+  function r4Draw() {
+    var W = 520, H = 330, ml = 54, mr = 18, mt = 14, mb = 46, yMid = (mt + H - mb) / 2;
+    /* (a) Pd with 95% CI */
+    var svg = document.getElementById('r4a'); clear(svg);
+    var X = lin(-118.5, -103.5, ml, W - mr), Y = lin(0, 1, H - mb, mt);
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (v) {
+      el('line', {x1: ml, x2: W - mr, y1: Y(v), y2: Y(v), 'class': 'gl'}, svg);
+      txt(svg, ml - 8, Y(v) + 4, v.toFixed(2), 'tick', 'end');
+    });
+    el('line', {x1: ml, x2: W - mr, y1: Y(0.9), y2: Y(0.9), 'class': 'ink2s', 'stroke-width': 1}, svg);
+    txt(svg, ml + 4, Y(0.9) - 6, 'Pd 0.9', 'lab', 'start');
+    for (var xt = -118; xt <= -104; xt += 2) txt(svg, X(xt), H - mb + 18, minus(xt), 'tick', 'middle');
+    el('line', {x1: ml, x2: W - mr, y1: H - mb, y2: H - mb, 'class': 'axl'}, svg);
+    txt(svg, (ml + W - mr) / 2, H - 6, '맞는 키 수신 세기 (dBm, 모델 환산)', 'axt', 'middle');
+    txt(svg, 14, yMid, '검출 확률 Pd', 'axt', 'middle').setAttribute('transform', 'rotate(-90 14 ' + yMid + ')');
+    var ser = [{k: 2, lo: 4, hi: 5, c: 's2', shape: 'circle'}, {k: 6, lo: 8, hi: 9, c: 's1', shape: 'sq'}];
+    ser.forEach(function (s) {
+      var d = '';
+      H1AW.forEach(function (r, i) { d += (i ? 'L' : 'M') + X(r[0]).toFixed(1) + ' ' + Y(r[s.k] / r[1]).toFixed(1); });
+      el('path', {d: d, 'class': 'line2 ' + s.c + 's'}, svg);
+    });
+    ser.forEach(function (s) {
+      H1AW.forEach(function (r) {
+        var x = X(r[0]);
+        el('line', {x1: x, x2: x, y1: Y(r[s.lo]), y2: Y(r[s.hi]), 'class': s.c + 's', 'stroke-width': 1.5}, svg);
+        marker(svg, s.shape, x, Y(r[s.k] / r[1]), s.c + 'f');
+      });
+    });
+    var a = H1AW[4];
+    txt(svg, X(a[0]) - 10, Y(a[6] / a[1]) - 8, 'Λ', 'labs', 'end');
+    txt(svg, X(a[0]) + 10, Y(a[2] / a[1]) + 18, 'MD 규칙', 'labs', 'start');
+    var xh = el('line', {x1: 0, x2: 0, y1: mt, y2: H - mb, 'class': 'xh', visibility: 'hidden'}, svg);
+    var hit = el('rect', {x: ml, y: mt, width: W - ml - mr, height: H - mt - mb, 'class': 'hit'}, svg);
+    hit.addEventListener('pointermove', function (ev) {
+      var bb = svg.getBoundingClientRect(), sx = (ev.clientX - bb.left) / bb.width * W, best = H1AW[0], bd = 1e9;
+      H1AW.forEach(function (r) { var dd = Math.abs(X(r[0]) - sx); if (dd < bd) { bd = dd; best = r; } });
+      xh.setAttribute('x1', X(best[0])); xh.setAttribute('x2', X(best[0])); xh.setAttribute('visibility', 'visible');
+      showTip(ev, [{key: keySvg('dot', 's2f'), v: (best[2] / best[1]).toFixed(4), l: 'MD [' + best[4].toFixed(4) + ', ' + best[5].toFixed(4) + ']'},
+                   {key: keySvg('sq', 's1f'), v: (best[6] / best[1]).toFixed(4), l: 'Λ [' + best[8].toFixed(4) + ', ' + best[9].toFixed(4) + ']'},
+                   {v: pct(best[7] / Math.max(best[6], 1)), l: 'Λ 검출 중 위치 정확'}], minus(best[0]) + ' dBm · n = ' + best[1].toLocaleString());
+    });
+    hit.addEventListener('pointerleave', function () { xh.setAttribute('visibility', 'hidden'); hideTip(); });
+
+    /* (b) detection-position accuracy of Lambda */
+    var svg2 = document.getElementById('r4b'); clear(svg2);
+    var X2 = lin(-118.5, -97.5, ml, W - mr), Y2 = lin(0.4, 1.0, H - mb, mt);
+    [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0].forEach(function (v) {
+      el('line', {x1: ml, x2: W - mr, y1: Y2(v), y2: Y2(v), 'class': 'gl'}, svg2);
+      txt(svg2, ml - 8, Y2(v) + 4, Math.round(100 * v) + '%', 'tick', 'end');
+    });
+    for (var x2 = -118; x2 <= -98; x2 += 4) txt(svg2, X2(x2), H - mb + 18, minus(x2), 'tick', 'middle');
+    el('line', {x1: ml, x2: W - mr, y1: H - mb, y2: H - mb, 'class': 'axl'}, svg2);
+    txt(svg2, (ml + W - mr) / 2, H - 6, '맞는 키 수신 세기 (dBm, LOS 기준)', 'axt', 'middle');
+    txt(svg2, 14, yMid, '첫 경로 ± 2탭 비율', 'axt', 'middle').setAttribute('transform', 'rotate(-90 14 ' + yMid + ')');
+    var chans = [
+      {name: 'AWGN', rows: H1AW.map(function (r) { return [r[0], r[7] / Math.max(r[6], 1), r[6], r[1]]; }), s: 'inks', f: 'inkf', shape: 'circle'},
+      {name: '멀티패스 τ10', rows: H1MP.filter(function (r) { return r[0] === 'tau10'; }).map(function (r) { return [r[1], r[8] / Math.max(r[7], 1), r[7], r[2]]; }), s: 'ink2s', f: 'ink2f', shape: 'sq'},
+      {name: '멀티패스 τ20', rows: H1MP.filter(function (r) { return r[0] === 'tau20'; }).map(function (r) { return [r[1], r[8] / Math.max(r[7], 1), r[7], r[2]]; }), s: 'muteds', f: 'mutedf', shape: 'tri'}
+    ];
+    chans.forEach(function (c) {
+      var d = '';
+      c.rows.forEach(function (r, i) { d += (i ? 'L' : 'M') + X2(r[0]).toFixed(1) + ' ' + Y2(r[1]).toFixed(1); });
+      el('path', {d: d, 'class': 'line2 ' + c.s}, svg2);
+    });
+    chans.forEach(function (c) {
+      c.rows.forEach(function (r) { marker(svg2, c.shape, X2(r[0]), Y2(r[1]), c.f); });
+      var last = c.rows[c.rows.length - 1];
+      txt(svg2, X2(last[0]) - 2, Y2(last[1]) + (c.shape === 'tri' ? 20 : -10), c.name + ' ' + pct(last[1]), 'lab', 'end');
+    });
+    var xs = [];
+    chans.forEach(function (c) { c.rows.forEach(function (r) { if (xs.indexOf(r[0]) < 0) xs.push(r[0]); }); });
+    xs.sort(function (p, q) { return p - q; });
+    var xh2 = el('line', {x1: 0, x2: 0, y1: mt, y2: H - mb, 'class': 'xh', visibility: 'hidden'}, svg2);
+    var hit2 = el('rect', {x: ml, y: mt, width: W - ml - mr, height: H - mt - mb, 'class': 'hit'}, svg2);
+    hit2.addEventListener('pointermove', function (ev) {
+      var bb = svg2.getBoundingClientRect(), sx = (ev.clientX - bb.left) / bb.width * W, bx = xs[0], bd = 1e9;
+      xs.forEach(function (x) { var dd = Math.abs(X2(x) - sx); if (dd < bd) { bd = dd; bx = x; } });
+      xh2.setAttribute('x1', X2(bx)); xh2.setAttribute('x2', X2(bx)); xh2.setAttribute('visibility', 'visible');
+      var rows = [];
+      chans.forEach(function (c) {
+        c.rows.forEach(function (r) {
+          if (r[0] === bx) rows.push({key: keySvg(c.shape === 'circle' ? 'dot' : c.shape, c.f), v: pct(r[1]), l: c.name + ' · Pd ' + (r[2] / r[3]).toFixed(3)});
+        });
+      });
+      showTip(ev, rows, minus(bx) + ' dBm');
+    });
+    hit2.addEventListener('pointerleave', function () { xh2.setAttribute('visibility', 'hidden'); hideTip(); });
+
+    /* table view */
+    var tb = document.getElementById('r4-tbl'); clear(tb);
+    var hd = tb.createTHead().insertRow();
+    ['채널', '세기 (dBm)', 'n', 'Pd MD [95% CI]', 'Pd Λ [95% CI]', '위치 정확도 MD', '위치 정확도 Λ'].forEach(function (h, i) {
+      var th = document.createElement('th'); th.textContent = h; if (i > 1) th.className = 'num'; hd.appendChild(th);
+    });
+    var body = tb.createTBody();
+    function addRow(ch, r) {   /* r = [dBm, n, kMD, kLocMD, loMD, hiMD, kL, kLocL, loL, hiL] */
+      var tr = body.insertRow();
+      [ch, minus(r[0]), r[1].toLocaleString(),
+       (r[2] / r[1]).toFixed(3) + ' [' + r[4].toFixed(3) + ', ' + r[5].toFixed(3) + ']',
+       (r[6] / r[1]).toFixed(3) + ' [' + r[8].toFixed(3) + ', ' + r[9].toFixed(3) + ']',
+       r[2] ? pct(r[3] / r[2]) : '–', r[6] ? pct(r[7] / r[6]) : '–'].forEach(function (v, i) {
+        var td = tr.insertCell(); td.textContent = v; if (i > 1) td.className = 'num';
+      });
+    }
+    H1AW.forEach(function (r) { addRow('AWGN', r); });
+    H1MP.forEach(function (r) { addRow(r[0] === 'tau10' ? '멀티패스 τrms 10 ns' : '멀티패스 τrms 20 ns, 확산 우세', r.slice(1)); });
+  }
+
   /* ------------------------------------------------------------------ boot & theme */
   function redrawCanvases() { w2Draw(); w3Draw(); }
   function boot() {
     w1Run(); drawCloud('d2a', false); drawCloud('d2b', true); w4Draw(); w5Update();
-    r1Draw(); r2Draw(); r3Draw();
+    r1Draw(); r2Draw(); r3Draw(); r4Draw();
     w2Run(); w3Run();
   }
   if (window.matchMedia) {

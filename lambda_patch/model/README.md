@@ -11,6 +11,8 @@ numpy 없이 표준 라이브러리와 `multiprocessing`(6 프로세스)만 씁�
 | `sweep_for_page.py` | 틀린 키 세기 스윕, MD 규칙 대 Λ (32심볼, 조건당 60,000) | 설계 문서 6.1 표, 웹 R1 그래프 | 약 3분 |
 | `conds_for_page.py` | 9개 H0 조건 × 3 방식(MD / 정규화만 / Λ) | 설계 문서 6.2 표, 웹 R2 그래프 | 약 2분 |
 | `l90_for_doc.py` | 길이별 L90: MD 규칙, MD 안전 단일 문턱, Λ | 설계 문서 6.4 표 | 약 1.5분 |
+| `h1_pos_for_page.py` | H1 Pd와 95% 신뢰구간, 검출 위치 정확도 (AWGN, 세기당 10,002) | 설계 문서 6.5 표, 웹 R4 왼쪽 | 약 1분 |
+| `h1_pos_mp_for_page.py` | H1 검출 위치 정확도, 멀티패스 τ10 / τ20 (세기당 4,002) | 설계 문서 6.5, 웹 R4 오른쪽 | 약 3분 |
 | `wavesim.py` | 파형 수준 검증(실제 ±1 STS, 원시 샘플 Q·Π): `python3 wavesim.py 24000` | 설계 문서 6.3 표 | 약 15분 |
 | `gen_dumps.py` | 합성 5열 덤프 생성: `python3 gen_dumps.py <root>` | `synthetic_dumps/` | 약 6분 |
 | `verify_dumps.py` | MATLAB 패치 계산의 파이썬 판: `python3 verify_dumps.py <root>` | `run_synthetic_test` 기대값 | 수 초 |

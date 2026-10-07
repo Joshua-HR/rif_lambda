@@ -50,7 +50,7 @@ def rif(folder, perclass=False):
         kappa = abs(num) / den
         kpk = max(WS, key=lambda k: P[k]); Z = P[kpk] / Fmax; D = Fmax / Fmin
         valid = (10 * math.log10(Z)) >= (9.6 if 10 * math.log10(D) < 10 else 14.4)
-        rec = {'Z': 10 * math.log10(Z), 'D': 10 * math.log10(D), 'valid': valid, 'kappa': kappa, 'hasMom': hm}
+        rec = {'Z': 10 * math.log10(Z), 'D': 10 * math.log10(D), 'valid': valid, 'kappa': kappa, 'hasMom': hm, 'kpk': kpk}
         if hm:
             Qx, Px = Q, Pi
             if perclass:
@@ -105,15 +105,23 @@ def h1(root):
     dirs = sorted(d for d in os.listdir(root) if re.match(r'^c(\d+)_m(\d+)_j(\d+)$', d))
     with Pool(6) as p:
         res = p.map(rif, [os.path.join(root, d, 'bin') for d in dirs])
+    from h1_pos_for_page import cp
     tab = []
     for d, r in zip(dirs, res):
-        pw = -int(re.match(r'^c\d+_m(\d+)_j\d+$', d).group(1))
-        tab.append((pw, len(r), sum(x['valid'] for x in r) / len(r), sum(x['validL'] for x in r) / len(r)))
+        pw = -int(re.match(r'^c\d+_m(\d+)_j\d+$', d).group(1)); n = len(r)
+        row = [pw, n]
+        for key in ('valid', 'validL'):
+            k = sum(x[key] for x in r); kl = sum(1 for x in r if x[key] and abs(x['kpk'] - 127) <= 2)
+            lo, hi = cp(k, n)
+            row += [k / n, lo, hi, (kl / k if k else float('nan')), kl / n]
+        tab.append(row)
     tab.sort()
-    for t in tab: print('   %5d dBm  n=%d  Pd(MD)=%.3f  Pd(Lam)=%.3f' % t)
+    for t in tab:
+        print('   %5d dBm n=%d  MD %.3f [%.3f %.3f] acc %.3f loc %.3f | Lam %.3f [%.3f %.3f] acc %.3f loc %.3f' % tuple(t))
     pws = [t[0] for t in tab]
-    return {'L90md': level_at(pws, [t[2] for t in tab], 0.9), 'L90L': level_at(pws, [t[3] for t in tab], 0.9),
-            'L99md': level_at(pws, [t[2] for t in tab], 0.99), 'L99L': level_at(pws, [t[3] for t in tab], 0.99)}
+    return {'L90md': level_at(pws, [t[2] for t in tab], 0.9), 'L90L': level_at(pws, [t[7] for t in tab], 0.9),
+            'L99md': level_at(pws, [t[2] for t in tab], 0.99), 'L99L': level_at(pws, [t[7] for t in tab], 0.99),
+            'L90locMD': level_at(pws, [t[6] for t in tab], 0.9), 'L90locL': level_at(pws, [t[11] for t in tab], 0.9)}
 
 
 if __name__ == '__main__':

@@ -22,6 +22,7 @@ function res = run_synthetic_test(root, show)
 %
 %   Every check prints [OK] or [CHECK] with the expected range. The ranges are wide enough for the
 %   statistical spread of these sample sizes; a single CHECK slightly outside is not necessarily a bug.
+%   Step 4 also checks the Pd confidence interval and the detection-position accuracy of h1_pd_analyze.
 %   The run rebuilds the per-folder caches (h0_stats_cache.mat) and takes a few minutes.
 
 here = fileparts(mfilename('fullpath'));                   % <project>/lambda_patch/test
@@ -100,6 +101,16 @@ R1 = h1_pd_analyze(fullfile(root, 'h1'), 'Plot', show);
 res = chk(res, 'h1: L90 MD rule [dBm]', R1.L90(1, 1), -113, -109.5);
 res = chk(res, 'h1: L90 Lambda [dBm]', R1.L90(1, 2), -113.5, -110);
 res = chk(res, 'h1: Lambda gain at L90 [dB]', R1.L90(1, 1) - R1.L90(1, 2), 0, 1.4);
+c110 = find([R1.cond.dBm] == -110, 1);
+if ~isempty(c110)
+    cc = R1.cond(c110);
+    res = chk(res, 'h1 -110 dBm: Lambda Pd inside its 95% CI', double(cc.PdLo(2) <= cc.Pd(2) && cc.Pd(2) <= cc.PdHi(2)), 1, 1);
+    res = chk(res, 'h1 -110 dBm: Lambda CI width', cc.PdHi(2) - cc.PdLo(2), 0.005, 0.12);
+end
+pdL = arrayfun(@(c) c.Pd(2), R1.cond);
+accL = arrayfun(@(c) c.PosAcc(2), R1.cond);
+res = chk(res, 'h1: worst Lambda position accuracy where Pd >= 0.1', min(accL(pdL >= 0.1)), 0.95, 1);
+res = chk(res, 'h1: L90 (position ok) - L90, Lambda [dB]', R1.L90loc(1, 2) - R1.L90(1, 2), -0.05, 0.5);
 
 % ------------------------------------------------------------------ 5) HW-like per-class moments
 banner('5) h0_pfa_analyze with PerClass = true (one Q/Pi per comb phase)');

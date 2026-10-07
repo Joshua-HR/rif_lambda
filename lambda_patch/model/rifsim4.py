@@ -50,6 +50,7 @@ def trial(rng,N,A,h1,chol,coh,pcoh,trms,kdb,need_wn=True):
         for k in WN: F[k%8]+=P[k]; n[k%8]+=1
         F=[F[i]/n[i] for i in range(8)]
         out['md']=(max(P[k] for k in WS)/max(F), max(F)/min(F))
+    out['kpk']=max(WS,key=lambda k:P[k])               # argmax |C|^2 in W_s (detection position)
     out['zq']=max(P[k]/Q[(k-K0)%8] for k in WS)
     out['lam']=max(lam(C[k],Q[(k-K0)%8],Pi[(k-K0)%8]) for k in WS)
     out['lam_vec']=[lam(C[k],Q[(k-K0)%8],Pi[(k-K0)%8]) for k in WS]
