@@ -17,5 +17,7 @@ numpy 없이 표준 라이브러리와 `multiprocessing`(6 프로세스)만 씁�
 | `wavesim.py` | 파형 수준 검증(실제 ±1 STS, 원시 샘플 Q·Π): `python3 wavesim.py 24000` | 설계 문서 6.3 표 | 약 15분 |
 | `gen_dumps.py` | 합성 5열 덤프 생성: `python3 gen_dumps.py <root>` | `synthetic_dumps/` | 약 6분 |
 | `verify_dumps.py` | MATLAB 패치 계산의 파이썬 판: `python3 verify_dumps.py <root>` | `run_synthetic_test` 기대값 | 수 초 |
+| `make_2col.py` | 5열 세트에서 같은 CIR의 2열 세트 만들기: `python3 make_2col.py ../../synthetic_dumps ../../synthetic_dumps_2col` | `synthetic_dumps_2col/` | 수 초 |
+| `web_results.py` | 5열·2열 세트 분석 결과 JSON (`export_web_results.m`과 같은 형식): `python3 web_results.py ../../synthetic_dumps ../../synthetic_dumps_2col out.json` | 웹 9장 "1단계 결과" 기본 데이터 | 약 10초 |
 
 dBm은 MD 문서의 환산(−100 dBm ↔ 펄스당 SNR −11.4 dB, 즉 A²[dB] = dBm + 82.5)을 쓴 모델 값입니다.

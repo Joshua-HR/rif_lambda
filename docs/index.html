@@ -187,6 +187,16 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
 .dash{stroke-dasharray:6 4}
 .guide td:first-child{font-weight:600}
 .guide tr.pick td{background:var(--wash)}
+/* paired charts (5-column vs 2-column) */
+.pair{display:flex;flex-wrap:wrap;gap:14px 22px}
+.pair > div{flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.pair-t{font:600 13.5px var(--f-sans);color:var(--ink)}
+.pair-t span{font-weight:400;color:var(--muted);margin-left:6px}
+.sub-h{font-size:14.5px;font-weight:600;margin:8px 0 0}
+.r7-bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.r7-msg{font-size:13.5px;color:var(--crit);margin:0}
+.stat .v.ok{color:var(--good)}
+.stat .v.ng{color:var(--crit)}
 
 .theme-btn{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);right:12px;z-index:40;font:500 12.5px var(--f-sans);padding:6px 11px;border-radius:999px;border:1px solid var(--hair);background:var(--raised);color:var(--ink-2);cursor:pointer}
 .theme-btn:hover{color:var(--ink);border-color:var(--axis)}
@@ -798,6 +808,61 @@ H0에서  P(Λ̂ ≥ t) = (1 + t/n)^(−(n−1)/2)        <span class="c">Hotell
     <figcaption>수치는 미리 만든 <code>synthetic_dumps/</code>(Python 파형 모델)의 값입니다. MATLAB에서 만든 세트는 난수가 달라 값이 조금 다르며, 자동 확인의 기대 범위는 그 흔들림을 감안했습니다. MATLAB에서 같은 프리셋으로 만든 5열과 2열 세트는 시드가 같아 CIR이 같으므로, MD·κ·Λ̂ 결과는 근사가 아니라 정확히 같아야 합니다. 하나라도 다르면 덤프 읽기나 형식 처리에 문제가 있는 것입니다. 2열 세트는 현재 LLS 덤프와 형식이 같아서, LLS 덤프를 받기 전에 분석 명령과 결과 표를 미리 연습해 볼 수 있습니다. 단계별 덤프 세트와 합격 기준은 <code>lambda_patch/TEST_PLAN.md</code>에 있습니다.</figcaption>
   </figure>
 
+  <figure class="plate" id="r7">
+    <h3>1단계 결과: 5열 덤프 대 2열 덤프</h3>
+    <div class="r7-bar">
+      <span class="chip" id="r7-src"><i></i><span id="r7-src-t">Python 미러</span></span>
+      <label class="btn" for="r7-file">MATLAB 결과 불러오기 (JSON)</label>
+      <input type="file" id="r7-file" accept=".json,application/json" hidden>
+      <button type="button" class="btn" id="r7-reset" hidden>Python 미러로 돌아가기</button>
+    </div>
+    <p class="r7-msg" id="r7-msg" role="status" hidden></p>
+    <div class="stats" id="r7-stats"></div>
+
+    <h4 class="sub-h">H0 오검출률 (틀린 키)</h4>
+    <div class="legend">
+      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>MD 규칙</span>
+      <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s1f"/></svg>Λ (원시 샘플 Q·Π, 5열만)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="hollow1" style="stroke-width:1.6"/></svg>Λ̂ (CIR 추정)</span>
+    </div>
+    <div class="pair">
+      <div><div class="pair-t" id="r7-h0a-t"></div><svg class="chart" id="r7-h0a" role="img" aria-label="첫 번째 세트의 H0 조건별 오검출률"></svg></div>
+      <div><div class="pair-t" id="r7-h0b-t"></div><svg class="chart" id="r7-h0b" role="img" aria-label="두 번째 세트의 H0 조건별 오검출률"></svg></div>
+    </div>
+
+    <h4 class="sub-h">H1 검출 확률 (맞는 키, 95% 신뢰구간)</h4>
+    <div class="legend">
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="s2f"/></svg>MD 규칙</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="s1f"/></svg>Λ (5열만)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s dash" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="hollow1" style="stroke-width:1.5"/></svg>Λ̂ (CIR 추정)</span>
+    </div>
+    <div class="pair">
+      <div><div class="pair-t" id="r7-h1a-t"></div><svg class="chart" id="r7-h1a" role="img" aria-label="첫 번째 세트의 세기별 검출 확률"></svg></div>
+      <div><div class="pair-t" id="r7-h1b-t"></div><svg class="chart" id="r7-h1b" role="img" aria-label="두 번째 세트의 세기별 검출 확률"></svg></div>
+    </div>
+
+    <h4 class="sub-h">H0 탭 단위 꼬리: P(Λ ≥ t)와 χ²₂ 기준 e<sup>−t/2</sup></h4>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="H0 조건" id="r7-seg"></div>
+    </div>
+    <div class="legend">
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/></svg>Λ (5열만)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s dash" stroke-width="2"/></svg>Λ̂ (CIR 추정)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="muteds" stroke-width="2" stroke-dasharray="2 3"/></svg>기준 e<sup>−t/2</sup></span>
+    </div>
+    <div class="pair">
+      <div><div class="pair-t" id="r7-ta-t"></div><svg class="chart" id="r7-ta" role="img" aria-label="첫 번째 세트의 탭 단위 꼬리 확률"></svg></div>
+      <div><div class="pair-t" id="r7-tb-t"></div><svg class="chart" id="r7-tb" role="img" aria-label="두 번째 세트의 탭 단위 꼬리 확률"></svg></div>
+    </div>
+
+    <figcaption id="r7-cap">같은 시드로 만든 5열과 2열 세트를 MATLAB 패치와 같은 계산으로 분석한 결과입니다. 기본으로 보이는 값은 Python 미러(<code>lambda_patch/model/web_results.py</code>)가 <code>synthetic_dumps/</code>와 그 2열 판 <code>synthetic_dumps_2col/</code>에서 계산한 것입니다. 왼쪽과 오른쪽에서 MD 규칙과 Λ̂의 표식과 곡선이 같은 자리에 있으면 2열 처리가 맞게 동작하는 것입니다. 5열 세트에서만 원시 샘플 Λ가 더해지며, 감도(L90)가 Λ̂보다 약 2.6 dB 좋습니다. H0는 조건당 1,000개라 오검출률 1e-3을 판정할 수는 없으므로(0~2건 수준), 처리 경로와 경향을 보는 용도입니다. 꼬리 그림에서 Λ와 Λ̂가 점선 e<sup>−t/2</sup>를 따르면 문턱 공식의 전제가 성립합니다.</figcaption>
+    <figcaption>MATLAB 결과로 바꾸려면 <code>export_web_results(root5, root2, 'rif_results.json')</code>로 JSON을 만든 뒤 위 버튼으로 불러오세요. 파일은 브라우저 안에서만 읽고 어디에도 올리지 않습니다. <code>synthetic_dumps</code>와 <code>synthetic_dumps_2col</code>로 만든 JSON이면 Python 미러와 같은지도 함께 표시합니다. GitHub Pages 판에서는 <code>docs/results/matlab_results.json</code>을 커밋하면 그 결과를 기본으로 보여 줍니다.</figcaption>
+    <details><summary>표로 보기</summary>
+      <div class="tbl-wrap"><table id="r7-tbl0"></table></div>
+      <div class="tbl-wrap" style="margin-top:12px"><table id="r7-tbl1"></table></div>
+    </details>
+  </figure>
+
   <div class="split">
     <figure class="plate main" style="flex-basis:420px">
       <h3>κ 예측값 (기존 덤프로 확인)</h3>
@@ -850,6 +915,9 @@ res2 = run_synthetic_test('D:/rif_test2');         % 열 수 자동 인식, 5단
 A = h0_pfa_analyze('D:/rif_test5/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
 B = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
 [isequal(A.E.k, B.E.k), isequal([A.cond.kappa], [B.cond.kappa]), isequal(A.EL.k, B.EL.k)]
+
+% 위의 "1단계 결과" 그림용 JSON (그림의 버튼으로 불러오기)
+export_web_results('D:/rif_test5', 'D:/rif_test2', 'D:/rif_results.json', 'Res5', res5, 'Res2', res2);
 
 addpath('&lt;repo&gt;/lambda_patch', '-begin');      % 시뮬레이터 덤프 분석
 R0   = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false);                     % MD 표 + kappa (+ 5열이면 Λ 표)
@@ -1948,11 +2016,390 @@ R1c  = h1_pd_analyze('&lt;H1 root&gt;', 'Moments', 'cir');</pre>
     });
   }
 
+  /* ------------------------------------------------------------------ R7: synthetic 5-column vs 2-column results */
+  /* default data: lambda_patch/model/web_results.py on synthetic_dumps + synthetic_dumps_2col;
+     a JSON from lambda_patch/test/export_web_results.m (MATLAB) has the same layout and replaces it */
+  var SYN = {"source":"python-mirror","created":"2026-10-07 16:43","tool":"lambda_patch/model/web_results.py","T_Lam":22.712543309849703,"sets":[{"label":"5열","cols":5,"root":"synthetic_dumps","checks":null,"tailT":[0.0,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.0,4.25,4.5,4.75,5.0,5.25,5.5,5.75,6.0,6.25,6.5,6.75,7.0,7.25,7.5,7.75,8.0,8.25,8.5,8.75,9.0,9.25,9.5,9.75,10.0,10.25,10.5,10.75,11.0,11.25,11.5,11.75,12.0,12.25,12.5,12.75,13.0,13.25,13.5,13.75,14.0,14.25,14.5,14.75,15.0,15.25,15.5,15.75,16.0,16.25,16.5,16.75,17.0,17.25,17.5,17.75,18.0,18.25,18.5,18.75,19.0,19.25,19.5,19.75,20.0,20.25,20.5,20.75,21.0,21.25,21.5,21.75,22.0,22.25,22.5,22.75,23.0,23.25,23.5,23.75,24.0,24.25,24.5,24.75,25.0,25.25,25.5,25.75,26.0,26.25,26.5,26.75,27.0,27.25,27.5,27.75,28.0,28.25,28.5,28.75,29.0,29.25,29.5,29.75,30.0,30.25,30.5,30.75,31.0,31.25,31.5,31.75,32.0,32.25,32.5,32.75,33.0,33.25,33.5,33.75,34.0,34.25,34.5,34.75,35.0,35.25,35.5,35.75,36.0,36.25,36.5,36.75,37.0,37.25,37.5,37.75,38.0,38.25,38.5,38.75,39.0,39.25,39.5,39.75,40.0],"h0":[{"ch":"awgn","len":32,"dBm":-120,"n":1000,"kMD":1,"kL":1,"kC":0,"kappa":0.38320782635567263,"Dmed":3.516564287173476,"nTapL":57000,"tailL":[57000,50319,44457,39360,34737,30559,26969,23827,21001,18574,16385,14429,12698,11182,9820,8681,7622,6733,5948,5232,4619,4062,3596,3196,2855,2507,2230,1954,1735,1510,1348,1189,1050,926,808,708,620,549,484,432,388,337,296,266,238,214,188,159,147,131,117,92,85,81,68,57,51,44,37,35,34,27,25,21,21,18,17,16,11,11,10,9,9,9,9,7,6,5,4,3,2,2,2,2,2,2,2,2,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"nTapC":57000,"tailC":[57000,50275,44408,39191,34581,30570,27015,23816,20945,18508,16315,14351,12660,11188,9868,8716,7662,6755,5967,5255,4642,4098,3585,3199,2847,2488,2202,1966,1744,1511,1334,1171,1037,926,809,730,633,555,479,410,355,311,283,244,213,179,152,134,115,101,91,81,73,63,59,53,44,40,34,28,26,24,21,17,15,12,10,9,8,7,5,4,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-88,"n":1000,"kMD":10,"kL":0,"kC":2,"kappa":0.5691167268737942,"Dmed":4.838659447750231,"nTapL":57000,"tailL":[57000,50341,44431,39227,34608,30568,26979,23811,21014,18570,16429,14508,12764,11319,10027,8837,7785,6935,6101,5351,4725,4158,3647,3240,2836,2492,2213,1967,1748,1557,1358,1210,1060,946,823,717,629,545,484,423,379,333,295,261,221,199,178,155,138,117,102,88,77,64,55,48,43,38,36,33,30,25,22,18,14,13,13,11,9,9,8,7,6,6,6,5,5,4,4,3,3,2,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"nTapC":57000,"tailC":[57000,50291,44336,39198,34676,30550,27017,23780,20951,18477,16451,14486,12785,11303,9998,8750,7742,6841,6030,5318,4688,4156,3686,3257,2857,2509,2230,1953,1741,1527,1357,1198,1056,933,844,737,653,570,497,438,390,342,298,264,236,218,199,182,167,149,130,116,103,90,81,72,64,58,53,47,36,32,27,21,18,18,17,13,11,9,9,7,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,2,2,2,2,2,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-82,"n":1000,"kMD":52,"kL":1,"kC":0,"kappa":0.8242741605548093,"Dmed":8.511563684193412,"nTapL":57000,"tailL":[57000,50253,44290,39013,34385,30328,26802,23728,20936,18406,16234,14291,12644,11193,9939,8777,7748,6820,5952,5244,4632,4083,3619,3203,2825,2486,2212,1974,1741,1534,1384,1241,1068,937,827,748,659,587,514,467,402,350,304,270,228,194,171,151,135,118,105,95,84,75,66,60,48,42,38,35,31,28,22,18,16,15,12,11,8,7,6,6,6,6,6,5,4,4,3,3,3,3,3,3,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"nTapC":57000,"tailC":[57000,50238,44322,39013,34374,30359,26806,23729,20983,18577,16403,14518,12769,11250,9890,8761,7676,6743,5911,5192,4562,4063,3604,3216,2874,2533,2226,1976,1743,1541,1375,1209,1060,923,816,712,628,566,489,443,382,340,306,280,249,219,196,170,150,133,116,101,91,83,71,59,52,45,39,35,29,25,22,19,17,15,13,10,9,8,8,6,6,5,5,5,5,4,3,3,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-40,"n":1000,"kMD":2,"kL":0,"kC":0,"kappa":0.9770829255807878,"Dmed":24.571539463693526,"nTapL":57000,"tailL":[57000,50181,44186,39208,34451,30380,26858,23733,20931,18481,16363,14458,12755,11242,9972,8685,7684,6811,6073,5399,4816,4307,3863,3447,3007,2690,2416,2164,1922,1680,1482,1309,1167,1014,904,778,663,565,506,453,399,369,318,290,265,242,209,187,177,158,144,132,116,99,88,75,65,54,50,48,45,43,36,30,27,12,10,7,7,7,4,3,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"nTapC":57000,"tailC":[57000,49973,43791,38667,33950,29717,26064,22831,20050,17727,15619,13679,11995,10569,9333,8195,7238,6335,5580,4898,4332,3819,3426,3032,2690,2381,2101,1887,1676,1513,1352,1198,1032,899,787,685,587,505,422,358,298,255,221,194,172,151,138,120,106,94,87,81,69,63,53,43,34,26,19,12,8,4,4,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"mp20","len":32,"dBm":-40,"n":1000,"kMD":50,"kL":0,"kC":0,"kappa":0.6918283504948362,"Dmed":6.514147021487572,"nTapL":57000,"tailL":[57000,50088,44050,38879,34294,30199,26623,23517,20771,18340,16103,14182,12505,11039,9771,8599,7622,6711,5932,5197,4545,4000,3529,3110,2776,2458,2168,1945,1716,1507,1331,1137,997,877,760,667,608,525,476,408,364,328,278,231,204,173,151,135,117,102,87,72,62,53,44,42,37,34,29,26,23,18,15,14,11,9,8,5,4,4,4,3,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"nTapC":57000,"tailC":[57000,50246,44441,39407,34836,30740,27156,23992,21274,18904,16685,14759,13046,11542,10185,9014,7954,7036,6149,5429,4764,4213,3714,3261,2884,2526,2229,1965,1748,1553,1372,1206,1072,960,855,758,689,589,510,450,398,347,313,264,225,190,163,135,116,93,76,62,59,53,44,41,41,32,31,29,22,19,17,16,13,11,10,8,7,6,6,3,3,3,3,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"h1":[{"len":32,"dBm":-116,"n":200,"MD":[27,27,0.09088710175487791,0.1903091726833982],"L":[36,36,0.12936892834838964,0.2403810968840071],"C":[12,12,0.03138395389347033,0.1024618313083239]},{"len":32,"dBm":-115,"n":200,"MD":[51,51,0.19614081520043664,0.3212753966387193],"L":[70,70,0.28407067032290734,0.42045062247799203],"C":[17,17,0.05029591863024038,0.13260516582955134]},{"len":32,"dBm":-114,"n":200,"MD":[87,87,0.36521706916961993,0.5067387921875266],"L":[113,113,0.49326120781244165,0.6347829308303474],"C":[35,35,0.1250244107737024,0.23488397063020916]},{"len":32,"dBm":-113,"n":200,"MD":[123,122,0.5437613072168246,0.6827754746371322],"L":[156,155,0.7161387526864564,0.8353639386882148],"C":[69,69,0.2793654759715303,0.4153072390103879]},{"len":32,"dBm":-112,"n":200,"MD":[176,176,0.8267276488358644,0.9215797520036373],"L":[190,190,0.9099724622986245,0.9757658345278908],"C":[102,102,0.4385217225621352,0.5811774847945139]},{"len":32,"dBm":-111,"n":200,"MD":[181,181,0.8556233600231364,0.9418303902748792],"L":[193,193,0.9292190016489981,0.9858144741015806],"C":[128,128,0.5692860539812541,0.7064952791088326]},{"len":32,"dBm":-110,"n":200,"MD":[196,196,0.9495863909100815,0.9945244341204436],"L":[199,199,0.9724581015427822,0.999873418972133],"C":[174,174,0.8153476694765693,0.9132916472314245]},{"len":32,"dBm":-109,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":[200,200,0.9817246596448526,1.0],"C":[195,195,0.9426256488731308,0.9918338338091572]},{"len":32,"dBm":-108,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":[200,200,0.9817246596448526,1.0],"C":[197,197,0.956791718082268,0.9968958923784463]},{"len":32,"dBm":-107,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":[200,200,0.9817246596448526,1.0],"C":[200,200,0.9817246596448526,1.0]},{"len":32,"dBm":-106,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":[200,200,0.9817246596448526,1.0],"C":[200,200,0.9817246596448526,1.0]}],"L90":{"MD":-111.2,"L":-112.29411764705883,"C":-109.71428571428571}},{"label":"2열","cols":2,"root":"synthetic_dumps_2col","checks":null,"tailT":[0.0,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.0,4.25,4.5,4.75,5.0,5.25,5.5,5.75,6.0,6.25,6.5,6.75,7.0,7.25,7.5,7.75,8.0,8.25,8.5,8.75,9.0,9.25,9.5,9.75,10.0,10.25,10.5,10.75,11.0,11.25,11.5,11.75,12.0,12.25,12.5,12.75,13.0,13.25,13.5,13.75,14.0,14.25,14.5,14.75,15.0,15.25,15.5,15.75,16.0,16.25,16.5,16.75,17.0,17.25,17.5,17.75,18.0,18.25,18.5,18.75,19.0,19.25,19.5,19.75,20.0,20.25,20.5,20.75,21.0,21.25,21.5,21.75,22.0,22.25,22.5,22.75,23.0,23.25,23.5,23.75,24.0,24.25,24.5,24.75,25.0,25.25,25.5,25.75,26.0,26.25,26.5,26.75,27.0,27.25,27.5,27.75,28.0,28.25,28.5,28.75,29.0,29.25,29.5,29.75,30.0,30.25,30.5,30.75,31.0,31.25,31.5,31.75,32.0,32.25,32.5,32.75,33.0,33.25,33.5,33.75,34.0,34.25,34.5,34.75,35.0,35.25,35.5,35.75,36.0,36.25,36.5,36.75,37.0,37.25,37.5,37.75,38.0,38.25,38.5,38.75,39.0,39.25,39.5,39.75,40.0],"h0":[{"ch":"awgn","len":32,"dBm":-120,"n":1000,"kMD":1,"kL":null,"kC":0,"kappa":0.38320782635567263,"Dmed":3.516564287173476,"nTapL":0,"tailL":null,"nTapC":57000,"tailC":[57000,50275,44408,39191,34581,30570,27015,23816,20945,18508,16315,14351,12660,11188,9868,8716,7662,6755,5967,5255,4642,4098,3585,3199,2847,2488,2202,1966,1744,1511,1334,1171,1037,926,809,730,633,555,479,410,355,311,283,244,213,179,152,134,115,101,91,81,73,63,59,53,44,40,34,28,26,24,21,17,15,12,10,9,8,7,5,4,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-88,"n":1000,"kMD":10,"kL":null,"kC":2,"kappa":0.5691167268737942,"Dmed":4.838659447750231,"nTapL":0,"tailL":null,"nTapC":57000,"tailC":[57000,50291,44336,39198,34676,30550,27017,23780,20951,18477,16451,14486,12785,11303,9998,8750,7742,6841,6030,5318,4688,4156,3686,3257,2857,2509,2230,1953,1741,1527,1357,1198,1056,933,844,737,653,570,497,438,390,342,298,264,236,218,199,182,167,149,130,116,103,90,81,72,64,58,53,47,36,32,27,21,18,18,17,13,11,9,9,7,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,2,2,2,2,2,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-82,"n":1000,"kMD":52,"kL":null,"kC":0,"kappa":0.8242741605548093,"Dmed":8.511563684193412,"nTapL":0,"tailL":null,"nTapC":57000,"tailC":[57000,50238,44322,39013,34374,30359,26806,23729,20983,18577,16403,14518,12769,11250,9890,8761,7676,6743,5911,5192,4562,4063,3604,3216,2874,2533,2226,1976,1743,1541,1375,1209,1060,923,816,712,628,566,489,443,382,340,306,280,249,219,196,170,150,133,116,101,91,83,71,59,52,45,39,35,29,25,22,19,17,15,13,10,9,8,8,6,6,5,5,5,5,4,3,3,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-40,"n":1000,"kMD":2,"kL":null,"kC":0,"kappa":0.9770829255807878,"Dmed":24.571539463693526,"nTapL":0,"tailL":null,"nTapC":57000,"tailC":[57000,49973,43791,38667,33950,29717,26064,22831,20050,17727,15619,13679,11995,10569,9333,8195,7238,6335,5580,4898,4332,3819,3426,3032,2690,2381,2101,1887,1676,1513,1352,1198,1032,899,787,685,587,505,422,358,298,255,221,194,172,151,138,120,106,94,87,81,69,63,53,43,34,26,19,12,8,4,4,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"mp20","len":32,"dBm":-40,"n":1000,"kMD":50,"kL":null,"kC":0,"kappa":0.6918283504948362,"Dmed":6.514147021487572,"nTapL":0,"tailL":null,"nTapC":57000,"tailC":[57000,50246,44441,39407,34836,30740,27156,23992,21274,18904,16685,14759,13046,11542,10185,9014,7954,7036,6149,5429,4764,4213,3714,3261,2884,2526,2229,1965,1748,1553,1372,1206,1072,960,855,758,689,589,510,450,398,347,313,264,225,190,163,135,116,93,76,62,59,53,44,41,41,32,31,29,22,19,17,16,13,11,10,8,7,6,6,3,3,3,3,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"h1":[{"len":32,"dBm":-116,"n":200,"MD":[27,27,0.09088710175487791,0.1903091726833982],"L":null,"C":[12,12,0.03138395389347033,0.1024618313083239]},{"len":32,"dBm":-115,"n":200,"MD":[51,51,0.19614081520043664,0.3212753966387193],"L":null,"C":[17,17,0.05029591863024038,0.13260516582955134]},{"len":32,"dBm":-114,"n":200,"MD":[87,87,0.36521706916961993,0.5067387921875266],"L":null,"C":[35,35,0.1250244107737024,0.23488397063020916]},{"len":32,"dBm":-113,"n":200,"MD":[123,122,0.5437613072168246,0.6827754746371322],"L":null,"C":[69,69,0.2793654759715303,0.4153072390103879]},{"len":32,"dBm":-112,"n":200,"MD":[176,176,0.8267276488358644,0.9215797520036373],"L":null,"C":[102,102,0.4385217225621352,0.5811774847945139]},{"len":32,"dBm":-111,"n":200,"MD":[181,181,0.8556233600231364,0.9418303902748792],"L":null,"C":[128,128,0.5692860539812541,0.7064952791088326]},{"len":32,"dBm":-110,"n":200,"MD":[196,196,0.9495863909100815,0.9945244341204436],"L":null,"C":[174,174,0.8153476694765693,0.9132916472314245]},{"len":32,"dBm":-109,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":null,"C":[195,195,0.9426256488731308,0.9918338338091572]},{"len":32,"dBm":-108,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":null,"C":[197,197,0.956791718082268,0.9968958923784463]},{"len":32,"dBm":-107,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":null,"C":[200,200,0.9817246596448526,1.0]},{"len":32,"dBm":-106,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":null,"C":[200,200,0.9817246596448526,1.0]}],"L90":{"MD":-111.2,"L":null,"C":-109.71428571428571}}]};
+  var R7 = {data: null, src: '', cond: -1};
+  var R7H0 = [{k: 'kMD', mk: 'circle', mc: 's2f', key: 'dot', name: 'MD 규칙', dy: -8},
+              {k: 'kL', mk: 'sq', mc: 's1f', key: 'sq', name: 'Λ (원시 샘플)', dy: 0},
+              {k: 'kC', mk: 'sqo', mc: '', key: 'sq', name: 'Λ̂ (CIR 추정)', dy: 8}];
+  var R7H1 = [{k: 'MD', line: 's2s', mk: 'circle', mc: 's2f', key: 'dot', ws: 's2s', name: 'MD 규칙', dx: -4},
+              {k: 'L', line: 's1s', mk: 'sq', mc: 's1f', key: 'sq', ws: 's1s', name: 'Λ', dx: 0},
+              {k: 'C', line: 's1s dash', mk: 'sqo', mc: '', key: 'sq', ws: 's1s', name: 'Λ̂', dx: 4}];
+  function r7SetName(s) { return s.cols === 5 ? '5열 세트' : s.cols === 2 ? '2열 세트' : String(s.label || '세트'); }
+  function r7Cond(r) { return minus(r.dBm) + ' dBm' + (r.ch === 'mp20' ? ' 멀티패스' : ''); }
+  function r7Key(r) { return r.ch + '|' + r.len + '|' + r.dBm; }
+  function r7Num(x) { return typeof x === 'number' && isFinite(x); }
+  function r7Valid(d) {
+    return !!(d && Array.isArray(d.sets) && d.sets.length >= 1 && d.sets.every(function (s) {
+      return s && Array.isArray(s.h0) && s.h0.length && Array.isArray(s.h1) && s.h1.length && s.L90 && Array.isArray(s.tailT) &&
+        s.h0.every(function (r) { return r7Num(r.n) && r7Num(r.kMD) && r7Num(r.kC) && r7Num(r.dBm); }) &&
+        s.h1.every(function (r) { return r7Num(r.n) && Array.isArray(r.MD) && Array.isArray(r.C); });
+    }));
+  }
+  function r7Sets() { return R7.data.sets.slice(0, 2); }
+
+  function r7H0(svg, s, lo, hi) {
+    clear(svg);
+    var rows = s.h0, W = 440, rowH = 36, mt = 6, mb = 58, ml = 122, mr = 14, H = mt + mb + rowH * rows.length;
+    var x0 = ml + 10, X = lin(lo, hi, ml + 42, W - mr);
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    for (var e = lo; e <= hi; e++) {
+      el('line', {x1: X(e), x2: X(e), y1: mt, y2: H - mb, 'class': 'gl'}, svg);
+      txt(svg, X(e), H - mb + 17, '1e' + minus(e), 'tick', 'middle');
+    }
+    el('line', {x1: x0, x2: x0, y1: mt, y2: H - mb, 'class': 'gl'}, svg);
+    txt(svg, x0, H - mb + 17, '0건', 'tick', 'middle');
+    if (-3 >= lo && -3 <= hi) {
+      el('line', {x1: X(-3), x2: X(-3), y1: mt, y2: H - mb, 'class': 'ink2s', 'stroke-width': 1.2}, svg);
+      txt(svg, X(-3), H - mb + 31, '목표', 'lab', 'middle');
+    }
+    txt(svg, (ml + W - mr) / 2, H - 6, '프래그먼트당 오검출률 (로그)', 'axt', 'middle');
+    rows.forEach(function (c, i) {
+      var y = mt + rowH * i + rowH / 2;
+      el('line', {x1: ml, x2: W - mr, y1: y + rowH / 2, y2: y + rowH / 2, 'class': 'gl'}, svg);
+      txt(svg, ml - 10, y + 4, r7Cond(c), 'lab', 'end');
+      R7H0.forEach(function (a) {
+        var k = c[a.k];
+        if (!r7Num(k)) return;
+        marker(svg, a.mk, k > 0 ? X(Math.log10(k / c.n)) : x0, y + a.dy, a.mc);
+      });
+      var hit = el('rect', {x: ml, y: y - rowH / 2, width: W - ml - mr, height: rowH, 'class': 'hit'}, svg);
+      hit.addEventListener('pointermove', function (ev) {
+        showTip(ev, R7H0.map(function (a) {
+          var k = c[a.k];
+          return {key: keySvg(a.key, a.mc || 's1f'), v: r7Num(k) ? (k ? fmtE(k / c.n) : '0') : '없음',
+                  l: a.name + (r7Num(k) ? ' · ' + k + '건' : ' (Q·Π 없음)')};
+        }).concat([{v: r7Num(c.kappa) ? c.kappa.toFixed(3) : '–', l: 'κ 중앙값'}]), r7SetName(s) + ' · ' + r7Cond(c) + ' · n = ' + c.n.toLocaleString());
+      });
+      hit.addEventListener('pointerleave', hideTip);
+    });
+  }
+
+  function r7H1(svg, s, xr) {
+    clear(svg);
+    var W = 440, H = 300, ml = 48, mr = 12, mt = 12, mb = 42, ym = (mt + H - mb) / 2;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var X = lin(xr[0], xr[1], ml, W - mr), Y = lin(0, 1, H - mb, mt);
+    var rows = s.h1.slice().sort(function (a, b) { return a.dBm - b.dBm; });
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (v) {
+      el('line', {x1: ml, x2: W - mr, y1: Y(v), y2: Y(v), 'class': 'gl'}, svg);
+      txt(svg, ml - 7, Y(v) + 4, v.toFixed(2), 'tick', 'end');
+    });
+    el('line', {x1: ml, x2: W - mr, y1: Y(0.9), y2: Y(0.9), 'class': 'ink2s', 'stroke-width': 1}, svg);
+    txt(svg, W - mr - 4, Y(0.9) + 15, 'Pd 0.9', 'lab', 'end');
+    var step = xr[1] - xr[0] > 14 ? 4 : 2;
+    for (var xt = Math.ceil(xr[0] / step) * step; xt <= xr[1]; xt += step) txt(svg, X(xt), H - mb + 17, minus(xt), 'tick', 'middle');
+    el('line', {x1: ml, x2: W - mr, y1: H - mb, y2: H - mb, 'class': 'axl'}, svg);
+    txt(svg, (ml + W - mr) / 2, H - 6, '맞는 키 수신 세기 (dBm, 모델 환산)', 'axt', 'middle');
+    txt(svg, 13, ym, '검출 확률 Pd', 'axt', 'middle').setAttribute('transform', 'rotate(-90 13 ' + ym + ')');
+    var ser = R7H1.filter(function (a) { return rows.every(function (r) { return Array.isArray(r[a.k]); }); });
+    ser.forEach(function (a) {
+      var d = '';
+      rows.forEach(function (r, i) { d += (i ? 'L' : 'M') + (X(r.dBm) + a.dx).toFixed(1) + ' ' + Y(r[a.k][0] / r.n).toFixed(1); });
+      el('path', {d: d, 'class': 'line2 ' + a.line}, svg);
+    });
+    ser.forEach(function (a) {
+      rows.forEach(function (r) {
+        var x = X(r.dBm) + a.dx, v = r[a.k];
+        if (r7Num(v[2]) && r7Num(v[3]) && v[3] - v[2] > 0.004) el('line', {x1: x, x2: x, y1: Y(v[2]), y2: Y(v[3]), 'class': a.ws, 'stroke-width': 1.2, 'stroke-opacity': 0.7}, svg);
+        marker(svg, a.mk, x, Y(v[0] / r.n), a.mc);
+      });
+    });
+    /* L90 readout in the empty lower-right corner (high power, Pd ~ 1) */
+    var L = s.L90 || {}, ly = H - mb - 12 - 17 * R7H1.length;
+    txt(svg, W - mr - 6, ly, 'L90 [dBm]', 'labs', 'end');
+    R7H1.forEach(function (a, i) {
+      var has = ser.indexOf(a) >= 0;
+      txt(svg, W - mr - 6, ly + 17 * (i + 1), a.name + '  ' + (has && r7Num(L[a.k]) ? minus(L[a.k].toFixed(1)) : has ? '–' : 'Q·Π 없음'), 'lab', 'end');
+    });
+    var xh = el('line', {x1: 0, x2: 0, y1: mt, y2: H - mb, 'class': 'xh', visibility: 'hidden'}, svg);
+    var hit = el('rect', {x: ml, y: mt, width: W - ml - mr, height: H - mt - mb, 'class': 'hit'}, svg);
+    hit.addEventListener('pointermove', function (ev) {
+      var bb = svg.getBoundingClientRect(), sx = (ev.clientX - bb.left) / bb.width * W, best = rows[0], bd = 1e9;
+      rows.forEach(function (r) { var dd = Math.abs(X(r.dBm) - sx); if (dd < bd) { bd = dd; best = r; } });
+      xh.setAttribute('x1', X(best.dBm)); xh.setAttribute('x2', X(best.dBm)); xh.setAttribute('visibility', 'visible');
+      showTip(ev, ser.map(function (a) {
+        var v = best[a.k];
+        return {key: keySvg(a.key, a.mc || 's1f'), v: (v[0] / best.n).toFixed(3),
+                l: a.name + ' [' + (r7Num(v[2]) ? v[2].toFixed(3) : '–') + ', ' + (r7Num(v[3]) ? v[3].toFixed(3) : '–') + '] · 위치 ' + (v[0] ? pct(v[1] / v[0]) : '–')};
+      }), r7SetName(s) + ' · ' + minus(best.dBm) + ' dBm · n = ' + best.n.toLocaleString());
+    });
+    hit.addEventListener('pointerleave', function () { xh.setAttribute('visibility', 'hidden'); hideTip(); });
+  }
+
+  function r7TailOf(s, key, ci) {
+    var nk = key === 'L' ? 'nTapL' : 'nTapC', tk = key === 'L' ? 'tailL' : 'tailC';
+    var rows = ci < 0 ? s.h0 : [s.h0[ci]];
+    if (!rows[0] || rows.some(function (r) { return !Array.isArray(r[tk]) || !(r[nk] > 0); })) return null;
+    var n = 0, cnt = s.tailT.map(function () { return 0; });
+    rows.forEach(function (r) { n += r[nk]; r[tk].forEach(function (v, i) { cnt[i] += v; }); });
+    return {n: n, p: cnt.map(function (v) { return v / n; })};
+  }
+  function r7Tail(svg, s, ci) {
+    clear(svg);
+    var W = 440, H = 300, ml = 52, mr = 12, mt = 12, mb = 42, ym = (mt + H - mb) / 2, tmax = 30;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var tl = r7TailOf(s, 'L', ci), tc = r7TailOf(s, 'C', ci);
+    var nmax = Math.max(tl ? tl.n : 0, tc ? tc.n : 0, 10), ylo = Math.floor(Math.log10(1 / nmax));
+    var X = lin(0, tmax, ml, W - mr), Y = lin(ylo, 0, H - mb, mt);
+    for (var e = ylo; e <= 0; e++) {
+      el('line', {x1: ml, x2: W - mr, y1: Y(e), y2: Y(e), 'class': 'gl'}, svg);
+      txt(svg, ml - 7, Y(e) + 4, e ? '1e' + minus(e) : '1', 'tick', 'end');
+    }
+    for (var t = 0; t <= tmax; t += 5) txt(svg, X(t), H - mb + 17, String(t), 'tick', 'middle');
+    el('line', {x1: ml, x2: W - mr, y1: H - mb, y2: H - mb, 'class': 'axl'}, svg);
+    txt(svg, (ml + W - mr) / 2, H - 6, '문턱 t (탭 하나의 Λ 값)', 'axt', 'middle');
+    txt(svg, 13, ym, '탭 비율 P(Λ ≥ t)', 'axt', 'middle').setAttribute('transform', 'rotate(-90 13 ' + ym + ')');
+    var T = R7.data.T_Lam;
+    if (r7Num(T) && T <= tmax) {
+      el('line', {x1: X(T), x2: X(T), y1: mt, y2: H - mb, 'class': 'ink2s', 'stroke-width': 1}, svg);
+      txt(svg, X(T) + 5, mt + 12, '문턱 ' + T.toFixed(2), 'lab', 'start');
+    }
+    var d = '';
+    for (var u = 0; u <= tmax; u += 0.5) { var ly = -u / (2 * Math.LN10); if (ly < ylo) break; d += (d ? 'L' : 'M') + X(u).toFixed(1) + ' ' + Y(ly).toFixed(1); }
+    el('path', {d: d, 'class': 'line2 muteds', 'stroke-dasharray': '2 3'}, svg);
+    [[tl, 's1s'], [tc, 's1s dash']].forEach(function (a) {
+      if (!a[0]) return;
+      var dd = '';
+      s.tailT.forEach(function (tt, i) {
+        var p = a[0].p[i];
+        if (tt > tmax || !(p > 0)) return;
+        dd += (dd ? 'L' : 'M') + X(tt).toFixed(1) + ' ' + Y(Math.log10(p)).toFixed(1);
+      });
+      el('path', {d: dd, 'class': 'line2 ' + a[1]}, svg);
+    });
+    if (!tl) txt(svg, ml + 10, H - mb - 10, 'Λ: Q·Π 없음 (2열)', 'lab', 'start');
+    var xh = el('line', {x1: 0, x2: 0, y1: mt, y2: H - mb, 'class': 'xh', visibility: 'hidden'}, svg);
+    var hit = el('rect', {x: ml, y: mt, width: W - ml - mr, height: H - mt - mb, 'class': 'hit'}, svg);
+    hit.addEventListener('pointermove', function (ev) {
+      var bb = svg.getBoundingClientRect(), sx = (ev.clientX - bb.left) / bb.width * W;
+      var tq = Math.max(0, Math.min(tmax, Math.round((sx - ml) / (W - ml - mr) * tmax)));
+      var i = 0; s.tailT.forEach(function (tt, j) { if (Math.abs(tt - tq) < Math.abs(s.tailT[i] - tq)) i = j; });
+      var ref = Math.exp(-s.tailT[i] / 2);
+      xh.setAttribute('x1', X(s.tailT[i])); xh.setAttribute('x2', X(s.tailT[i])); xh.setAttribute('visibility', 'visible');
+      var rows = [];
+      if (tl) rows.push({key: keySvg('line', 's1s'), v: fmtE(tl.p[i]), l: 'Λ · 기준 대비 ×' + (tl.p[i] / ref).toFixed(2)});
+      if (tc) rows.push({key: keySvg('line', 's1s'), v: fmtE(tc.p[i]), l: 'Λ̂ · 기준 대비 ×' + (tc.p[i] / ref).toFixed(2)});
+      rows.push({key: keySvg('line', 'muteds'), v: fmtE(ref), l: '기준 e^(−t/2)'});
+      showTip(ev, rows, r7SetName(s) + ' · t = ' + s.tailT[i]);
+    });
+    hit.addEventListener('pointerleave', function () { xh.setAttribute('visibility', 'hidden'); hideTip(); });
+  }
+
+  function r7Compare(a, b) {
+    var m = {}, out = {md: [0, 0], kap: [0, 0], c: [0, 0], h1: [0, 0]};
+    b.h0.forEach(function (r) { m[r7Key(r)] = r; });
+    a.h0.forEach(function (r) {
+      var q = m[r7Key(r)];
+      out.md[1]++; out.kap[1]++; out.c[1]++;
+      if (!q || q.n !== r.n) return;
+      if (q.kMD === r.kMD) out.md[0]++;
+      if (q.kappa === r.kappa) out.kap[0]++;
+      if (q.kC === r.kC) out.c[0]++;
+    });
+    var m1 = {};
+    b.h1.forEach(function (r) { m1[r.len + '|' + r.dBm] = r; });
+    a.h1.forEach(function (r) {
+      var q = m1[r.len + '|' + r.dBm];
+      out.h1[1]++;
+      if (q && q.n === r.n && q.MD[0] === r.MD[0] && q.MD[1] === r.MD[1] && q.C[0] === r.C[0] && q.C[1] === r.C[1]) out.h1[0]++;
+    });
+    return out;
+  }
+  function r7MirrorDiff(d) {
+    /* MATLAB result on the same files as the default data: count the counts that differ */
+    if (!SYN || d === SYN || d.source !== 'matlab') return null;
+    var diff = 0, tot = 0, matched = 0;
+    d.sets.forEach(function (s) {
+      var ref = SYN.sets.filter(function (q) { return q.root === s.root && q.cols === s.cols; })[0];
+      if (!ref) return;
+      matched++;
+      var m = {}; ref.h0.forEach(function (r) { m[r7Key(r)] = r; });
+      s.h0.forEach(function (r) {
+        var q = m[r7Key(r)]; ['n', 'kMD', 'kL', 'kC'].forEach(function (k) { tot++; if (!q || q[k] !== r[k]) diff++; });
+      });
+      var m1 = {}; ref.h1.forEach(function (r) { m1[r.len + '|' + r.dBm] = r; });
+      s.h1.forEach(function (r) {
+        var q = m1[r.len + '|' + r.dBm];
+        ['MD', 'L', 'C'].forEach(function (k) {
+          tot++;
+          var a = r[k], b = q && q[k];
+          if (!(a === null && (b === null || b === undefined)) && !(Array.isArray(a) && Array.isArray(b) && a[0] === b[0] && a[1] === b[1])) diff++;
+        });
+      });
+    });
+    return matched ? {diff: diff, tot: tot} : {diff: -1, tot: 0};
+  }
+  function r7Stats() {
+    var box = document.getElementById('r7-stats'); clear(box);
+    function tile(k, v, s, cls) {
+      var d = document.createElement('div'); d.className = 'stat';
+      var a = document.createElement('span'); a.className = 'k'; a.textContent = k; d.appendChild(a);
+      var b = document.createElement('span'); b.className = 'v' + (cls ? ' ' + cls : ''); b.textContent = v; d.appendChild(b);
+      var c = document.createElement('span'); c.className = 's'; c.textContent = s; d.appendChild(c);
+      box.appendChild(d);
+    }
+    var S = r7Sets();
+    if (S.length === 2) {
+      var c = r7Compare(S[0], S[1]);
+      [['MD 오검출 수', c.md, 'H0 조건'], ['κ 중앙값', c.kap, 'H0 조건'], ['Λ̂ 오검출 수', c.c, 'H0 조건'], ['H1 검출 수 (MD, Λ̂)', c.h1, 'H1 세기']].forEach(function (t) {
+        var ok = t[1][0] === t[1][1];
+        tile(t[0] + ': ' + r7SetName(S[0]).replace(' 세트', '') + ' 대 ' + r7SetName(S[1]).replace(' 세트', ''), ok ? '같음' : '다름',
+             t[2] + ' ' + t[1][1] + '개 중 ' + t[1][0] + '개 같음', ok ? 'ok' : 'ng');
+      });
+    } else {
+      tile('2열·5열 교차 확인', '–', '세트가 하나뿐이라 비교하지 않음', '');
+    }
+    var ck = S.map(function (s) { return s.checks && r7Num(s.checks.ok) ? s.checks.ok + '/' + s.checks.total : '–'; });
+    var allOk = S.every(function (s) { return s.checks && s.checks.ok === s.checks.total; });
+    if (S.some(function (s) { return s.checks; })) tile('run_synthetic_test [OK]', ck.join(' · '), S.map(r7SetName).join(' · '), allOk ? 'ok' : 'ng');
+    else tile('run_synthetic_test [OK]', '–', 'MATLAB 결과에서 표시 (Res5, Res2 옵션)', '');
+    var s5 = S.filter(function (s) { return r7Num(s.L90.L) && r7Num(s.L90.C); })[0];
+    if (s5) tile('Q·Π가 주는 감도 이득', (s5.L90.C - s5.L90.L).toFixed(1) + ' dB', 'L90: Λ ' + minus(s5.L90.L.toFixed(1)) + ', Λ̂ ' + minus(s5.L90.C.toFixed(1)) + ' dBm (' + r7SetName(s5) + ')', '');
+    var md = r7MirrorDiff(R7.data);
+    if (md) {
+      if (md.diff < 0) tile('Python 미러와 비교', '–', '다른 덤프 세트라 비교하지 않음', '');
+      else tile('Python 미러와 비교', md.diff ? md.diff + '건 다름' : '같음', '같은 synthetic_dumps 파일의 검출 수 ' + md.tot + '개', md.diff ? 'ng' : 'ok');
+    }
+  }
+
+  function r7Tables() {
+    var S = r7Sets();
+    var tb = document.getElementById('r7-tbl0'); clear(tb);
+    var hd = tb.createTHead().insertRow(), cols = ['H0 조건', 'n'];
+    S.forEach(function (s) { var nm = r7SetName(s).replace(' 세트', ''); cols.push('MD ' + nm, 'Λ ' + nm, 'Λ̂ ' + nm, 'κ ' + nm); });
+    cols.forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
+    var bd = tb.createTBody();
+    S[0].h0.forEach(function (r) {
+      var tr = bd.insertRow(), c0 = tr.insertCell(); c0.textContent = r7Cond(r);
+      var c1 = tr.insertCell(); c1.className = 'num'; c1.textContent = r.n.toLocaleString();
+      S.forEach(function (s) {
+        var q = s.h0.filter(function (x) { return r7Key(x) === r7Key(r); })[0] || {};
+        ['kMD', 'kL', 'kC'].forEach(function (k) {
+          var td = tr.insertCell(); td.className = 'num'; td.textContent = r7Num(q[k]) ? q[k] + ' (' + (q[k] ? fmtE(q[k] / q.n) : '0') + ')' : '–';
+        });
+        var tk = tr.insertCell(); tk.className = 'num'; tk.textContent = r7Num(q.kappa) ? q.kappa.toFixed(3) : '–';
+      });
+    });
+    var tb1 = document.getElementById('r7-tbl1'); clear(tb1);
+    var hd1 = tb1.createTHead().insertRow(), cols1 = ['H1 세기 (dBm)', 'n'];
+    S.forEach(function (s) { var nm = r7SetName(s).replace(' 세트', ''); cols1.push('Pd MD ' + nm, 'Pd Λ ' + nm, 'Pd Λ̂ ' + nm); });
+    cols1.forEach(function (h) { var th = document.createElement('th'); th.textContent = h; th.className = 'num'; hd1.appendChild(th); });
+    var bd1 = tb1.createTBody();
+    var rows = S[0].h1.slice().sort(function (a, b) { return a.dBm - b.dBm; });
+    rows.forEach(function (r) {
+      var tr = bd1.insertRow();
+      [minus(r.dBm), r.n.toLocaleString()].forEach(function (v) { var td = tr.insertCell(); td.className = 'num'; td.textContent = v; });
+      S.forEach(function (s) {
+        var q = s.h1.filter(function (x) { return x.len === r.len && x.dBm === r.dBm; })[0] || {};
+        ['MD', 'L', 'C'].forEach(function (k) {
+          var td = tr.insertCell(); td.className = 'num'; td.textContent = Array.isArray(q[k]) ? (q[k][0] / q.n).toFixed(3) : '–';
+        });
+      });
+    });
+    var tr2 = bd1.insertRow();
+    ['L90', ''].forEach(function (v) { var td = tr2.insertCell(); td.className = 'num'; td.textContent = v; });
+    S.forEach(function (s) {
+      ['MD', 'L', 'C'].forEach(function (k) { var td = tr2.insertCell(); td.className = 'num'; td.textContent = r7Num(s.L90[k]) ? minus(s.L90[k].toFixed(2)) : '–'; });
+    });
+  }
+
+  function r7Seg() {
+    var seg = document.getElementById('r7-seg'); clear(seg);
+    var rows = r7Sets()[0].h0;
+    if (R7.cond >= rows.length) R7.cond = -1;
+    if (R7.cond === -1 && !R7.touched) {
+      rows.forEach(function (r, i) { if (r.ch === 'awgn' && r.dBm === -82) R7.cond = i; });
+    }
+    rows.map(function (r, i) { return [i, r7Cond(r)]; }).concat([[-2, '모든 조건 합산']]).forEach(function (o) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = o[1];
+      var idx = o[0] === -2 ? -1 : o[0];
+      b.setAttribute('aria-pressed', String(idx === R7.cond));
+      b.addEventListener('click', function () { R7.cond = idx; R7.touched = true; r7Seg(); r7DrawTails(); });
+      seg.appendChild(b);
+    });
+  }
+  function r7DrawTails() {
+    var S = r7Sets(), ids = ['r7-ta', 'r7-tb'];
+    ids.forEach(function (id, j) {
+      var svg = document.getElementById(id);
+      svg.parentNode.hidden = !S[j];
+      if (S[j]) r7Tail(svg, S[j], R7.cond);
+    });
+  }
+  function r7Draw() {
+    var S = r7Sets();
+    var nmax = 10, pmax = 1e-3, xs = [];
+    S.forEach(function (s) {
+      s.h0.forEach(function (r) { nmax = Math.max(nmax, r.n); R7H0.forEach(function (a) { if (r7Num(r[a.k]) && r[a.k] > 0) pmax = Math.max(pmax, r[a.k] / r.n); }); });
+      s.h1.forEach(function (r) { xs.push(r.dBm); });
+    });
+    var lo = Math.floor(Math.log10(0.5 / nmax)), hi = Math.max(-1, Math.ceil(Math.log10(pmax)));
+    var xr = [Math.min.apply(null, xs) - 0.6, Math.max.apply(null, xs) + 0.6];
+    [['r7-h0a', 'r7-h1a', 'r7-ta'], ['r7-h0b', 'r7-h1b', 'r7-tb']].forEach(function (ids, j) {
+      var s = S[j];
+      ids.forEach(function (id) {
+        var t = document.getElementById(id + '-t'); clear(t);
+        document.getElementById(id).parentNode.hidden = !s;
+        if (!s) return;
+        t.textContent = r7SetName(s);
+        var sp = document.createElement('span');
+        sp.textContent = (s.root ? s.root + ' · ' : '') + (s.cols === 5 ? 're im Q PiRe PiIm' : s.cols === 2 ? 're im' : '');
+        t.appendChild(sp);
+      });
+      if (!s) return;
+      r7H0(document.getElementById(ids[0]), s, lo, hi);
+      r7H1(document.getElementById(ids[1]), s, xr);
+    });
+    r7Seg(); r7DrawTails(); r7Stats(); r7Tables();
+    var src = document.getElementById('r7-src'), d = R7.data;
+    src.className = 'chip' + (d.source === 'matlab' ? ' good' : '');
+    document.getElementById('r7-src-t').textContent = R7.src + (d.created ? ' · ' + d.created : '');
+    document.getElementById('r7-reset').hidden = d === SYN || !SYN;
+  }
+  function r7Use(d, src) {
+    R7.data = d; R7.src = src; R7.touched = false; R7.cond = -1;
+    r7Draw();
+  }
+  function r7Msg(s) { var m = document.getElementById('r7-msg'); m.textContent = s || ''; m.hidden = !s; }
+  function r7Boot() {
+    if (!r7Valid(SYN)) { document.getElementById('r7').hidden = true; return; }
+    r7Use(SYN, 'Python 미러 · synthetic_dumps / synthetic_dumps_2col');
+    document.getElementById('r7-file').addEventListener('change', function (ev) {
+      var f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        var d = null;
+        try { d = JSON.parse(String(rd.result)); } catch (e) { d = null; }
+        if (!r7Valid(d)) { r7Msg(f.name + ': export_web_results.m가 만든 JSON 형식이 아닙니다.'); return; }
+        r7Msg('');
+        r7Use(d, (d.source === 'matlab' ? 'MATLAB' : String(d.source || '불러온 파일')) + ' · ' + f.name);
+      };
+      rd.onerror = function () { r7Msg(f.name + ': 파일을 읽지 못했습니다.'); };
+      rd.readAsText(f);
+      ev.target.value = '';
+    });
+    document.getElementById('r7-reset').addEventListener('click', function () {
+      r7Msg(''); r7Use(SYN, 'Python 미러 · synthetic_dumps / synthetic_dumps_2col');
+    });
+    /* GitHub Pages: a committed docs/results/matlab_results.json is shown by default */
+    if (window.fetch && /^https?:$/.test(location.protocol)) {
+      fetch('results/matlab_results.json', {cache: 'no-cache'}).then(function (r) {
+        return r.ok ? r.json() : null;
+      }).then(function (d) {
+        if (r7Valid(d) && R7.data === SYN) r7Use(d, 'MATLAB · docs/results/matlab_results.json');
+      }).catch(function () {});
+    }
+  }
+
   /* ------------------------------------------------------------------ boot & theme */
   function redrawCanvases() { w2Draw(); w3Draw(); }
   function boot() {
     w1Run(); drawCloud('d2a', false); drawCloud('d2b', true); w4Draw(); w5Update();
-    r1Draw(); r2Draw(); r3Draw(); r4Draw(); d5Draw(); w6Draw(); r5Draw(); r6Draw();
+    r1Draw(); r2Draw(); r3Draw(); r4Draw(); d5Draw(); w6Draw(); r5Draw(); r6Draw(); r7Boot();
     w2Run(); w3Run();
   }
   if (window.matchMedia) {

@@ -108,6 +108,18 @@ isequal(R15.table, R12.table)                            % H1 Pd 표 (MD, Λ̂) 
 
 하나라도 `false`면 덤프 읽기나 형식 처리에 문제가 있는 것입니다.
 
+결과를 그림으로 나란히 보려면 JSON으로 내보내 웹 페이지 9장 "1단계 결과: 5열 덤프 대 2열 덤프" 그림에서 불러옵니다.
+
+```matlab
+export_web_results('D:/rif_test5', 'D:/rif_test2', 'D:/rif_results.json', 'Res5', res5, 'Res2', res2);
+```
+
+- 그림 위의 "MATLAB 결과 불러오기 (JSON)" 버튼으로 파일을 고릅니다. 파일은 브라우저 안에서만 읽습니다.
+- 교차 확인 타일 4개(MD 오검출 수, κ, Λ̂ 오검출 수, H1 검출 수)가 모두 "같음"이어야 합니다.
+- `run_synthetic_test` 타일에는 43/43 · 29/29가 보여야 합니다.
+- 미리 만든 `synthetic_dumps/`와 `synthetic_dumps_2col/`로 내보내면 "Python 미러와 비교" 타일이 함께 나옵니다. 경계값 몇 건 외에는 "같음"이어야 합니다.
+- GitHub Pages 판은 `docs/results/matlab_results.json`이 있으면 그것을 기본으로 보여 줍니다.
+
 ### A-4. 단계 B 리허설 (선택)
 
 단계 B와 같은 폴더 구성을 합성 2열로 만들어, LLS를 돌리기 전에 명령·폴더·결과 표를 한 번 돌려 봅니다.
@@ -249,7 +261,7 @@ R1c = h1_pd_analyze('D:/rif5/h1_awgn', 'Moments', 'cir');
 
 | 결과 | 출처 |
 |---|---|
-| 단계 A 요약 (43/43, 29/29), A-3 교차 확인 결과 | `run_synthetic_test` 출력, `isequal` 결과 |
+| 단계 A 요약 (43/43, 29/29), A-3 교차 확인 결과 | `run_synthetic_test` 출력, `isequal` 결과, `export_web_results` JSON과 웹 9장 그림 |
 | H0 MD 표 (Pfa, 상한, kappa, Dmed) | `h0_pfa_analyze` "current thresholds" 표, `h0_pfa.png` |
 | H0 Λ 표 (raw / cir) | "Lambda detector" 표, `h0_lambda.png` |
 | H1 표 (Pd [95% CI], 위치 정확도, L90/L99, L90loc) | `h1_pd_analyze` 출력과 그림 |

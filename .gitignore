@@ -14,3 +14,6 @@ __pycache__/
 *~
 .DS_Store
 Thumbs.db
+
+# 2열 합성 덤프 (lambda_patch/model/make_2col.py 로 synthetic_dumps 에서 만듦)
+synthetic_dumps_2col/

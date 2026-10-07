@@ -24,4 +24,6 @@
 1. 무엇을 판정하나 (CIR 위젯) 2. 기존 판정기 (결정 평면 위젯) 3. 왜 깨지나 (꼬리 확률) 4. 핵심 관찰
 5. 백색화 Λ (상관값 구름 위젯) 6. 문턱 계산기 7. 검증 결과 8. 고정 칩 대안 (CIR 추정 Λ̂) 9. 적용 순서 (합성 5열·2열 시험 포함)
 
+9장 "1단계 결과: 5열 덤프 대 2열 덤프" 그림은 기본으로 Python 미러 값을 보여 줍니다. MATLAB의 `export_web_results`가 만든 JSON을 `docs/results/matlab_results.json`으로 커밋하면 게시된 페이지가 그 결과를 기본으로 보여 주고, 그림의 버튼으로 Python 미러와 바꿔 볼 수 있습니다.
+
 설계 문서: `../lambda_patch/LAMBDA_PATCH_DESIGN.md`. 페이지의 수치는 `../lambda_patch/model/`의 스크립트로 다시 만들 수 있습니다.

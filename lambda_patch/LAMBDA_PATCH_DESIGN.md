@@ -137,6 +137,7 @@ momPi[k] += z * z;           // z^2 (복소)
 | `h1_pd_analyze.m` | 신규 | H1 Pd와 95% 신뢰구간, 검출 위치 정확도, MD 대 Λ의 L90/L99 |
 | `test/gen_synthetic_dumps.m` | 신규 | 파형 모델로 5열(또는 2열) 합성 덤프 생성 |
 | `test/run_synthetic_test.m` | 신규 | 합성 덤프로 자동 확인 (5열: 9단계 43개 항목, 2열: 5단계 29개 항목) |
+| `test/export_web_results.m` | 신규 | 5열·2열 세트의 분석 결과를 웹 페이지용 JSON으로 저장 (9장 "1단계 결과" 그림) |
 
 원본(`../rif_cir_analyze.m`, `../h0_pfa_analyze.m`)은 수정하지 않았습니다.
 
@@ -293,6 +294,8 @@ res2 = run_synthetic_test('D:/rif_test2');        % 형식 자동 인식: 2열 5
 ```
 
 같은 프리셋과 시드로 만든 2열과 5열 세트는 CIR이 비트 단위로 같습니다. 따라서 두 실행의 MD 규칙 Pfa, kappa, CIR 추정 Λ̂ 결과는 정확히 같아야 합니다. 2열 세트에서는 원시 샘플 Λ, PerClass, 스케일 검사, 형식 혼합 검사가 빠집니다.
+
+두 세트의 결과는 `export_web_results(root5, root2, 'rif_results.json', 'Res5', res, 'Res2', res2)`로 JSON에 담아, 웹 페이지 9장 "1단계 결과: 5열 덤프 대 2열 덤프" 그림에서 불러와 나란히 볼 수 있습니다(H0 오검출률, H1 Pd와 신뢰구간, 탭 꼬리, 교차 확인). 페이지의 기본 데이터는 `model/web_results.py`가 `synthetic_dumps/`와 그 2열 판 `synthetic_dumps_2col/`(`model/make_2col.py`)에서 계산한 Python 미러 값입니다. MATLAB에서도 이 두 폴더로 JSON을 만들면 페이지가 Python 미러와의 일치 여부를 함께 표시합니다.
 
 미리 만든 `synthetic_dumps/`에 대해 같은 계산을 Python으로 따라 한 결과(`model/verify_dumps.py`), 43개 항목이 모두 기대 범위 안에 들었습니다.
 
