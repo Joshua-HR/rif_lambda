@@ -22,7 +22,8 @@ function res = run_synthetic_test(root, show)
 %
 %   Every check prints [OK] or [CHECK] with the expected range. The ranges are wide enough for the
 %   statistical spread of these sample sizes; a single CHECK slightly outside is not necessarily a bug.
-%   Step 4 also checks the Pd confidence interval and the detection-position accuracy of h1_pd_analyze.
+%   Step 4 also checks the Pd confidence interval and the detection-position accuracy of h1_pd_analyze;
+%   step 9 runs the CIR-only variant ('Moments', 'cir'), as on fixed silicon without Q/Pi accumulators.
 %   The run rebuilds the per-folder caches (h0_stats_cache.mat) and takes a few minutes.
 
 here = fileparts(mfilename('fullpath'));                   % <project>/lambda_patch/test
@@ -148,6 +149,23 @@ catch err
     fprintf('  caught: %s\n', err.message);
 end
 res = chk(res, 'mixed: error rif_cir_analyze:mixed raised', double(strcmp(eid, 'rif_cir_analyze:mixed')), 1, 1);
+
+% ------------------------------------------------------------------ 9) CIR-only moments (fixed silicon)
+banner('9) ''Moments'', ''cir'': Q/Pi estimated from the CIR (no raw-sample accumulators)');
+rc = rif_cir_analyze(fullfile(root, 'h0', 'c32_m82_j1', 'bin'), 'Quiet', true, 'Plot', 'none', 'Moments', 'cir');
+res = chk(res, 'cir -82 dBm: Lambda computed from the CIR', double(strcmp(rc.lamMode, 'cir')), 1, 1);
+res = chk(res, 'cir -82 dBm: fewest noise taps per phase', min(rc.nCir), 24, 25);
+res = chk(res, 'cir -82 dBm: Lambda false-alarm rate', mean(rc.validL), 0, 0.006);
+R0c = h0_pfa_analyze(fullfile(root, 'h0'), 'Suggest', false, 'Moments', 'cir', 'Plot', false);
+if ~isempty(R0c.EL)
+    res = chk(res, 'cir h0: worst Lambda Pfa over conditions', max(R0c.EL.pfa), 0, 0.005);
+    res = chk(res, 'cir h0: smallest tail ratio t=10', min(R0c.EL.tailRatio(:, 1)), 0.5, 1.3);
+    res = chk(res, 'cir h0: largest tail ratio t=10', max(R0c.EL.tailRatio(:, 1)), 0.7, 1.3);
+end
+R2c = h0_pfa_analyze(fullfile(root, 'h0_2col'), 'Suggest', false, 'Moments', 'cir', 'Plot', false);
+res = chk(res, 'cir 2col: Lambda evaluated on 2-column dumps', double(~isempty(R2c.EL)), 1, 1);
+R1c = h1_pd_analyze(fullfile(root, 'h1'), 'Moments', 'cir', 'Plot', false);
+res = chk(res, 'cir h1: L90 loss vs dumped Q/Pi [dB]', R1c.L90(1, 2) - R1.L90(1, 2), 1.0, 4.0);
 
 % ------------------------------------------------------------------ summary
 banner('summary');

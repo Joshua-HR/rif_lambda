@@ -25,8 +25,10 @@ function R = h0_pfa_analyze(root, varargin)
 %       'Plot'      true    'Save' ''  (folder for the PNG)  'Visible' 'on'
 %       'PerClass'  false   Lambda detector with one Q/Pi per comb phase (HW-like), passed to rif_cir_analyze
 %       'Margin'    1.5     Lambda threshold margin: T = 2 ln(|W_s| / Target) + 2 ln(Margin)
+%       'Moments'   'raw'   'raw': Q/Pi from 5-column dumps, 'cir': estimated from the CIR (any dump,
+%                           fixed silicon); passed to rif_cir_analyze
 %
-%   Lambda detector (needs 5-column dumps "re im Q PiRe PiIm", see rif_cir_analyze)
+%   Lambda detector (5-column dumps "re im Q PiRe PiIm", or any dump with 'Moments','cir')
 %       The threshold is analytic (no search). Two checks per condition:
 %       - per-tap tail ratio P(Lam >= t) / exp(-t/2) at t = 10, 14, 18 (~1 expected, n x |W_s| samples)
 %       - fragment Pfa at T with the same Clopper-Pearson upper bound as above
@@ -59,6 +61,7 @@ p.addParameter('Save', '', @ischar)
 p.addParameter('Visible', 'on', @ischar);
 p.addParameter('PerClass', false, @(x) islogical(x) || isnumeric(x));
 p.addParameter('Margin', 1.5, @isnumeric);
+p.addParameter('Moments', 'raw', @(x) ischar(x) && any(strcmpi(x, {'raw', 'cir'})));
 p.parse(root, varargin{:});
 o = p.Results;
 o.Suggest = logical(o.Suggest);
@@ -98,7 +101,7 @@ end
 lens = [F.len]; pows = [F.pow];
 keys = unique([lens(:) pows(:)], 'rows');
 C = struct('len', {}, 'pow', {}, 'jobs', {}, 'n', {}, 'kmax', {}, 'Z', {}, 'D', {}, ...
-           'kappa', {}, 'hasMom', {}, 'Lmax', {}, 'tailCnt', {}, 'nTap', {});
+           'kappa', {}, 'lamOn', {}, 'Lmax', {}, 'tailCnt', {}, 'nTap', {});
 for c = 1:size(keys, 1)
     sel = find(lens == keys(c, 1) & pows == keys(c, 2));
     Z = []; D = []; K = []; L = []; tc = 0; nt = 0; hm = true;
@@ -107,7 +110,7 @@ for c = 1:size(keys, 1)
         D = [D, F(s).S.D(:).']; %#ok<AGROW>
         K = [K, F(s).S.kappa(:).']; %#ok<AGROW>
         L = [L, F(s).S.Lmax(:).']; %#ok<AGROW>
-        tc = tc + F(s).S.tailCnt;  nt = nt + F(s).S.nTap;  hm = hm && F(s).S.hasMom;
+        tc = tc + F(s).S.tailCnt;  nt = nt + F(s).S.nTap;  hm = hm && F(s).S.lamOn;
     end
     for a = 1:numel(sel) - 1
         for b = a + 1:numel(sel)
@@ -122,7 +125,7 @@ for c = 1:size(keys, 1)
     C(c).len = keys(c, 1); C(c).pow = keys(c, 2); C(c).jobs = numel(sel);
     C(c).n = numel(Z);     C(c).Z = Z;            C(c).D = D;
     C(c).kmax = kmax_for(C(c).n, o.Target, o.Conf);
-    C(c).kappa = K; C(c).hasMom = hm; C(c).Lmax = L; C(c).tailCnt = tc; C(c).nTap = nt;
+    C(c).kappa = K; C(c).lamOn = hm; C(c).Lmax = L; C(c).tailCnt = tc; C(c).nTap = nt;
 end
 nC = numel(C);
 
@@ -132,12 +135,12 @@ print_table(C, E, o.TLow, o.THigh, o, 'current thresholds');
 
 % ---------------------------------------------------------------- proposed detector (analytic threshold)
 EL = []; TLam = NaN;
-if all([C.hasMom])
+if all([C.lamOn])
     TLam = 2 * log(numel(o.Sig(1):o.Sig(2)) / o.Target) + 2 * log(o.Margin);
     EL = eval_lambda(C, TLam, o);
     print_lambda(C, EL, TLam, o);
 else
-    fprintf('\n(Lambda detector skipped: some conditions have dumps without the Q/Pi columns)\n');
+    fprintf('\n(Lambda detector skipped: some dumps have no Q/Pi columns; ''Moments'', ''cir'' estimates them from the CIR)\n');
 end
 
 % ---------------------------------------------------------------- threshold search (in-sample)
@@ -216,7 +219,7 @@ end
 % ======================================================================
 function S = load_stats(binDir, o)
 cf = fullfile(binDir, 'h0_stats_cache.mat');
-key = [o.Sig(:).' o.Noise(:).' o.Period 2 double(o.PerClass)];   % 2: cache format with kappa / Lambda
+key = [o.Sig(:).' o.Noise(:).' o.Period 3 double(o.PerClass) double(strcmpi(o.Moments, 'cir'))];   % 3: format
 nfile = numel(dir(fullfile(binDir, '*_RifCir_AccNum_*.txt')));
 if ~o.Rebuild && exist(cf, 'file') == 2
     c = load(cf);
@@ -226,12 +229,12 @@ if ~o.Rebuild && exist(cf, 'file') == 2
     end
 end
 r = rif_cir_analyze(binDir, 'Plot', 'none', 'Quiet', true, 'Sig', o.Sig, 'Noise', o.Noise, 'Period', o.Period, ...
-                    'PerClass', o.PerClass);
+                    'PerClass', o.PerClass, 'Moments', o.Moments);
 tg = tail_grid();
 S = struct('Z', r.Z_dB, 'D', r.D_dB, 'kpk', r.kpk, 'signalPower', median(r.signalPower), 'accNum', median(r.accNum), ...
-           'kappa', r.kappa, 'hasMom', r.hasMom, 'Lmax', r.Lmax, 'rhoPk', r.rhoPk, ...
+           'kappa', r.kappa, 'hasMom', r.hasMom, 'lamOn', ~isempty(r.lamMode), 'Lmax', r.Lmax, 'rhoPk', r.rhoPk, ...
            'tailCnt', zeros(1, numel(tg)), 'nTap', 0);
-if r.hasMom
+if ~isempty(r.lamMode)
     cnt = histcounts(r.Lam_W(:), [tg Inf]);
     S.tailCnt = fliplr(cumsum(fliplr(cnt)));      % number of taps with Lam >= tg(i)
     S.nTap = numel(r.Lam_W);
@@ -268,8 +271,9 @@ end
 
 % ======================================================================
 function print_lambda(C, EL, TLam, o)
-fprintf('\nLambda detector:  T = %.2f (%.2f dB on |C|^2/Q)  design Pfa %.1e / margin %.2f  |W_s| = %d\n', ...
-        TLam, 10 * log10(TLam / 2), o.Target, o.Margin, numel(o.Sig(1):o.Sig(2)));
+fprintf('\nLambda detector (Q/Pi: %s):  T = %.2f  design Pfa %.1e / margin %.2f  |W_s| = %d\n', ...
+        ternary_(strcmpi(o.Moments, 'cir'), 'estimated from the CIR', 'dumped'), TLam, o.Target, o.Margin, ...
+        numel(o.Sig(1):o.Sig(2)));
 fprintf('  per-tap ratio = P(Lam >= t) / exp(-t/2): about 1 (or below) expected for every H0 condition\n');
 fprintf('  len  P[dBm]        n   k       Pfa    upper  result     | ratio t=%g  t=%g  t=%g | kappa med\n', EL.tailT);
 for c = 1:numel(C)
@@ -325,6 +329,12 @@ set(ax, 'YScale', 'log', 'XTick', x, 'XTickLabel', arrayfun(@(c) sprintf('%d/%d'
 xlim([0.5 nC + 0.5]); grid(ax, 'on'); box(ax, 'on');
 xlabel('RIF symbols / H0 power [dBm]'); ylabel('Pfa per fragment');
 title(sprintf('\\Lambda \\geq %.2f:  point k/n (o, if k > 0) and upper bound (v)', TLam));
+end
+
+
+% ======================================================================
+function r = ternary_(cond, a, b)
+if cond, r = a; else r = b; end
 end
 
 

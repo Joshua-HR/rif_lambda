@@ -20,6 +20,7 @@ function R = h1_pd_analyze(root, varargin)
 %       'PeakTap'   127     tap of the true peak (127 at distance 0 in the LLS)
 %       'Tol'       2       position tolerance [taps]; 1 tap ~ 1 ns ~ 0.3 m
 %       'Conf'      0.95    two-sided confidence of the Pd interval
+%       'Moments'   'raw'   'raw': Q/Pi from 5-column dumps, 'cir': estimated from the CIR (fixed silicon)
 %       'Sig', 'Noise', 'Period'  as in rif_cir_analyze
 %       'Plot'      true
 %
@@ -38,6 +39,7 @@ p.addParameter('PerClass', false, @(x) islogical(x) || isnumeric(x));
 p.addParameter('PeakTap', 127, @isnumeric);
 p.addParameter('Tol', 2, @isnumeric);
 p.addParameter('Conf', 0.95, @isnumeric);
+p.addParameter('Moments', 'raw', @(x) ischar(x) && any(strcmpi(x, {'raw', 'cir'})));
 p.addParameter('Sig', [119 175], @isnumeric);
 p.addParameter('Noise', [16 96], @isnumeric);
 p.addParameter('Period', 8, @isnumeric);
@@ -60,9 +62,10 @@ for i = 1:numel(d)
     if exist(binDir, 'dir') ~= 7, binDir = fullfile(o.root, d(i).name); end
     if isempty(dir(fullfile(binDir, '*_RifCir_AccNum_*.txt'))), continue; end
     r = rif_cir_analyze(binDir, 'Plot', 'none', 'Quiet', true, 'Sig', o.Sig, 'Noise', o.Noise, ...
-                        'Period', o.Period, 'Pfa', o.Pfa, 'Margin', o.Margin, 'PerClass', logical(o.PerClass));
-    if ~r.hasMom
-        fprintf('   WARNING: %s has no Q/Pi columns; Pd(Lambda) is reported as 0\n', d(i).name);
+                        'Period', o.Period, 'Pfa', o.Pfa, 'Margin', o.Margin, 'PerClass', logical(o.PerClass), ...
+                        'Moments', o.Moments);
+    if isempty(r.lamMode)
+        fprintf('   WARNING: %s has no Q/Pi columns; Pd(Lambda) is reported as 0 (try ''Moments'', ''cir'')\n', d(i).name);
     end
     F(end + 1) = struct('len', str2double(t{1}), 'pow', str2double(t{2}), 'valid', logical(r.valid), ...
                         'validL', logical(r.validL), 'kpk', r.kpk); %#ok<AGROW>

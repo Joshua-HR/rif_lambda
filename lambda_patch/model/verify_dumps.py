@@ -28,7 +28,7 @@ def lam(c, q, p, rmax=0.98):
     return 2 * (abs(c) ** 2 - (pin.conjugate() * c * c).real) / (q * (1 - abs(pin) ** 2))
 
 
-def rif(folder, perclass=False):
+def rif(folder, perclass=False, mode='raw'):
     names = [os.path.basename(f) for f in glob.glob(os.path.join(folder, '*_RifCir_AccNum_*_Frame*_Samp*.txt'))]
     items = []
     for nm in names:
@@ -51,7 +51,18 @@ def rif(folder, perclass=False):
         kpk = max(WS, key=lambda k: P[k]); Z = P[kpk] / Fmax; D = Fmax / Fmin
         valid = (10 * math.log10(Z)) >= (9.6 if 10 * math.log10(D) < 10 else 14.4)
         rec = {'Z': 10 * math.log10(Z), 'D': 10 * math.log10(D), 'valid': valid, 'kappa': kappa, 'hasMom': hm, 'kpk': kpk}
-        if hm:
+        if mode == 'cir':                                  # moments estimated from the CIR (fixed silicon)
+            NZ = [k for k in range(256) if k < 119 or k > 175]
+            Qh = [0.0] * PER; Ph = [0j] * PER; nh = [0] * PER
+            for k in NZ:
+                Qh[k % PER] += P[k]; Ph[k % PER] += C[k] * C[k]; nh[k % PER] += 1
+            L = []
+            for k in WS:
+                e = k % PER; t2 = lam(C[k], Qh[e] / nh[e], Ph[e] / nh[e])
+                L.append((nh[e] - 1) * math.log1p(t2 / nh[e]))
+            rec.update(Lmax=max(L), validL=max(L) >= TLAM, LamW=L, lamOn=True)
+            if hm: rec['qRatio'] = sum(P[k] / max(Q[k], 2.2e-308) for k in WN) / len(WN)
+        elif hm:
             Qx, Px = Q, Pi
             if perclass:
                 Qx = [0.0] * 256; Px = [0j] * 256
@@ -60,7 +71,7 @@ def rif(folder, perclass=False):
                     mq = sum(Q[k] for k in ks) / len(ks); mp = sum(Pi[k] for k in ks) / len(ks)
                     for k in ks: Qx[k] = mq; Px[k] = mp
             L = [lam(C[k], Qx[k], Px[k]) for k in WS]
-            rec.update(Lmax=max(L), validL=max(L) >= TLAM, LamW=L,
+            rec.update(Lmax=max(L), validL=max(L) >= TLAM, LamW=L, lamOn=True,
                        qRatio=sum(P[k] / max(Q[k], 2.2e-308) for k in WN) / len(WN))
         out.append(rec)
     return out
@@ -71,10 +82,10 @@ def median(x):
     return s[n // 2] if n % 2 else 0.5 * (s[n // 2 - 1] + s[n // 2])
 
 
-def h0(root, perclass=False):
+def h0(root, perclass=False, mode='raw'):
     dirs = sorted(d for d in os.listdir(root) if re.match(r'^c(\d+)_m(\d+)_j(\d+)$', d))
     with Pool(6) as p:
-        res = p.starmap(rif, [(os.path.join(root, d, 'bin'), perclass) for d in dirs])
+        res = p.starmap(rif, [(os.path.join(root, d, 'bin'), perclass, mode) for d in dirs])
     cond = {}
     for d, r in zip(dirs, res):
         m = re.match(r'^c(\d+)_m(\d+)_j(\d+)$', d); key = (int(m.group(1)), int(m.group(2)))
@@ -84,12 +95,12 @@ def h0(root, perclass=False):
         r = cond[key]; n = len(r)
         row = {'len': key[0], 'pow': key[1], 'n': n, 'pfaMD': sum(x['valid'] for x in r) / n,
                'kappa': median([x['kappa'] for x in r]), 'Dmed': median([x['D'] for x in r])}
-        if all(x['hasMom'] for x in r):
+        if all(x.get('lamOn') for x in r):
             row['pfaL'] = sum(x['validL'] for x in r) / n
             allL = [v for x in r for v in x['LamW']]
             for t in (10, 14, 18):
                 row['tail%d' % t] = sum(1 for v in allL if v >= t) / len(allL) / math.exp(-t / 2)
-            row['qRatio'] = median([x['qRatio'] for x in r])
+            if all('qRatio' in x for x in r): row['qRatio'] = median([x['qRatio'] for x in r])
         rows.append(row)
     return rows
 
@@ -101,10 +112,10 @@ def level_at(pw, pd, target):
     return float('nan')
 
 
-def h1(root):
+def h1(root, mode='raw'):
     dirs = sorted(d for d in os.listdir(root) if re.match(r'^c(\d+)_m(\d+)_j(\d+)$', d))
     with Pool(6) as p:
-        res = p.map(rif, [os.path.join(root, d, 'bin') for d in dirs])
+        res = p.starmap(rif, [(os.path.join(root, d, 'bin'), False, mode) for d in dirs])
     from h1_pos_for_page import cp
     tab = []
     for d, r in zip(dirs, res):

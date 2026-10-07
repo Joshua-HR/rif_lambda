@@ -31,6 +31,11 @@ function R = rif_cir_analyze(src, varargin)
 %       'Margin'    1.5         Lambda threshold margin (designed for Pfa / Margin)
 %       'PerClass'  false       true: one Q/Pi per comb phase (HW-like 8 accumulators) instead of per tap
 %       'RhoMax'    0.98        clamp of |Pi|/Q
+%       'Moments'   'raw'       'raw': Q/Pi from the dump (5-column dumps only)
+%                               'cir': Q/Pi estimated from the CIR itself (any dump; for fixed silicon
+%                                      without the Q/Pi accumulators), see below
+%       'CirNoise'  []          'cir' only: noise-tap ranges [first last; ...] (W_s is always excluded);
+%                               [] = every tap outside W_s (about 25 per comb phase)
 %
 %   Statistics per fragment (see uwb/doc/RIF_CIR_Validity_Detector.md)
 %       P[k]    = |C[k]|^2
@@ -44,6 +49,12 @@ function R = rif_cir_analyze(src, varargin)
 %   Proposed detector (5-column dumps only)
 %       Lam[k]  = 2 (Q|C|^2 - Re(conj(Pi) C^2)) / (Q^2 - |Pi|^2)     chi-square, 2 DOF under H0
 %       validL  = max_{k in W_s} Lam[k] >= 2 ln(|W_s| / Pfa) + 2 ln(Margin)
+%   CIR-only variant ('Moments','cir'): per comb phase e, Qh_e = mean |C|^2 and Pih_e = mean C^2 over the
+%   noise taps of that phase (n_e taps). The plug-in statistic T2 is Hotelling's T^2 under H0,
+%   P(T2 > t) = (1 + t/n_e)^(-(n_e-1)/2), and is reported as its chi-square(2) equivalent
+%       Lam = (n_e - 1) ln(1 + T2/n_e)
+%   so the same threshold and the same per-tap tail check (exp(-t/2)) apply. The price is the estimation
+%   noise: about 2.2 dB of sensitivity with ~25 noise taps per phase.
 %       qRatio  = mean over W_n of |C[k]|^2 / Q[k]   (scale check: ~1 for any data, since E|C|^2 = Q
 %                 under H0; far from 1 means C and Q/Pi were dumped with different scaling)
 %
@@ -69,6 +80,8 @@ p.addParameter('Pfa', 1e-3, @isnumeric);
 p.addParameter('Margin', 1.5, @isnumeric);
 p.addParameter('PerClass', false, @(x) islogical(x) || isnumeric(x));
 p.addParameter('RhoMax', 0.98, @isnumeric);
+p.addParameter('Moments', 'raw', @(x) ischar(x) && any(strcmpi(x, {'raw', 'cir'})));
+p.addParameter('CirNoise', [], @isnumeric);
 p.parse(src, varargin{:});
 o = p.Results;
 
@@ -124,9 +137,11 @@ T   = o.TLow * ones(1, n);
 T(Ddb >= o.DTh) = o.THigh;
 valid = Zdb >= T;
 
-% proposed detector: exact H0 moments from the correlator input (5-column dumps only)
+% proposed detector (Lambda)
+%   'raw': exact H0 moments from the correlator input (5-column dumps)
+%   'cir': moments estimated from the CIR (fixed silicon), mapped to the chi-square(2) equivalent
 Lam_W = []; Lmax = NaN(1, n); kL = NaN(1, n); validL = false(1, n); rhoPk = NaN(1, n); TLam = NaN;
-qRatio = NaN(1, n);
+qRatio = NaN(1, n); lamMode = ''; nCir = [];
 if hasMom
     qRatio = mean(P(wnl, :) ./ max(Qv(wnl, :), realmin), 1);
     if median(qRatio) < 0.5 || median(qRatio) > 2
@@ -134,6 +149,8 @@ if hasMom
                 'C and Q/Pi look differently scaled (e.g. CIR rounded by >>3 but Q, Pi not scaled by 2^-6).'], ...
                 o.src, median(qRatio));
     end
+end
+if strcmpi(o.Moments, 'raw') && hasMom
     Qx = Qv; Px = Pv;
     if o.PerClass
         for e = 0:o.Period - 1
@@ -143,6 +160,37 @@ if hasMom
         end
     end
     [Lam, rho] = lambda_stat(C, Qx, Px, o.RhoMax);
+    lamMode = 'raw';
+elseif strcmpi(o.Moments, 'cir')
+    inSig = k >= o.Sig(1) & k <= o.Sig(2);
+    if isempty(o.CirNoise)
+        nz = ~inSig;
+    else
+        nz = false(256, 1);
+        for r_ = 1:size(o.CirNoise, 1)
+            nz = nz | (k >= o.CirNoise(r_, 1) & k <= o.CirNoise(r_, 2));
+        end
+        nz = nz & ~inSig;
+    end
+    nzl = find(nz);
+    nCir = zeros(o.Period, 1);
+    Qx = zeros(256, n); Px = complex(zeros(256, n));
+    for e = 0:o.Period - 1
+        m = nzl(cls(nzl) == e);
+        nCir(e + 1) = numel(m);
+        if numel(m) < 5
+            error('rif_cir_analyze:cirnoise', 'Only %d noise taps in comb phase %d; widen ''CirNoise''.', numel(m), e);
+        end
+        sel = cls == e;
+        Qx(sel, :) = repmat(mean(P(m, :), 1), sum(sel), 1);
+        Px(sel, :) = repmat(mean(C(m, :) .^ 2, 1), sum(sel), 1);
+    end
+    [Lam, rho] = lambda_stat(C, Qx, Px, o.RhoMax);
+    nk = nCir(cls + 1);                                            % noise taps of each tap's phase
+    Lam = bsxfun(@times, nk - 1, log1p(bsxfun(@rdivide, Lam, nk)));  % Hotelling -> chi-square(2) equivalent
+    lamMode = 'cir';
+end
+if ~isempty(lamMode)
     Lam_W = Lam(wsl, :);
     [Lmax, iL] = max(Lam_W, [], 1);
     kL = k(wsl(iL(:))).';
@@ -169,7 +217,8 @@ R = struct('files', {files}, 'frame', meta.frame(:).', 'frag', frag, 'samp', met
            'C', C, 'P', P, 'F', F, 'Fmax', Fmax, 'Fmin', Fmin, 'Pk', Pk, 'kpk', kpk, ...
            'Z_dB', Zdb, 'D_dB', Ddb, 'Zphase_dB', Zph_db, 'T_dB', T, 'valid', valid, ...
            'scoreEq', scoreEq, 'kappa', kapMax, 'hasMom', hasMom, 'Lam_W', Lam_W, 'Lmax', Lmax, ...
-           'kL', kL, 'T_Lam', TLam, 'validL', validL, 'rhoPk', rhoPk, 'qRatio', qRatio, 'opt', o);
+           'kL', kL, 'T_Lam', TLam, 'validL', validL, 'rhoPk', rhoPk, 'qRatio', qRatio, ...
+           'lamMode', lamMode, 'nCir', nCir, 'opt', o);
 
 % ---------------------------------------------------------------- report
 if ~o.Quiet
@@ -183,9 +232,16 @@ for i = 1:n
 end
 fprintf('valid: %d / %d     (Z median %.2f dB, D median %.2f dB, kappa median %.2f)\n', ...
         sum(valid), n, median(Zdb), median(Ddb), median(kapMax));
+if ~isempty(lamMode)
+    if strcmp(lamMode, 'raw')
+        src_ = 'dumped Q/Pi';
+    else
+        src_ = sprintf('CIR-estimated Q/Pi, %d-%d noise taps per phase', min(nCir), max(nCir));
+    end
+    fprintf('validL: %d / %d    (Lambda from %s, T = %.2f, Pfa %.0e, |W_s| = %d, Lmax median %.2f)\n', ...
+            sum(validL), n, src_, TLam, o.Pfa, numel(wsl), median(Lmax));
+end
 if hasMom
-    fprintf('validL: %d / %d    (Lambda T = %.2f = %.2f dB on |C|^2/Q, Pfa %.0e, |W_s| = %d, Lmax median %.2f)\n', ...
-            sum(validL), n, TLam, 10 * log10(TLam / 2), o.Pfa, numel(wsl), median(Lmax));
     fprintf('scale check: median mean(|C|^2/Q) over W_n = %.3f (expected ~1)\n', median(qRatio));
 end
 fprintf('\n');
@@ -283,9 +339,11 @@ txt = { ...
     sprintf('decision   : %s', dec), ...
     sprintf('Z (peak-phase floor) : %.2f dB,  approx. score %.1f / 128', R.Zphase_dB(i), R.scoreEq(i))};
 txt{end + 1} = sprintf('kappa (max-floor phase) : %.2f   (~1 real self-noise, ~0.4 circular)', R.kappa(i));
-if R.hasMom
-    txt{end + 1} = sprintf('Lambda max : %.2f at k=%d  (T %.2f) -> %s,  rho at peak %.2f', ...
+if ~isempty(R.lamMode)
+    txt{end + 1} = sprintf('Lambda (%s) max : %.2f at k=%d  (T %.2f) -> %s,  rho at peak %.2f', R.lamMode, ...
                            R.Lmax(i), R.kL(i), R.T_Lam, ternary(R.validL(i), 'VALID', 'INVALID'), R.rhoPk(i));
+end
+if R.hasMom
     txt{end + 1} = sprintf('scale check mean(|C|^2/Q) in W_n : %.2f (expected ~1)', R.qRatio(i));
 end
 text(0, 1, txt, 'VerticalAlignment', 'top', 'FontName', 'Courier New', 'FontSize', 9, 'Interpreter', 'none');
