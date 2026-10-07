@@ -717,7 +717,7 @@ H0에서  P(Λ̂ ≥ t) = (1 + t/n)^(−(n−1)/2)        <span class="c">Hotell
       <rect class="bx" x="296" y="54" width="220" height="92" rx="8"/>
       <text x="406" y="82" text-anchor="middle" class="m">rif_cir_analyze.m</text>
       <text x="406" y="104" text-anchor="middle">프래그먼트별 Λ, κ</text>
-      <text x="406" y="126" text-anchor="middle" class="sub">2열이면 MD + κ만 계산</text>
+      <text x="406" y="126" text-anchor="middle" class="sub">2열이면 MD + κ ('cir'이면 Λ̂)</text>
       <path class="ar" d="M518 86 L560 86 L560 44 L600 44" marker-end="url(#ah4)"/>
       <path class="ar" d="M518 114 L560 114 L560 156 L600 156" marker-end="url(#ah4)"/>
       <rect class="bx" x="604" y="10" width="286" height="70" rx="8"/>
@@ -734,7 +734,7 @@ H0에서  P(Λ̂ ≥ t) = (1 + t/n)^(−(n−1)/2)        <span class="c">Hotell
   <div class="prose stack">
     <h3>단계</h3>
     <ol>
-      <li><strong>MATLAB 패치 단독 시험:</strong> <code>lambda_patch/test/gen_synthetic_dumps.m</code>으로 파형 모델 덤프(5열)를 만들고 <code>run_synthetic_test.m</code>으로 9단계 43개 항목을 확인합니다. C++ 수정 없이 MATLAB 쪽 동작을 먼저 검증할 수 있습니다.</li>
+      <li><strong>MATLAB 패치 단독 시험:</strong> <code>lambda_patch/test/gen_synthetic_dumps.m</code>으로 파형 모델 덤프를 5열과 2열로 각각 만들고, <code>run_synthetic_test.m</code>으로 확인합니다(5열 43개, 2열 29개 항목). 두 세트를 교차 비교해 MD·κ·Λ̂ 결과가 정확히 같은지도 봅니다. C++ 수정 없이 MATLAB 쪽 동작을 먼저 검증할 수 있습니다(아래 그림).</li>
       <li><strong>지금, 기존 2열 덤프로:</strong> κ(비원형 지수)를 확인하고, <code>run_h0.sh</code>에 중간 세기(c32_m70~m100, 2~3 dB 간격)를 추가해 MD 규칙의 실패를 실제 시뮬레이터에서 재현합니다.</li>
       <li><strong>C++:</strong> 상관기와 같은 루프, 같은 샘플로 Q와 Π를 누적해 덤프를 5열로 늘립니다(아래 코드).</li>
       <li><strong>H0 검증:</strong> <code>h0_pfa_analyze(root, 'Suggest', false)</code>. MD 표와 Λ 표가 함께 나옵니다.</li>
@@ -743,6 +743,60 @@ H0에서  P(Λ̂ ≥ t) = (1 + t/n)^(−(n−1)/2)        <span class="c">Hotell
       <li><strong>고정 칩:</strong> Q·Π 누산기를 넣을 수 없으면 <code>'Moments', 'cir'</code>로 CIR 추정 Λ̂를 씁니다. C++ 수정 없이 지금의 2열 덤프로 H0 Pfa와 H1 L90을 바로 확인할 수 있습니다(8장).</li>
     </ol>
   </div>
+
+  <figure class="plate">
+    <h3>1단계: MATLAB 합성 시험, 5열과 2열</h3>
+    <div class="scroll-x">
+    <svg class="dg" viewBox="0 0 900 230" role="img" aria-label="같은 시드로 5열과 2열 합성 덤프를 만들고 각각 run_synthetic_test로 43개와 29개 항목을 확인한 뒤 두 결과를 교차 비교한다">
+      <defs><marker id="ah5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <rect class="bx-new" x="10" y="75" width="180" height="80" rx="8"/>
+      <text x="100" y="97" text-anchor="middle" class="m">gen_synthetic_dumps</text>
+      <text x="100" y="119" text-anchor="middle">같은 프리셋, 같은 시드</text>
+      <text x="100" y="141" text-anchor="middle" class="sub">CIR 비트 단위로 동일</text>
+      <path class="ar" d="M192 108 L210 108 L210 54 L228 54" marker-end="url(#ah5)"/>
+      <path class="ar" d="M192 122 L210 122 L210 176 L228 176" marker-end="url(#ah5)"/>
+      <rect class="bx" x="232" y="14" width="220" height="80" rx="8"/>
+      <text x="342" y="36" text-anchor="middle">5열 세트 (기본)</text>
+      <text x="342" y="58" text-anchor="middle" class="m">re im Q PiRe PiIm</text>
+      <text x="342" y="80" text-anchor="middle" class="sub">C++ 확장 후의 형식</text>
+      <rect class="bx" x="232" y="136" width="220" height="80" rx="8"/>
+      <text x="342" y="158" text-anchor="middle">2열 세트 ('Cols', 2)</text>
+      <text x="342" y="180" text-anchor="middle" class="m">re im</text>
+      <text x="342" y="202" text-anchor="middle" class="sub">현재 LLS와 같은 형식</text>
+      <line class="ar" x1="454" y1="54" x2="490" y2="54" marker-end="url(#ah5)"/>
+      <line class="ar" x1="454" y1="176" x2="490" y2="176" marker-end="url(#ah5)"/>
+      <rect class="bx" x="494" y="14" width="230" height="80" rx="8"/>
+      <text x="609" y="36" text-anchor="middle" class="m">run_synthetic_test</text>
+      <text x="609" y="58" text-anchor="middle">9단계 43개 항목</text>
+      <text x="609" y="80" text-anchor="middle" class="sub">MD·κ·Λ·Λ̂·PerClass·형식 검사</text>
+      <rect class="bx" x="494" y="136" width="230" height="80" rx="8"/>
+      <text x="609" y="158" text-anchor="middle" class="m">run_synthetic_test</text>
+      <text x="609" y="180" text-anchor="middle">5단계 29개 항목</text>
+      <text x="609" y="202" text-anchor="middle" class="sub">MD·κ·Λ̂ (Q·Π가 없어 Λ는 생략)</text>
+      <path class="ar" d="M726 54 L744 54 L744 108 L760 108" marker-end="url(#ah5)"/>
+      <path class="ar" d="M726 176 L744 176 L744 122 L760 122" marker-end="url(#ah5)"/>
+      <rect class="bx-new" x="764" y="75" width="126" height="80" rx="8"/>
+      <text x="827" y="97" text-anchor="middle">교차 확인</text>
+      <text x="827" y="119" text-anchor="middle" class="m">isequal</text>
+      <text x="827" y="141" text-anchor="middle" class="sub">MD·κ·Λ̂ 결과 동일</text>
+    </svg>
+    </div>
+    <div class="tbl-wrap"><table class="guide">
+      <thead><tr><th>항목</th><th>5열 세트</th><th>2열 세트</th></tr></thead>
+      <tbody>
+        <tr><td>만드는 명령</td><td><code>gen_synthetic_dumps('D:/rif_test5')</code></td><td><code>gen_synthetic_dumps('D:/rif_test2', 'Cols', 2)</code></td></tr>
+        <tr><td>폴더</td><td>h0, h0_mp20, h1, h0_2col, scale_test, mixed_test</td><td>h0, h0_mp20, h1</td></tr>
+        <tr><td>자동 확인 (<code>run_synthetic_test</code>)</td><td>9단계 43개 항목</td><td>5단계 29개 항목 (열 수 자동 인식)</td></tr>
+        <tr><td>MD 규칙 Pfa (−120 / −88 / −82 / −40 dBm)</td><td>0.1 / 1.0 / 5.2 / 0.2%</td><td>5열과 같음</td></tr>
+        <tr><td>κ 중앙값 (같은 순서)</td><td>0.38 / 0.57 / 0.82 / 0.98</td><td>5열과 같음</td></tr>
+        <tr><td>Λ (원시 샘플 Q·Π) Pfa</td><td>0 ~ 0.1%</td><td>계산 안 함 (Q·Π 없음)</td></tr>
+        <tr class="pick"><td>Λ̂ (CIR 추정, <code>'Moments', 'cir'</code>) Pfa</td><td>0 ~ 0.2%</td><td>5열과 같음</td></tr>
+        <tr><td>H1 L90 (32심볼)</td><td>MD −111.2, Λ −112.3, Λ̂ −109.7 dBm</td><td>MD −111.2, Λ̂ −109.7 dBm</td></tr>
+        <tr><td>PerClass, 스케일 오류, 형식 혼합 검사</td><td>확인</td><td>해당 없음 (5열 전용)</td></tr>
+      </tbody>
+    </table></div>
+    <figcaption>수치는 미리 만든 <code>synthetic_dumps/</code>(Python 파형 모델)의 값입니다. MATLAB에서 만든 세트는 난수가 달라 값이 조금 다르며, 자동 확인의 기대 범위는 그 흔들림을 감안했습니다. MATLAB에서 같은 프리셋으로 만든 5열과 2열 세트는 시드가 같아 CIR이 같으므로, MD·κ·Λ̂ 결과는 근사가 아니라 정확히 같아야 합니다. 하나라도 다르면 덤프 읽기나 형식 처리에 문제가 있는 것입니다. 2열 세트는 현재 LLS 덤프와 형식이 같아서, LLS 덤프를 받기 전에 분석 명령과 결과 표를 미리 연습해 볼 수 있습니다. 단계별 덤프 세트와 합격 기준은 <code>lambda_patch/TEST_PLAN.md</code>에 있습니다.</figcaption>
+  </figure>
 
   <div class="split">
     <figure class="plate main" style="flex-basis:420px">
@@ -787,8 +841,15 @@ momPi[k] += z * z;          // z^2 (복소)
     <h3>MATLAB</h3>
 <pre class="code">% 원본 스크립트가 없는 폴더에서 실행 (현재 폴더의 함수가 path보다 우선)
 addpath('&lt;repo&gt;/lambda_patch/test');
-gen_synthetic_dumps('D:/rif_test');                % 합성 덤프 7,620개
-res  = run_synthetic_test('D:/rif_test');          % lambda_patch를 path 맨 앞에 추가, 43개 항목 [OK]/[CHECK]
+gen_synthetic_dumps('D:/rif_test5');               % 5열 합성 덤프 7,620개
+res5 = run_synthetic_test('D:/rif_test5');         % lambda_patch를 path 맨 앞에 추가, 9단계 43개 항목 [OK]/[CHECK]
+gen_synthetic_dumps('D:/rif_test2', 'Cols', 2);    % 같은 시드의 2열 세트 (현재 LLS 형식)
+res2 = run_synthetic_test('D:/rif_test2');         % 열 수 자동 인식, 5단계 29개 항목
+
+% 교차 확인: 2열과 5열의 MD·κ·Λ̂ 결과는 정확히 같아야 함 (세 값 모두 true)
+A = h0_pfa_analyze('D:/rif_test5/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
+B = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
+[isequal(A.E.k, B.E.k), isequal([A.cond.kappa], [B.cond.kappa]), isequal(A.EL.k, B.EL.k)]
 
 addpath('&lt;repo&gt;/lambda_patch', '-begin');      % 시뮬레이터 덤프 분석
 R0   = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false);                     % MD 표 + kappa (+ 5열이면 Λ 표)
@@ -805,7 +866,7 @@ R1c  = h1_pd_analyze('&lt;H1 root&gt;', 'Moments', 'cir');</pre>
 <footer class="foot">
   <p><strong>가정과 한계.</strong> 수치는 통계 모델(MD 5.1장의 빗 프로파일, 펄스당 가우시안 근사)과 파형 모델(이상 펄스, 부동소수점, 단일 안테나, HPRF)에서 나왔습니다. 실제 시뮬레이터의 덤프로 다시 확인해야 합니다.</p>
   <p>Λ의 보장은 H0 신호가 내 키 시퀀스와 독립일 때 성립합니다. 키를 알거나 일부 아는 공격(재전송, 일부 비트 반전)은 대상이 아니며, 표준이 RIF에 요구하는 ToA 무결성 검증은 별도 과제입니다.</p>
-  <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(MD 방식), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>(패치 설계), <code>lambda_patch/model/</code>(수치를 다시 만드는 Python 스크립트). 2026-10-07 기준.</p>
+  <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(MD 방식), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>(패치 설계), <code>lambda_patch/TEST_PLAN.md</code>(검증 계획), <code>lambda_patch/model/</code>(수치를 다시 만드는 Python 스크립트). 2026-10-07 기준.</p>
 </footer>
 </div>
 
