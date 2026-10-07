@@ -50,7 +50,8 @@ def rif(folder, perclass=False, mode='raw'):
         kappa = abs(num) / den
         kpk = max(WS, key=lambda k: P[k]); Z = P[kpk] / Fmax; D = Fmax / Fmin
         valid = (10 * math.log10(Z)) >= (9.6 if 10 * math.log10(D) < 10 else 14.4)
-        rec = {'Z': 10 * math.log10(Z), 'D': 10 * math.log10(D), 'valid': valid, 'kappa': kappa, 'hasMom': hm, 'kpk': kpk}
+        rec = {'Z': 10 * math.log10(Z), 'D': 10 * math.log10(D), 'valid': valid, 'kappa': kappa, 'hasMom': hm, 'kpk': kpk,
+               'frame': fr, 'samp': sm, 'C': C}
         if mode == 'cir':                                  # moments estimated from the CIR (fixed silicon)
             NZ = [k for k in range(256) if k < 119 or k > 175]
             Qh = [0.0] * PER; Ph = [0j] * PER; nh = [0] * PER

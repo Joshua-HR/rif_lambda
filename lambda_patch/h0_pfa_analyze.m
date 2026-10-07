@@ -27,6 +27,19 @@ function R = h0_pfa_analyze(root, varargin)
 %       'Margin'    1.5     Lambda threshold margin: T = 2 ln(|W_s| / Target) + 2 ln(Margin)
 %       'Moments'   'raw'   'raw': Q/Pi from 5-column dumps, 'cir': estimated from the CIR (any dump,
 %                           fixed silicon); passed to rif_cir_analyze
+%       'Chip'      ''      mode shortcut: 'fixed' = 'Moments','cir', 'new' = 'Moments','raw'
+%
+%   Packet decision (FiRa target per ranging; see rif_packet.m), off with 'Combine','none' (default)
+%       'Combine'       'none'  'soft' | 'and' | 'kofn' | 'strict' | 'single' | 'none'
+%       'FragPerPacket' 8       RIF fragments per packet (NumRIF = 4 -> 8; 1 = one-fragment configuration)
+%       'PfaTarget'     1e-6    packet target (FiRa medium); 'strict' uses 'Target' per fragment instead
+%       'KofN'          []      'kofn': fragments that must pass ([] = FragPerPacket - 2)
+%       'Floor'         1       'soft': per-fragment consistency floor on the selected path (0 = off)
+%       'Drift'         0       'soft': peak-drift hypotheses [taps per fragment]
+%       A packet Pfa of 1e-6 cannot be counted; the table shows the evidence it rests on:
+%       - and / kofn / strict: per-fragment rate at the fragment threshold against its budget (upper bound),
+%       - soft: tail ratio P(S >= t) / P(chi2_2K >= t) of the zero-drift path sums,
+%       - all: independence of the fragments of a packet (pair ratio ~1, correlation ~0).
 %
 %   Lambda detector (5-column dumps "re im Q PiRe PiIm", or any dump with 'Moments','cir')
 %       The threshold is analytic (no search). Two checks per condition:
@@ -62,8 +75,16 @@ p.addParameter('Visible', 'on', @ischar);
 p.addParameter('PerClass', false, @(x) islogical(x) || isnumeric(x));
 p.addParameter('Margin', 1.5, @isnumeric);
 p.addParameter('Moments', 'raw', @(x) ischar(x) && any(strcmpi(x, {'raw', 'cir'})));
+p.addParameter('Chip', '', @(x) ischar(x) && any(strcmpi(x, {'', 'fixed', 'new'})));
+p.addParameter('Combine', 'none', @(x) ischar(x) && any(strcmpi(x, {'none', 'soft', 'and', 'kofn', 'strict', 'single'})));
+p.addParameter('FragPerPacket', 8, @(x) isnumeric(x) && isscalar(x) && x >= 1);
+p.addParameter('PfaTarget', 1e-6, @isnumeric);
+p.addParameter('KofN', [], @isnumeric);
+p.addParameter('Floor', 1, @isnumeric);
+p.addParameter('Drift', 0, @isnumeric);
 p.parse(root, varargin{:});
 o = p.Results;
+o.Moments = chip_moments(o.Chip, o.Moments, ~any(strcmp(p.UsingDefaults, 'Moments')));
 o.Suggest = logical(o.Suggest);
 o.Rebuild = logical(o.Rebuild);
 o.Plot    = logical(o.Plot);
@@ -197,7 +218,18 @@ if o.Suggest
     end
 end
 
-R = struct('cond', {C}, 'E', E, 'sugg', sugg, 'EL', EL, 'T_Lam', TLam, 'opt', o);
+% ---------------------------------------------------------------- packet decision
+PK = []; pkInfo = [];
+if ~strcmpi(o.Combine, 'none')
+    if ~all([C.lamOn])
+        error('h0_pfa_analyze:nolam', ['''Combine'' needs Lambda: some dumps have no Q/Pi columns. ' ...
+              'Use ''Chip'', ''fixed'' (Lambda-hat from the CIR).']);
+    end
+    [PK, pkInfo] = eval_packets(F, keys, lens, pows, o);
+    print_packets(PK, pkInfo, o);
+end
+
+R = struct('cond', {C}, 'E', E, 'sugg', sugg, 'EL', EL, 'T_Lam', TLam, 'PK', {PK}, 'pkInfo', pkInfo, 'opt', o);
 
 % ---------------------------------------------------------------- plots
 if o.Plot
@@ -212,6 +244,12 @@ if o.Plot
         plot_lambda(C, EL, TLam, o);
         if ~isempty(o.Save), print(fig2, fullfile(o.Save, 'h0_lambda.png'), '-dpng', '-r110'); end
     end
+    if ~isempty(PK)
+        fig3 = figure('Color', [252 252 251] / 255, 'Position', [100 100 1200 480], 'Visible', o.Visible, ...
+                      'Name', 'H0 packet check');
+        plot_packets(PK, pkInfo, o);
+        if ~isempty(o.Save), print(fig3, fullfile(o.Save, 'h0_packet.png'), '-dpng', '-r110'); end
+    end
 end
 end
 
@@ -219,7 +257,7 @@ end
 % ======================================================================
 function S = load_stats(binDir, o)
 cf = fullfile(binDir, 'h0_stats_cache.mat');
-key = [o.Sig(:).' o.Noise(:).' o.Period 3 double(o.PerClass) double(strcmpi(o.Moments, 'cir'))];   % 3: format
+key = [o.Sig(:).' o.Noise(:).' o.Period 4 double(o.PerClass) double(strcmpi(o.Moments, 'cir'))];   % 4: format
 nfile = numel(dir(fullfile(binDir, '*_RifCir_AccNum_*.txt')));
 if ~o.Rebuild && exist(cf, 'file') == 2
     c = load(cf);
@@ -233,11 +271,12 @@ r = rif_cir_analyze(binDir, 'Plot', 'none', 'Quiet', true, 'Sig', o.Sig, 'Noise'
 tg = tail_grid();
 S = struct('Z', r.Z_dB, 'D', r.D_dB, 'kpk', r.kpk, 'signalPower', median(r.signalPower), 'accNum', median(r.accNum), ...
            'kappa', r.kappa, 'hasMom', r.hasMom, 'lamOn', ~isempty(r.lamMode), 'Lmax', r.Lmax, 'rhoPk', r.rhoPk, ...
-           'tailCnt', zeros(1, numel(tg)), 'nTap', 0);
+           'tailCnt', zeros(1, numel(tg)), 'nTap', 0, 'LamW', single([]), 'frame', r.frame, 'frag', r.frag);
 if ~isempty(r.lamMode)
     cnt = histcounts(r.Lam_W(:), [tg Inf]);
     S.tailCnt = fliplr(cumsum(fliplr(cnt)));      % number of taps with Lam >= tg(i)
     S.nTap = numel(r.Lam_W);
+    S.LamW = single(r.Lam_W);                     % per-tap Lambda in W_s, for the packet decision
 end
 save(cf, 'S', 'key', 'nfile');
 end
@@ -329,6 +368,194 @@ set(ax, 'YScale', 'log', 'XTick', x, 'XTickLabel', arrayfun(@(c) sprintf('%d/%d'
 xlim([0.5 nC + 0.5]); grid(ax, 'on'); box(ax, 'on');
 xlabel('RIF symbols / H0 power [dBm]'); ylabel('Pfa per fragment');
 title(sprintf('\\Lambda \\geq %.2f:  point k/n (o, if k > 0) and upper bound (v)', TLam));
+end
+
+
+% ======================================================================
+function [PK, info] = eval_packets(F, keys, lens, pows, o)
+% packet decision per job folder (packets never span folders), pooled per (length, power) condition
+args = {'Combine', o.Combine, 'FragPerPacket', o.FragPerPacket, 'PfaTarget', o.PfaTarget, 'KofN', o.KofN, ...
+        'PfaFragment', o.Target, 'Floor', o.Floor, 'Drift', o.Drift, 'Margin', o.Margin};
+nC = size(keys, 1);
+PK = struct('len', {}, 'pow', {}, 'nPkt', {}, 'nDrop', {}, 'k', {}, 'pfa', {}, 'upper', {}, 'fragHit', {}, ...
+            'nFrag', {}, 'fragRate', {}, 'fragUpper', {}, 'budgetOk', {}, 'pairHit', {}, 'nPair', {}, ...
+            'pairRatio', {}, 'rhoPair', {}, 'tailCnt', {}, 'nPath', {}, 'tailT', {}, 'tailRatio', {}, 'floorFail', {});
+info = [];
+for c = 1:nC
+    sel = find(lens == keys(c, 1) & pows == keys(c, 2));
+    a = struct('nPkt', 0, 'nDrop', 0, 'k', 0, 'fragHit', 0, 'nFrag', 0, 'pairHit', 0, 'nPair', 0, ...
+               'pairC', zeros(1, 4), 'tailCnt', [], 'nPath', 0, 'floorFail', 0);
+    for s = sel
+        S = F(s).S;
+        Rl = struct('Lam_W', double(S.LamW), 'frame', S.frame, 'frag', S.frag, 'opt', struct('Sig', o.Sig));
+        P = rif_packet(Rl, args{:});
+        if isempty(info)
+            info = struct('rule', P.rule, 'K', P.K, 'KofN', P.KofN, 'T', P.T, 'pFrag', P.pFrag, 'Tchk', P.Tchk, ...
+                          'drift', P.drift, 'PfaTarget', o.PfaTarget, 'Floor', o.Floor, 'tailT', P.tailT);
+        end
+        a.nPkt = a.nPkt + P.nPkt; a.nDrop = a.nDrop + P.nDrop; a.k = a.k + sum(P.valid);
+        a.fragHit = a.fragHit + P.fragHit; a.nFrag = a.nFrag + P.nFrag;
+        a.pairHit = a.pairHit + P.pairHit; a.nPair = a.nPair + P.nPair; a.pairC = a.pairC + centered(P.pairSum);
+        a.nPath = a.nPath + P.nPath; a.floorFail = a.floorFail + P.floorFail;
+        if ~isempty(P.tailCnt)
+            if isempty(a.tailCnt), a.tailCnt = P.tailCnt; else a.tailCnt = a.tailCnt + P.tailCnt; end
+        end
+    end
+    PK(c).len = keys(c, 1); PK(c).pow = keys(c, 2);
+    PK(c).nPkt = a.nPkt; PK(c).nDrop = a.nDrop; PK(c).k = a.k;
+    PK(c).pfa = a.k / max(a.nPkt, 1);
+    PK(c).upper = cp_upper(a.k, max(a.nPkt, 1), o.Conf);
+    PK(c).fragHit = a.fragHit; PK(c).nFrag = a.nFrag;
+    PK(c).fragRate = a.fragHit / max(a.nFrag, 1);
+    PK(c).fragUpper = cp_upper(a.fragHit, max(a.nFrag, 1), o.Conf);
+    if any(strcmp(info.rule, {'and', 'kofn', 'strict'}))
+        PK(c).budgetOk = PK(c).fragUpper <= info.pFrag;
+    else
+        PK(c).budgetOk = NaN;
+    end
+    PK(c).pairHit = a.pairHit; PK(c).nPair = a.nPair;
+    PK(c).pairRatio = (a.pairHit / max(a.nPair, 1)) / max(PK(c).fragRate, eps) ^ 2;
+    if a.nPair == 0 || a.fragHit == 0, PK(c).pairRatio = NaN; end
+    PK(c).rhoPair = a.pairC(2) / sqrt(max(a.pairC(3) * a.pairC(4), realmin));
+    if a.pairC(1) < 3, PK(c).rhoPair = NaN; end
+    PK(c).tailCnt = a.tailCnt; PK(c).nPath = a.nPath; PK(c).floorFail = a.floorFail;
+    [PK(c).tailT, PK(c).tailRatio] = soft_tail_check(a.tailCnt, a.nPath, info.tailT, info.K);
+end
+end
+
+
+% ======================================================================
+function [tq, ratio] = soft_tail_check(cnt, nPath, tg, K)
+% tail ratio of the zero-drift path sums at the grid points where P(chi2_2K >= t) first drops below
+% 1e-2, 1e-3, 1e-4 (NaN when fewer than 5 paths are expected there)
+tq = NaN(1, 3); ratio = NaN(1, 3);
+if isempty(cnt) || nPath == 0, return; end
+lev = [1e-2 1e-3 1e-4];
+for i = 1:3
+    j = find(arrayfun(@(t) chi2tail_(t, K), tg) <= lev(i), 1, 'first');
+    if isempty(j), continue; end
+    tq(i) = tg(j);
+    q = chi2tail_(tg(j), K);
+    if nPath * q >= 5, ratio(i) = (cnt(j) / nPath) / q; end
+end
+end
+
+
+% ======================================================================
+function print_packets(PK, info, o)
+nd = numel(info.drift);
+fprintf('\nPacket decision: rule %s, %d RIF fragments per packet, target %.1e per packet, T = %.2f', ...
+        info.rule, info.K, info.PfaTarget, info.T);
+switch info.rule
+    case 'soft'
+        fprintf(' (sum of %d fragment Lambdas, %d drift hypotheses, floor %g)\n', info.K, nd, info.Floor);
+    case 'kofn'
+        fprintf(' per fragment (>= %d of %d, budget %.3g per fragment)\n', info.KofN, info.K, info.pFrag);
+    case 'single'
+        fprintf(' (one fragment)\n');
+    otherwise
+        fprintf(' per fragment (budget %.3g per fragment)\n', info.pFrag);
+end
+fprintf('  A packet Pfa of %.0e is not countable; the evidence is the per-fragment budget (and/kofn/strict) or\n', info.PfaTarget);
+fprintf('  the chi2_%d tail of the packet sums (soft), plus independence (pair ratio ~1, rho ~0).\n', 2 * info.K);
+fprintf('  len  P[dBm] packets  drop  k   upper    | frag rate (>=%.2f)  upper     budget | pair ratio  rho    ', info.Tchk);
+if strcmp(info.rule, 'soft'), fprintf('| tail ratio at t =      | floor\n'); else fprintf('\n'); end
+for c = 1:numel(PK)
+    if isnan(PK(c).budgetOk), bud = '   -  '; elseif PK(c).budgetOk, bud = '  ok  '; else bud = ' FAIL '; end
+    fprintf('  %3d  %6d  %6d  %4d  %2d  %8.2e | %9.4f  %9.4f  %s | %7.2f  %6.3f ', PK(c).len, -PK(c).pow, ...
+            PK(c).nPkt, PK(c).nDrop, PK(c).k, PK(c).upper, PK(c).fragRate, PK(c).fragUpper, bud, ...
+            PK(c).pairRatio, PK(c).rhoPair);
+    if strcmp(info.rule, 'soft')
+        fprintf('| %g:%5.2f %g:%5.2f %g:%5.2f | %d', PK(c).tailT(1), PK(c).tailRatio(1), PK(c).tailT(2), ...
+                PK(c).tailRatio(2), PK(c).tailT(3), PK(c).tailRatio(3), PK(c).floorFail);
+    end
+    fprintf('\n');
+end
+if strcmp(info.rule, 'single')
+    fprintf('  single: the evidence is the per-tap tail of the fragment Lambda (table above), extrapolated to T = %.2f.\n', info.T);
+end
+end
+
+
+% ======================================================================
+function plot_packets(PK, info, o)
+nC = numel(PK);
+cm = lines(nC);
+ax = subplot(1, 2, 1); hold on;
+if strcmp(info.rule, 'soft')
+    tg = info.tailT;
+    h = zeros(nC + 1, 1); nm = cell(nC + 1, 1);
+    for c = 1:nC
+        y = PK(c).tailCnt / max(PK(c).nPath, 1);
+        y(y == 0) = NaN;
+        h(c) = plot(tg, y, '-', 'Color', cm(c, :), 'LineWidth', 1.2);
+        nm{c} = sprintf('%d sym, %d dBm', PK(c).len, -PK(c).pow);
+    end
+    h(end) = plot(tg, arrayfun(@(t) chi2tail_(t, info.K), tg), 'k--', 'LineWidth', 1.5);
+    nm{end} = sprintf('theory P(\\chi^2_{%d} \\geq t)', 2 * info.K);
+    set(ax, 'YScale', 'log'); grid(ax, 'on'); box(ax, 'on');
+    ylim([0.3 / max([PK.nPath 1]) 1]); xlim([0 tg(end)]);
+    xlabel('t'); ylabel('P(S \geq t)');
+    title(sprintf('sum of %d fragment \\Lambda per tap (zero drift), T = %.1f', info.K, info.T));
+    legend(h, nm, 'Location', 'southwest', 'FontSize', 7);
+else
+    for c = 1:nC
+        plot(c, max(PK(c).fragRate, 1e-6), 'o', 'Color', cm(c, :), 'MarkerFaceColor', cm(c, :), 'MarkerSize', 7);
+        plot(c, PK(c).fragUpper, 'v', 'Color', cm(c, :), 'MarkerSize', 7);
+    end
+    if ~isnan(info.pFrag), line([0.5 nC + 0.5], info.pFrag * [1 1], 'Color', 'k', 'LineStyle', '--'); end
+    set(ax, 'YScale', 'log', 'XTick', 1:nC, 'XTickLabel', arrayfun(@(c) sprintf('%d/%d', PK(c).len, -PK(c).pow), ...
+        1:nC, 'UniformOutput', false));
+    xlim([0.5 nC + 0.5]); grid(ax, 'on'); box(ax, 'on');
+    xlabel('RIF symbols / H0 power [dBm]'); ylabel('fragment rate at the fragment threshold');
+    title(sprintf('per-fragment rate (o) and upper bound (v); dashed: budget %.3g', info.pFrag));
+end
+ax = subplot(1, 2, 2); hold on;
+for c = 1:nC
+    plot(c, PK(c).rhoPair, 's', 'Color', cm(c, :), 'MarkerFaceColor', cm(c, :), 'MarkerSize', 7);
+    if PK(c).nPair > 0
+        e = 2 / sqrt(PK(c).nPair);
+        line([c c], [-e e], 'Color', cm(c, :));
+    end
+end
+line([0.5 nC + 0.5], [0 0], 'Color', 'k', 'LineStyle', '--');
+set(ax, 'XTick', 1:nC, 'XTickLabel', arrayfun(@(c) sprintf('%d/%d', PK(c).len, -PK(c).pow), 1:nC, 'UniformOutput', false));
+xlim([0.5 nC + 0.5]); grid(ax, 'on'); box(ax, 'on');
+xlabel('RIF symbols / H0 power [dBm]'); ylabel('correlation of Lmax in fragment pairs');
+title('independence: correlation (square) and +-2/sqrt(n) band (line)');
+end
+
+
+% ======================================================================
+function q = chi2tail_(T, K)
+% P(chi-square with 2K DOF > T)
+h = T / 2; s = 0; term = 1;
+for i = 0:K - 1
+    if i > 0, term = term * h / i; end
+    s = s + term;
+end
+q = exp(-h) * s;
+end
+
+
+% ======================================================================
+function c = centered(s)
+% [n, Sxy, Sxx, Syy] about the folder (job) means, from the raw sums [n sx sy sxx syy sxy]
+c = [0 0 0 0];
+if s(1) < 2, return; end
+n = s(1);
+c = [n, s(6) - s(2) * s(3) / n, s(4) - s(2) ^ 2 / n, s(5) - s(3) ^ 2 / n];
+end
+
+
+% ======================================================================
+function m = chip_moments(chip, moments, given)
+m = moments;
+if isempty(chip), return; end
+if strcmpi(chip, 'fixed'), m = 'cir'; else m = 'raw'; end
+if given && ~strcmpi(moments, m)
+    error('h0_pfa_analyze:chip', '''Chip'', ''%s'' means ''Moments'', ''%s'' (got ''Moments'', ''%s'').', chip, m, moments);
+end
 end
 
 

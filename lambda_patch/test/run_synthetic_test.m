@@ -15,17 +15,22 @@ function res = run_synthetic_test(root, show)
 %       h0_2col/     2-column dumps (old format): MD rule + kappa only, Lambda skipped
 %       scale_test/  Q and Pi multiplied by 64 on purpose: the scale warning must appear
 %       mixed_test/  first file 2-column, the rest 5-column: 'rif_cir_analyze:mixed' error expected
+%       h1_drift/    H1 c32_m114 (400) and c32_m90 (80): peak drift 0.3 tap per fragment inside a packet (frame),
+%                    AGC gain -3/0/+3 dB per fragment; for the packet drift search and check_packet_assumptions
 %
 %   res = run_synthetic_test                    % root = <project>/synthetic_dumps, with figures
 %   res = run_synthetic_test('D:/rif_test')     % dumps made by gen_synthetic_dumps('D:/rif_test')
 %   res = run_synthetic_test(root, false)       % no figures
 %
 %   The dump format is detected from h0/c32_m82_j1/bin:
-%     5 columns (gen_synthetic_dumps(root)):            steps 1-9, 43 checks
-%     2 columns (gen_synthetic_dumps(root, 'Cols', 2)): the current LLS format; 5 steps, 29 checks on the
+%     5 columns (gen_synthetic_dumps(root)):            steps 1-10, 77 checks
+%     2 columns (gen_synthetic_dumps(root, 'Cols', 2)): the current LLS format; 6 steps, 49 checks on the
 %       MD rule, kappa and the CIR-only Lambda-hat ('Moments', 'cir'). Made with the same root and seeds,
 %       the 2-column set has the same CIR as the 5-column set, so the MD-rule, kappa and Lambda-hat numbers
 %       of the two runs must be identical.
+%   The last step checks the packet decision (rif_packet, FiRa medium 1e-6 per packet, 8 RIF fragments per
+%   frame): soft sum, AND, one-fragment configuration, drift search on h1_drift/ and
+%   check_packet_assumptions; for 'fixed' (Lambda-hat) and, with 5 columns, 'new' (Lambda).
 %
 %   Every check prints [OK] or [CHECK] with the expected range. The ranges are wide enough for the
 %   statistical spread of these sample sizes; a single CHECK slightly outside is not necessarily a bug.
@@ -42,7 +47,7 @@ if exist(fullfile(root, 'h0'), 'dir') ~= 7
 end
 fprintf('dumps: %s\n', root);
 addpath(patchDir, '-begin');
-fns = {'rif_cir_analyze', 'h0_pfa_analyze', 'h1_pd_analyze'};
+fns = {'rif_cir_analyze', 'h0_pfa_analyze', 'h1_pd_analyze', 'rif_packet', 'check_packet_assumptions'};
 for i = 1:numel(fns)
     w = which(fns{i});
     fprintf('%-16s -> %s\n', fns{i}, w);
@@ -181,8 +186,69 @@ res = chk(res, 'cir 2col: Lambda evaluated on 2-column dumps', double(~isempty(R
 R1c = h1_pd_analyze(fullfile(root, 'h1'), 'Moments', 'cir', 'Plot', false);
 res = chk(res, 'cir h1: L90 loss vs dumped Q/Pi [dB]', R1c.L90(1, 2) - R1.L90(1, 2), 1.0, 4.0);
 
+% ------------------------------------------------------------------ 10) packet decision
+banner('10) packet decision (rif_packet): FiRa medium 1e-6 per packet, 8 RIF fragments');
+res = suite_packet(root, 'new', show, res, 'pkt');
+res = suite_packet(root, 'fixed', show, res, 'pkt');
+
 % ------------------------------------------------------------------ summary
 summary(res);
+end
+
+
+% ======================================================================
+function res = suite_packet(root, chip, show, res, pre)
+% packet decision for one chip mode; the assumption checks run once, with 'fixed'
+tag = sprintf('%s %s', pre, chip);
+P0 = h0_pfa_analyze(fullfile(root, 'h0'), 'Suggest', false, 'Chip', chip, 'Combine', 'soft', 'Plot', show);
+res = chk(res, [tag ' h0 soft: packet threshold T'], P0.pkInfo.T, 69.5, 69.7);
+res = chk(res, [tag ' h0 soft: packets accepted (all conditions)'], sum([P0.PK.k]), 0, 1);
+tr = arrayfun(@(x) x.tailRatio(1), P0.PK);
+res = chk(res, [tag ' h0 soft: smallest tail ratio at P = 1e-2'], min(tr), 0.6, 1.6);
+res = chk(res, [tag ' h0 soft: largest tail ratio at P = 1e-2'], max(tr), 0.6, 1.6);
+res = chk(res, [tag ' h0: largest |correlation| of fragment pairs'], max(abs([P0.PK.rhoPair])), 0, 0.2);
+Pa = h0_pfa_analyze(fullfile(root, 'h0'), 'Suggest', false, 'Chip', chip, 'Combine', 'and', 'Plot', false);
+res = chk(res, [tag ' h0 and: largest per-fragment rate (budget 0.178)'], max([Pa.PK.fragRate]), 0.02, 0.178);
+res = chk(res, [tag ' h0 and: every condition within the budget'], double(all([Pa.PK.budgetOk] == 1)), 1, 1);
+
+H = h1_pd_analyze(fullfile(root, 'h1'), 'Chip', chip, 'Combine', 'soft', 'Plot', false);
+pd = [H.pkt.cond.Pd]; acc = [H.pkt.cond.PosAcc]; db = [H.pkt.cond.dBm];
+res = chk(res, [tag ' h1 soft: packet Pd at -116 dBm'], sum(pd(db == -116)), 0.8, 1);
+res = chk(res, [tag ' h1 soft: worst packet position accuracy'], min(acc(pd >= 0.1)), 0.95, 1);
+Ha = h1_pd_analyze(fullfile(root, 'h1'), 'Chip', chip, 'Combine', 'and', 'Plot', false);
+if strcmp(chip, 'fixed'), lr = [-113 -110]; else lr = [-114 -111]; end
+res = chk(res, [tag ' h1 and: packet L90 [dBm]'], Ha.pkt.L90(1), lr(1), lr(2));
+Hs = h1_pd_analyze(fullfile(root, 'h1'), 'Chip', chip, 'Combine', 'single', 'FragPerPacket', 1, 'Plot', false);
+if strcmp(chip, 'new')
+    res = chk(res, [tag ' h1 one fragment (1e-6): L90 [dBm]'], Hs.pkt.L90(1), -111.5, -109);
+else
+    pd1 = [Hs.pkt.cond.Pd]; db1 = [Hs.pkt.cond.dBm];
+    res = chk(res, [tag ' h1 one fragment (1e-6): Pd at -106 dBm'], sum(pd1(db1 == -106)), 0.8, 1);
+    res = chk(res, [tag ' h1 one fragment (1e-6): Pd at -110 dBm'], sum(pd1(db1 == -110)), 0, 0.4);
+end
+
+dr = fullfile(root, 'h1_drift');
+if exist(dr, 'dir') == 7
+    Hd0 = h1_pd_analyze(dr, 'Chip', chip, 'Combine', 'soft', 'Plot', false);
+    Hd = h1_pd_analyze(dr, 'Chip', chip, 'Combine', 'soft', 'Drift', (-3:3) / 7, 'Plot', false);
+    c = find([Hd.pkt.cond.dBm] == -114, 1);
+    res = chk(res, [tag ' drift: -114 dBm packet Pd with drift search'], Hd.pkt.cond(c).Pd, 0.85, 1);
+    res = chk(res, [tag ' drift: Pd gain of the drift search'], Hd.pkt.cond(c).Pd - Hd0.pkt.cond(c).Pd, 0, 1);
+    res = chk(res, [tag ' drift: median selected drift [taps/fragment]'], Hd.pkt.cond(c).dMed, 0.14, 0.43);
+    if strcmp(chip, 'fixed')
+        A1 = check_packet_assumptions(dr, '', 'Plot', false);
+        res = chk(res, [pre ' assumptions: drift slope median [taps/fragment]'], median(A1.drift.slopes), 0.25, 0.4);
+        res = chk(res, [pre ' assumptions: suggested drift hypotheses'], numel(A1.suggest.Drift), 5, 9);
+        res = chk(res, [pre ' assumptions: AGC level std [dB]'], A1.agc.std, 1.5, 3.5);
+    end
+else
+    fprintf('  (no h1_drift folder under %s: drift checks skipped; regenerate the set)\n', root);
+end
+if strcmp(chip, 'fixed')
+    A0 = check_packet_assumptions('', fullfile(root, 'h0'), 'Plot', false);
+    res = chk(res, [pre ' assumptions: share of frames with 8 fragments'], sum(A0.layout.share(A0.layout.counts == 8)), 0.95, 1);
+    res = chk(res, [pre ' assumptions: fragment-pair correlation (H0)'], A0.indep.rho, -0.1, 0.1);
+end
 end
 
 
@@ -250,6 +316,9 @@ if ~isempty(c110)
     res = chk(res, '2col h1 cir -110 dBm: Pd inside its 95% CI', double(cc.PdLo(2) <= cc.Pd(2) && cc.Pd(2) <= cc.PdHi(2)), 1, 1);
     res = chk(res, '2col h1 cir -110 dBm: CI width', cc.PdHi(2) - cc.PdLo(2), 0.005, 0.16);
 end
+
+banner('2-column set: 6) packet decision (rif_packet, fixed chip): FiRa medium 1e-6 per packet');
+res = suite_packet(root, 'fixed', show, res, '2col pkt');
 end
 
 

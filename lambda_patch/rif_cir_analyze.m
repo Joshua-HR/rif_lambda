@@ -36,6 +36,9 @@ function R = rif_cir_analyze(src, varargin)
 %                                      without the Q/Pi accumulators), see below
 %       'CirNoise'  []          'cir' only: noise-tap ranges [first last; ...] (W_s is always excluded);
 %                               [] = every tap outside W_s (about 25 per comb phase)
+%       'Chip'      ''          mode shortcut: 'fixed' = 'Moments','cir' (fixed chip, Lambda-hat from the CIR),
+%                               'new' = 'Moments','raw' (new chip with Q/Pi accumulators, 5-column dumps)
+%   Packet-level decisions over the RIF fragments of one ranging (FiRa target per packet): rif_packet.m
 %
 %   Statistics per fragment (see uwb/doc/RIF_CIR_Validity_Detector.md)
 %       P[k]    = |C[k]|^2
@@ -82,8 +85,10 @@ p.addParameter('PerClass', false, @(x) islogical(x) || isnumeric(x));
 p.addParameter('RhoMax', 0.98, @isnumeric);
 p.addParameter('Moments', 'raw', @(x) ischar(x) && any(strcmpi(x, {'raw', 'cir'})));
 p.addParameter('CirNoise', [], @isnumeric);
+p.addParameter('Chip', '', @(x) ischar(x) && any(strcmpi(x, {'', 'fixed', 'new'})));
 p.parse(src, varargin{:});
 o = p.Results;
+o.Moments = chip_moments(o.Chip, o.Moments, ~any(strcmp(p.UsingDefaults, 'Moments')), 'rif_cir_analyze');
 
 % ---------------------------------------------------------------- load
 [files, meta] = list_dumps(o.src, o.Frames);
@@ -473,6 +478,18 @@ rho = abs(pin);                               % returned before the clamp (diagn
 big = rho > rhoMax;
 pin(big) = pin(big) ./ rho(big) * rhoMax;     % clamp |Pi|/Q
 Lam = 2 * (abs(C).^2 - real(conj(pin) .* C.^2)) ./ (Qv .* (1 - abs(pin).^2));
+end
+
+
+% ======================================================================
+function m = chip_moments(chip, moments, given, caller)
+% 'Chip' shortcut: fixed -> Lambda-hat from the CIR ('cir'), new -> dumped raw-sample moments ('raw')
+m = moments;
+if isempty(chip), return; end
+if strcmpi(chip, 'fixed'), m = 'cir'; else m = 'raw'; end
+if given && ~strcmpi(moments, m)
+    error([caller ':chip'], '''Chip'', ''%s'' means ''Moments'', ''%s'' (got ''Moments'', ''%s'').', chip, m, moments);
+end
 end
 
 

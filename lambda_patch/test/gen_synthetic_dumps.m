@@ -41,14 +41,21 @@ function gen_synthetic_dumps(root, varargin)
 %       'QScale'      1        multiply Q and Pi (scale_test uses 64)
 %       'FirstTwoCol' false    write the first file with 2 columns (mixed_test)
 %       'FrameOffset' 0        index of the first fragment
+%     packet structure (8 fragments per frame = the 8 RIF fragments of one ranging, NumRIF = 4):
+%       'Drift'       0        peak drift [taps per fragment]: fragment f = 0..7 of a frame peaks at
+%                              tap 127 + round(Drift * f) (integer taps), like a residual clock offset
+%       'AgcStep'     0        AGC step [dB]: every fragment gets a random gain index -1, 0 or +1 (x AgcStep)
+%                              applied to signal and noise; Lambda is scale-invariant, the CIR level is not
+%       'PacketChannel' false  multipath: one channel realization per frame, shared by its 8 fragments
 %
-%   'test' preset layout (all 32 symbols, CFO 0.25 ppm; the last three only with 'Cols', 5)
+%   'test' preset layout (all 32 symbols, CFO 0.25 ppm; h0_2col, scale_test, mixed_test only with 'Cols', 5)
 %       h0/c32_m{120,88,82,40}_j{1,2}/bin   H0, 500 fragments per job
 %       h0_mp20/c32_m40_j{1,2}/bin          H0 -40 dBm, multipath tau_rms 20, K = -6 dB, 500 per job
 %       h1/c32_m{106..116}_j1/bin           H1, 200 fragments each
 %       h0_2col/c32_m82_j1/bin              2-column dumps, 300 fragments
 %       scale_test/c32_m82_j1/bin           Q, Pi x 64, 100 fragments
 %       mixed_test/c32_m82_j1/bin           first file 2-column, 20 fragments
+%       h1_drift/c32_m{114,90}_j1/bin       H1 -114 / -90 dBm, Drift 0.3, AgcStep 3 dB, 400 / 80 fragments
 
 p = inputParser;
 p.addRequired('root', @ischar);
@@ -67,11 +74,15 @@ p.addParameter('Cols', 5, @(x) isnumeric(x) && isscalar(x) && any(x == [2 5]));
 p.addParameter('QScale', 1, @isnumeric);
 p.addParameter('FirstTwoCol', false, @(x) islogical(x) || isnumeric(x));
 p.addParameter('FrameOffset', 0, @isnumeric);
+p.addParameter('Drift', 0, @(x) isnumeric(x) && isscalar(x));
+p.addParameter('AgcStep', 0, @(x) isnumeric(x) && isscalar(x));
+p.addParameter('PacketChannel', false, @(x) islogical(x) || isnumeric(x));
 p.parse(root, varargin{:});
 o = p.Results;
 base = rmfield(o, {'root', 'Preset', 'Scale'});
 base.Overwrite = logical(o.Overwrite);
 base.FirstTwoCol = logical(o.FirstTwoCol);
+base.PacketChannel = logical(o.PacketChannel);
 
 list = cell(0, 2);                                  % {folder, condition}
 switch lower(o.Preset)
@@ -106,6 +117,12 @@ switch lower(o.Preset)
         else
             fprintf('2-column test set: h0_2col, scale_test and mixed_test are 5-column checks and are skipped.\n');
         end
+        c = mk(base, -114, 'right', sc(400), sd + 4, 0, 0, cols, 1, false);   % same seeds in both formats
+        c.Drift = 0.3; c.AgcStep = 3;
+        list(end + 1, :) = {fullfile(o.root, 'h1_drift', 'c32_m114_j1', 'bin'), c};
+        c = mk(base, -90, 'right', sc(80), sd + 5, 0, 0, cols, 1, false);      % strong: drift estimate
+        c.Drift = 0.3; c.AgcStep = 3;
+        list(end + 1, :) = {fullfile(o.root, 'h1_drift', 'c32_m90_j1', 'bin'), c};
     otherwise
         error('gen_synthetic_dumps:preset', 'Unknown preset "%s" (use ''test'' or ''none'').', o.Preset);
 end
@@ -126,6 +143,7 @@ function c = mk(base, power, key, count, seed, trms, kdb, cols, qscale, first2)
 c = base;
 c.N = 32; c.Power = power; c.Key = key; c.Count = count; c.Seed = seed;
 c.Trms = trms; c.KdB = kdb; c.Cols = cols; c.QScale = qscale; c.FirstTwoCol = first2; c.FrameOffset = 0;
+c.Drift = 0; c.AgcStep = 0; c.PacketChannel = false;
 end
 
 
@@ -165,8 +183,12 @@ for q = 1:nBlk
     idx{q} = bsxfun(@plus, ks, nOff) + 1;                   % 1-based sample index, lagBlk x M
 end
 right = strcmpi(c.Key, 'right');
+gFrame = [];
 
 for f = 1:c.Count
+    gi = c.FrameOffset + f - 1;                             % global fragment index, 8 per frame
+    fi = mod(gi, 8);                                        % fragment position in its frame (packet)
+    sh = round(c.Drift * fi);                               % peak drift of this fragment [taps]
     a = 2 * (rand(Ltx, 1) < 0.5) - 1;                       % Tx STS
     if right
         b = a(129:128 + M);                                 % matched key, AccLen-1 (first symbol skipped)
@@ -176,12 +198,19 @@ for f = 1:c.Count
     r = zeros(T, 1);
     if A > 0
         if c.Trms > 0
-            g = channel(gph, c.Trms, c.KdB);
+            if c.PacketChannel && (fi == 0 || isempty(gFrame))
+                gFrame = channel(gph, c.Trms, c.KdB);       % one channel per frame (packet)
+            end
+            if c.PacketChannel
+                g = gFrame;
+            else
+                g = channel(gph, c.Trms, c.KdB);
+            end
         else
             g = gph;
         end
         for j = 1:numel(g)                                  % tap j sits at delay j - 4 (first tap e = -3)
-            ii = pos + (j - 4);
+            ii = pos + sh + (j - 4);
             ok = ii >= 0 & ii < T;
             r(ii(ok) + 1) = r(ii(ok) + 1) + a(ok) * g(j);
         end
@@ -189,6 +218,9 @@ for f = 1:c.Count
     end
     u = complex(randn(T + 2, 1), randn(T + 2, 1));
     r = r + (0.5 * u(1:T) + u(2:T + 1) + 0.5 * u(3:T + 2)) / sqrt(3);   % unit power per sample
+    if c.AgcStep ~= 0
+        r = r * 10 ^ ((randi(3) - 2) * c.AgcStep / 20);    % AGC gain index -1, 0, +1 (signal and noise)
+    end
 
     C = complex(zeros(NT, 1)); Q = zeros(NT, 1); Pq = complex(zeros(NT, 1));
     for q = 1:nBlk
@@ -199,7 +231,6 @@ for f = 1:c.Count
         Pq(rows) = sum(Z .^ 2, 2);
     end
 
-    gi = c.FrameOffset + f - 1;
     fn = fullfile(outDir, sprintf('%s_RifCir_AccNum_%d_Frame%d_Samp%d.txt', pw, N, floor(gi / 8), ...
                   1000000 * floor(gi / 8) + 125000 * mod(gi, 8) + 4096));
     fid = fopen(fn, 'w');

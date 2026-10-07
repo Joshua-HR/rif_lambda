@@ -4,7 +4,7 @@
 #   python3 make_2col.py <root5> <root2>        e.g. ../../synthetic_dumps ../../synthetic_dumps_2col
 import os, sys, glob
 
-SUBSETS = ('h0', 'h0_mp20', 'h1')                     # the 5-column-only checks are not copied
+SUBSETS = ('h0', 'h0_mp20', 'h1', 'h1_drift')                     # the 5-column-only checks are not copied
 
 
 def main(root5, root2):

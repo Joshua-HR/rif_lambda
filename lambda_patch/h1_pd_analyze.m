@@ -21,6 +21,9 @@ function R = h1_pd_analyze(root, varargin)
 %       'Tol'       2       position tolerance [taps]; 1 tap ~ 1 ns ~ 0.3 m
 %       'Conf'      0.95    two-sided confidence of the Pd interval
 %       'Moments'   'raw'   'raw': Q/Pi from 5-column dumps, 'cir': estimated from the CIR (fixed silicon)
+%       'Chip'      ''      mode shortcut: 'fixed' = 'Moments','cir', 'new' = 'Moments','raw'
+%       'Combine'   'none'  packet decision of rif_packet.m: 'soft' | 'and' | 'kofn' | 'strict' | 'single'
+%       'FragPerPacket' 8, 'PfaTarget' 1e-6, 'KofN' [], 'Floor' 1, 'Drift' 0   as in rif_packet.m
 %       'Sig', 'Noise', 'Period'  as in rif_cir_analyze
 %       'Plot'      true
 %
@@ -29,6 +32,9 @@ function R = h1_pd_analyze(root, varargin)
 %       cond(c) len, dBm, n, and 1x2 vectors [MD Lambda]: k, kLoc, Pd, PdLo, PdHi, PdLoc, PosAcc;
 %               errMD, errL = |kpk - PeakTap| of every detected fragment
 %       len     lengths; L90, L99, L90loc, L99loc: rows = lengths, columns = [MD Lambda]
+%       pkt     packet decision ('Combine' not 'none'): cond(c) with len, dBm, n (packets), k, kLoc, Pd, PdLo,
+%               PdHi, PdLoc, PosAcc (selected tap within PeakTap +- Tol), dMed (median selected drift);
+%               L90, L99, L90loc per length; info (rule, K, T, drift)
 %       opt     options
 
 p = inputParser;
@@ -44,8 +50,20 @@ p.addParameter('Sig', [119 175], @isnumeric);
 p.addParameter('Noise', [16 96], @isnumeric);
 p.addParameter('Period', 8, @isnumeric);
 p.addParameter('Plot', true, @(x) islogical(x) || isnumeric(x));
+p.addParameter('Chip', '', @(x) ischar(x) && any(strcmpi(x, {'', 'fixed', 'new'})));
+p.addParameter('Combine', 'none', @(x) ischar(x) && any(strcmpi(x, {'none', 'soft', 'and', 'kofn', 'strict', 'single'})));
+p.addParameter('FragPerPacket', 8, @(x) isnumeric(x) && isscalar(x) && x >= 1);
+p.addParameter('PfaTarget', 1e-6, @isnumeric);
+p.addParameter('KofN', [], @isnumeric);
+p.addParameter('Floor', 1, @isnumeric);
+p.addParameter('Drift', 0, @isnumeric);
 p.parse(root, varargin{:});
 o = p.Results;
+o.Moments = chip_moments(o.Chip, o.Moments, ~any(strcmp(p.UsingDefaults, 'Moments')));
+doPkt = ~strcmpi(o.Combine, 'none');
+pkArgs = {'Combine', o.Combine, 'FragPerPacket', o.FragPerPacket, 'PfaTarget', o.PfaTarget, 'KofN', o.KofN, ...
+          'PfaFragment', o.Pfa, 'Floor', o.Floor, 'Drift', o.Drift, 'Margin', o.Margin};
+pkInfo = [];
 if o.PeakTap < o.Sig(1) || o.PeakTap > o.Sig(2)
     warning('h1_pd_analyze:peak', 'PeakTap %d lies outside the signal window [%d %d].', o.PeakTap, o.Sig(1), o.Sig(2));
 end
@@ -53,7 +71,7 @@ end
 % ---------------------------------------------------------------- read job folders
 d = dir(o.root);
 d = d([d.isdir]);
-F = struct('len', {}, 'pow', {}, 'valid', {}, 'validL', {}, 'kpk', {});
+F = struct('len', {}, 'pow', {}, 'valid', {}, 'validL', {}, 'kpk', {}, 'pkValid', {}, 'pkSel', {}, 'pkD', {});
 fprintf('\nreading job folders under %s\n', o.root);
 for i = 1:numel(d)
     t = regexp(d(i).name, '^c(\d+)_m(\d+)_j(\d+)$', 'tokens', 'once');
@@ -66,9 +84,21 @@ for i = 1:numel(d)
                         'Moments', o.Moments);
     if isempty(r.lamMode)
         fprintf('   WARNING: %s has no Q/Pi columns; Pd(Lambda) is reported as 0 (try ''Moments'', ''cir'')\n', d(i).name);
+        if doPkt
+            error('h1_pd_analyze:nolam', '''Combine'' needs Lambda: %s has no Q/Pi columns (use ''Chip'', ''fixed'').', d(i).name);
+        end
+    end
+    pv = false(1, 0); ps = zeros(1, 0); pdr = zeros(1, 0);
+    if doPkt
+        Pk = rif_packet(r, pkArgs{:});
+        pv = Pk.valid; ps = Pk.kSel; pdr = Pk.dSel;
+        if isempty(pkInfo)
+            pkInfo = struct('rule', Pk.rule, 'K', Pk.K, 'KofN', Pk.KofN, 'T', Pk.T, 'pFrag', Pk.pFrag, ...
+                            'drift', Pk.drift, 'PfaTarget', o.PfaTarget, 'Floor', o.Floor);
+        end
     end
     F(end + 1) = struct('len', str2double(t{1}), 'pow', str2double(t{2}), 'valid', logical(r.valid), ...
-                        'validL', logical(r.validL), 'kpk', r.kpk); %#ok<AGROW>
+                        'validL', logical(r.validL), 'kpk', r.kpk, 'pkValid', pv, 'pkSel', ps, 'pkD', pdr); %#ok<AGROW>
     fprintf('   %-16s %6d fragments\n', d(i).name, numel(r.valid));
 end
 if isempty(F)
@@ -116,7 +146,7 @@ end
 % ---------------------------------------------------------------- detection levels per length
 ul = unique([C.len]);
 R = struct('table', tab, 'cond', {C}, 'len', ul, 'L90', NaN(numel(ul), 2), 'L99', NaN(numel(ul), 2), ...
-           'L90loc', NaN(numel(ul), 2), 'L99loc', NaN(numel(ul), 2), 'opt', o);
+           'L90loc', NaN(numel(ul), 2), 'L99loc', NaN(numel(ul), 2), 'pkt', [], 'opt', o);
 fprintf('\n  len   L90 MD / Lam [dBm]    L99 MD / Lam [dBm]    L90 position ok MD / Lam    Lam gain at L90\n');
 for q = 1:numel(ul)
     [pw, Pd, ~, ~, PdLoc] = series(C, ul(q));
@@ -131,6 +161,49 @@ for q = 1:numel(ul)
             R.L90(q, 1) - R.L90(q, 2));
 end
 fprintf('  (NaN: the level is not crossed inside the swept power range)\n\n');
+
+% ---------------------------------------------------------------- packet decision
+if doPkt
+    PC = struct('len', {}, 'dBm', {}, 'n', {}, 'k', {}, 'kLoc', {}, 'Pd', {}, 'PdLo', {}, 'PdHi', {}, ...
+                'PdLoc', {}, 'PosAcc', {}, 'dMed', {});
+    for c = 1:size(keys, 1)
+        sel = find(lens == keys(c, 1) & pows == keys(c, 2));
+        v = false(1, 0); ks = zeros(1, 0); dd = zeros(1, 0);
+        for s = sel
+            v = [v, F(s).pkValid(:).']; ks = [ks, F(s).pkSel(:).']; dd = [dd, F(s).pkD(:).']; %#ok<AGROW>
+        end
+        n = numel(v); k = sum(v); kLoc = sum(v & abs(ks - o.PeakTap) <= o.Tol);
+        PC(c).len = keys(c, 1); PC(c).dBm = -keys(c, 2); PC(c).n = n; PC(c).k = k; PC(c).kLoc = kLoc;
+        if n > 0
+            [PC(c).PdLo, PC(c).PdHi] = cp_interval(k, n, o.Conf);
+            PC(c).Pd = k / n; PC(c).PdLoc = kLoc / n;
+        else
+            PC(c).PdLo = NaN; PC(c).PdHi = NaN; PC(c).Pd = NaN; PC(c).PdLoc = NaN;
+        end
+        if k > 0, PC(c).PosAcc = kLoc / k; PC(c).dMed = median(dd(v)); else PC(c).PosAcc = NaN; PC(c).dMed = NaN; end
+    end
+    R.pkt = struct('cond', {PC}, 'L90', NaN(numel(ul), 1), 'L99', NaN(numel(ul), 1), 'L90loc', NaN(numel(ul), 1), ...
+                   'info', pkInfo);
+    fprintf('Packet decision: rule %s, %d RIF fragments per packet, target %.1e, T = %.2f, %d drift hypotheses\n', ...
+            pkInfo.rule, pkInfo.K, pkInfo.PfaTarget, pkInfo.T, numel(pkInfo.drift));
+    fprintf('  len  P[dBm] packets   Pd     [   lo     hi ]   pos.acc   PdLoc   drift med\n');
+    for c = 1:numel(PC)
+        fprintf('  %3d  %6g  %6d   %6.3f [%6.3f %6.3f]   %6.3f   %6.3f   %6.2f\n', PC(c).len, PC(c).dBm, PC(c).n, ...
+                PC(c).Pd, PC(c).PdLo, PC(c).PdHi, PC(c).PosAcc, PC(c).PdLoc, PC(c).dMed);
+    end
+    fprintf('  len   packet L90 / L99 [dBm]   L90 position ok   fragment L90 (Lambda)   packet gain\n');
+    for q = 1:numel(ul)
+        cs = find([PC.len] == ul(q));
+        [pw, ord] = sort([PC(cs).dBm]);
+        pd = [PC(cs(ord)).Pd]; pl = [PC(cs(ord)).PdLoc];
+        R.pkt.L90(q) = level_at(pw, pd, 0.90);
+        R.pkt.L99(q) = level_at(pw, pd, 0.99);
+        R.pkt.L90loc(q) = level_at(pw, pl, 0.90);
+        fprintf('  %3d   %7.2f / %7.2f       %7.2f             %7.2f            %+5.2f dB\n', ul(q), R.pkt.L90(q), ...
+                R.pkt.L99(q), R.pkt.L90loc(q), R.L90(q, 2), R.L90(q, 2) - R.pkt.L90(q));
+    end
+    fprintf('  (fragment L90 uses the fragment threshold of ''Pfa''; NaN: not crossed in the swept range)\n\n');
+end
 
 % ---------------------------------------------------------------- plots
 if logical(o.Plot)
@@ -161,6 +234,38 @@ if logical(o.Plot)
     ylim([0 1.02]);
     xlabel('SignalPower [dBm]'); ylabel('share of detections at the right tap');
     title(sprintf('detection position: peak tap within %d \\pm %d', o.PeakTap, o.Tol));
+    if doPkt
+        figure('Color', 'w', 'Name', 'H1 packet Pd', 'Position', [100 100 700 460]);
+        hold on; grid on; box on;
+        h = zeros(numel(ul), 1); nm = cell(numel(ul), 1);
+        for q = 1:numel(ul)
+            cs = find([R.pkt.cond.len] == ul(q));
+            [pw, ord] = sort([R.pkt.cond(cs).dBm]);
+            cc = R.pkt.cond(cs(ord));
+            pd = [cc.Pd]; lo = [cc.PdLo]; hi = [cc.PdHi];
+            h(q) = errorbar(pw, pd, pd - lo, hi - pd, '-s', 'Color', cm(q, :), 'MarkerSize', 4, 'MarkerFaceColor', cm(q, :));
+            [pw2, Pd2] = series(C, ul(q));
+            plot(pw2, Pd2(:, 2), ':', 'Color', cm(q, :));
+            nm{q} = sprintf('%d sym', ul(q));
+        end
+        line(xlim, [0.9 0.9], 'Color', [0.5 0.5 0.5], 'LineStyle', ':');
+        ylim([0 1.02]);
+        xlabel('SignalPower [dBm]'); ylabel('Pd per packet');
+        title(sprintf('packet Pd (%s, %d fragments, target %.0e); dotted: fragment \\Lambda', R.pkt.info.rule, ...
+                      R.pkt.info.K, R.pkt.info.PfaTarget));
+        legend(h, nm, 'Location', 'southeast');
+    end
+end
+end
+
+
+% ======================================================================
+function m = chip_moments(chip, moments, given)
+m = moments;
+if isempty(chip), return; end
+if strcmpi(chip, 'fixed'), m = 'cir'; else m = 'raw'; end
+if given && ~strcmpi(moments, m)
+    error('h1_pd_analyze:chip', '''Chip'', ''%s'' means ''Moments'', ''%s'' (got ''Moments'', ''%s'').', chip, m, moments);
 end
 end
 

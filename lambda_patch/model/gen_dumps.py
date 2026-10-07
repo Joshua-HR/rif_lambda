@@ -27,17 +27,17 @@ def channel(rng, trms, kdb):
     return g
 
 
-def fragment(rng, N, dbm, h1, ppm, trms, kdb, rotT):
+def fragment(rng, N, dbm, h1, ppm, trms, kdb, rotT, shift=0, gch=None):
     M = (N - 1) * 128; Ltx = N * 128; T = 8 * (M - 1) + NTAP + 8
     a = [1 if rng.random() < 0.5 else -1 for _ in range(Ltx)]
     b = a[128:128 + M] if h1 else [1 if rng.random() < 0.5 else -1 for _ in range(M)]
     r = [0j] * T
     if dbm is not None:
         A = math.sqrt(10 ** ((dbm + DBM_OFS) / 10))
-        g = channel(rng, trms, kdb) if trms > 0 else GPH
+        g = (gch if gch is not None else channel(rng, trms, kdb)) if trms > 0 else GPH
         gl = list(g.items())
         for l in range(Ltx):
-            pos = 8 * (l - 128) + K0; al = a[l]
+            pos = 8 * (l - 128) + K0 + shift; al = a[l]
             for e, ge in gl:
                 t = pos + e
                 if 0 <= t < T:
@@ -66,16 +66,28 @@ def write_dump(path, rows, ncol):
                 f.write('%.7g %.7g\n' % (c.real, c.imag))
 
 
+def round_half_away(x):
+    return int(math.floor(abs(x) + 0.5)) * (1 if x >= 0 else -1)
+
+
 def job(args):
-    outdir, N, dbm, h1, ppm, trms, kdb, nfrag, seed, ncol, qscale, first2col, gofs = args
+    outdir, N, dbm, h1, ppm, trms, kdb, nfrag, seed, ncol, qscale, first2col, gofs = args[:13]
+    drift, agc, pchan = args[13:16] if len(args) > 13 else (0, 0, False)
     rng = random.Random(seed)
     M = (N - 1) * 128; T = 8 * (M - 1) + NTAP + 8
     w = 2 * math.pi * ppm * 1e-6 * FC / FS
     rotT = [cmath.exp(1j * w * t) for t in range(T)]
     os.makedirs(outdir, exist_ok=True)
     pw = '%d' % dbm
+    gframe = None
     for i in range(nfrag):
-        rows = fragment(rng, N, dbm, h1, ppm, trms, kdb, rotT)
+        fi = (gofs + i) % 8                                # fragment position in its frame (packet)
+        if pchan and trms > 0 and (fi == 0 or gframe is None):
+            gframe = channel(rng, trms, kdb)               # one multipath channel per frame
+        rows = fragment(rng, N, dbm, h1, ppm, trms, kdb, rotT, round_half_away(drift * fi), gframe if pchan else None)
+        if agc:
+            gn = 10 ** (rng.choice((-1, 0, 1)) * agc / 20)  # AGC gain index -1, 0, +1 on signal and noise
+            rows = [(c * gn, q * gn * gn, p * gn * gn) for c, q, p in rows]
         if qscale != 1:
             rows = [(c, q * qscale, p * qscale) for c, q, p in rows]
         frame, fr = divmod(gofs + i, 8)                    # 8 RIF fragments per frame
@@ -89,12 +101,15 @@ if __name__ == '__main__':
     root = sys.argv[1]
     N = 32; ppm = 0.25; tasks = []; seed = [70000]
 
-    def add(sub, dbm, h1, nfrag, trms=0, kdb=0, ncol=5, qscale=1, first2col=False, chunks=1):
+    only = sys.argv[2] if len(sys.argv) > 2 else None   # e.g. 'h1_drift': add that folder to an existing root
+
+    def add(sub, dbm, h1, nfrag, trms=0, kdb=0, ncol=5, qscale=1, first2col=False, chunks=1, drift=0, agc=0, pchan=False):
         per = nfrag // chunks
         for c in range(chunks):                            # chunks run in parallel, disjoint frame ranges
             seed[0] += 1
+            if only and not sub.startswith(only): continue
             tasks.append((os.path.join(root, sub), N, dbm, h1, ppm, trms, kdb, per, seed[0], ncol, qscale,
-                          first2col and c == 0, c * per))
+                          first2col and c == 0, c * per, drift, agc, pchan))
 
     for j in (1, 2):                                       # two independent jobs per H0 condition
         for p in (120, 88, 82, 40):
@@ -105,6 +120,8 @@ if __name__ == '__main__':
     add('h0_2col/c32_m82_j1/bin', -82, False, 300, ncol=2, chunks=2)
     add('scale_test/c32_m82_j1/bin', -82, False, 100, qscale=64, chunks=2)
     add('mixed_test/c32_m82_j1/bin', -82, False, 20, first2col=True)
+    add('h1_drift/c32_m114_j1/bin', -114, True, 400, chunks=2, drift=0.3, agc=3)   # packets: drift + AGC
+    add('h1_drift/c32_m90_j1/bin', -90, True, 80, drift=0.3, agc=3)                # strong: drift estimate
     tasks.sort(key=lambda a: -a[7] * (40 if a[5] else 1))  # long (multipath) chunks first
     with Pool(6) as pool:
         for outdir, n in pool.imap_unordered(job, tasks):
