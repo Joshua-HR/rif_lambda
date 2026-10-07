@@ -1,0 +1,16 @@
+# 합성 덤프(98 MB)와 옮기기용 묶음: lambda_patch/test/gen_synthetic_dumps.m 으로 다시 만들 수 있음
+synthetic_dumps/
+lambda_test_bundle.zip
+
+# 분석 캐시
+h0_stats_cache.mat
+
+# Python
+__pycache__/
+*.pyc
+
+# MATLAB 자동 백업, OS/편집기 파일
+*.asv
+*~
+.DS_Store
+Thumbs.db
