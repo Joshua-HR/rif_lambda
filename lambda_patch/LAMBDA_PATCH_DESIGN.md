@@ -8,6 +8,7 @@
   - 시험 도구: `lambda_patch/test/gen_synthetic_dumps.m`, `lambda_patch/test/run_synthetic_test.m`, `synthetic_dumps/`
   - 모델 스크립트: `lambda_patch/model/` (이 문서의 수치를 다시 만드는 Python 스크립트)
   - 해설 웹 페이지: `docs/index.html` (GitHub Pages용)
+  - 결정 기록: `lambda_patch/DECISIONS.md` (판정 기준·정책 결정, 근거 페이지, 다시 볼 조건)
   - 검증 계획: `lambda_patch/TEST_PLAN.md` (합성 2열·5열, LLS 2열, 5열 bring-up과 최종 검증의 단계별 덤프 세트, 명령, 합격 기준)
 
 ---

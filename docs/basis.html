@@ -1,0 +1,1082 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RIF 판정 기준 전환</title>
+<meta name="description" content="MD 문서의 프래그먼트 1e-3 기준을 FiRa medium(거리 측정 1회당 10⁻⁶) 기준으로 바꾸는 검토: 개념, 수식, 대화형 그래프">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<script>
+  (function () {  /* 저장된 테마를 첫 렌더링 전에 적용 */
+    try { var t = localStorage.getItem('rif-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  })();
+</script>
+<style>
+/* Layout: RIF Λ 판정기 해설 페이지와 같은 체계(68ch 본문 + 1080px 도판). 개념 → 수식 → 효과 → 검증 → 영향 순서라 섹션 번호를 쓴다.
+   Color: 파랑 = 제안(Λ), 주황 = 기존 MD 규칙, 청록 = 정규화만(중간 단계). 빨강/초록은 상태(오검출/정상) 전용. */
+:root{
+  --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
+  --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.11);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --crit:#d03b3b; --good:#0ca30c;
+  --wash:#e6eef9; --code-bg:#e9eae6;
+  --f-sans:"IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+    --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+    --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --crit:#d03b3b; --good:#0ca30c;
+    --wash:#1b2636; --code-bg:#242422;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+  --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+  --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --crit:#d03b3b; --good:#0ca30c;
+  --wash:#1b2636; --code-bg:#242422;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none !important}
+img{max-width:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:36px 80px;display:flex;flex-direction:column;gap:0}
+h1,h2,h3{text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:clamp(32px,5vw,46px);font-weight:700;letter-spacing:-0.02em}
+h2{font-size:clamp(22px,2.8vw,28px);font-weight:700;letter-spacing:-0.01em}
+h3{font-size:17px;font-weight:600}
+p,ul,ol,dl{margin:0}
+ul,ol{padding-left:1.3em}
+li + li{margin-top:6px}
+a{color:var(--s1)}
+code,.mono{font-family:var(--f-mono);font-size:.9em}
+strong{font-weight:600}
+.stack{display:flex;flex-direction:column;gap:14px}
+.prose{max-width:68ch}
+.eyebrow{font:500 12.5px/1.5 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:18.5px;line-height:1.7;color:var(--ink-2)}
+
+/* hero */
+.hero{display:flex;flex-direction:column;gap:22px;padding-block:8px 36px}
+.thesis{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.thesis > div{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.thesis dt{font:600 12.5px var(--f-mono);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.thesis dd{margin:0;font-size:15px;line-height:1.6}
+.toc{display:flex;flex-wrap:wrap;gap:6px 8px;padding:0;list-style:none}
+.toc li{margin:0}
+.toc a{display:inline-flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink-2);font-size:14px;padding:5px 10px;border-radius:999px;border:1px solid var(--hair);background:var(--surface)}
+.toc a:hover{color:var(--ink);border-color:var(--axis)}
+.toc .n{font:500 12px var(--f-mono);color:var(--muted)}
+
+/* sections */
+.sec{display:flex;flex-direction:column;gap:18px;padding-block:48px 4px;border-top:1px solid var(--hair);scroll-margin-top:12px}
+.sec-head{display:flex;align-items:baseline;gap:14px}
+.sec-no{font:600 15px var(--f-mono);color:var(--muted);min-width:1.4em}
+.eq{font-family:var(--f-mono);font-size:14.5px;background:var(--code-bg);border-radius:8px;padding:12px 16px;overflow-x:auto;line-height:1.9;white-space:pre;max-width:100%}
+.eq .c{color:var(--muted)}
+.note{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:14px 16px;font-size:15px;display:flex;flex-direction:column;gap:6px;max-width:80ch}
+.note b{font:600 12.5px var(--f-mono);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+
+/* figures */
+.plate{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px;margin:0;min-width:0}
+.plate figcaption{font-size:13.5px;color:var(--ink-2);line-height:1.65;max-width:84ch}
+.plate h3{font-size:15.5px}
+.scroll-x{overflow-x:auto;max-width:100%}
+.scroll-x > svg{min-width:660px;width:100%;height:auto;display:block}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+.split{display:flex;flex-wrap:wrap;gap:18px}
+.split > .main{flex:1 1 540px;min-width:0}
+.split > .side{flex:1 1 250px;min-width:0;display:flex;flex-direction:column;gap:14px}
+canvas{display:block;width:100%;touch-action:none}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
+.ctl{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.ctl-label{font-size:12.5px;color:var(--muted);font-weight:500}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button,.btn{font:500 13px var(--f-sans);padding:6px 11px;border:1px solid var(--hair);background:var(--raised);color:var(--ink-2);border-radius:7px;cursor:pointer;line-height:1.4}
+.seg button:hover,.btn:hover{color:var(--ink);border-color:var(--axis)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn-primary{background:var(--s1);color:#fff;border-color:var(--s1)}
+.btn-primary:hover{color:#fff;filter:brightness(1.08)}
+input[type=range]{width:min(320px,100%);accent-color:var(--s1)}
+select,input[type=number]{font:inherit;font-size:14px;padding:5px 8px;border-radius:7px;border:1px solid var(--hair);background:var(--raised);color:var(--ink)}
+input[type=number]{width:7em;font-family:var(--f-mono)}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.val{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:14px}
+
+/* readouts */
+.readout{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:14px;align-content:start}
+.readout dt{color:var(--muted)}
+.readout dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.readout .sep{grid-column:1 / -1;border-top:1px solid var(--hair);margin-block:2px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:1px 9px;border-radius:999px;font:500 12.5px var(--f-sans);border:1px solid var(--hair);background:var(--raised);color:var(--ink);white-space:nowrap}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.chip.good i{background:var(--good)}
+.chip.bad i{background:var(--crit)}
+.stats{display:flex;flex-wrap:wrap;gap:10px}
+.stat{background:var(--raised);border:1px solid var(--hair);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:150px;flex:1 1 150px}
+.stat .k{font-size:12.5px;color:var(--muted)}
+.stat .v{font-size:20px;font-weight:600}
+.stat .s{font-size:12.5px;color:var(--ink-2)}
+
+/* legend & tooltip */
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--ink-2)}
+.key{display:inline-flex;align-items:center;gap:7px}
+.key svg{width:16px;height:12px;flex:none}
+#tip{position:fixed;z-index:30;pointer-events:none;background:var(--raised);color:var(--ink);border:1px solid var(--hair);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.55;box-shadow:0 6px 22px rgba(0,0,0,.14);max-width:300px}
+#tip .tv{font-family:var(--f-mono);font-weight:600;font-variant-numeric:tabular-nums}
+#tip .tl{color:var(--ink-2)}
+#tip .row{display:flex;align-items:center;gap:7px}
+#tip .row svg{width:14px;height:10px;flex:none}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;font-size:14px;min-width:100%}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--hair);vertical-align:top}
+th{font-weight:600;color:var(--ink-2);font-size:13px;white-space:nowrap}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+details{font-size:14px}
+details summary{cursor:pointer;color:var(--ink-2);font-size:13.5px}
+details[open] summary{margin-bottom:10px}
+pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:var(--code-bg);border-radius:8px;padding:12px 14px;overflow-x:auto;margin:0;white-space:pre}
+
+/* chart marks */
+.gl{stroke:var(--grid);stroke-width:1}
+.axl{stroke:var(--axis);stroke-width:1}
+.tick{fill:var(--muted);font:12px var(--f-sans);font-variant-numeric:tabular-nums}
+.axt{fill:var(--ink-2);font:12.5px var(--f-sans)}
+.lab{fill:var(--ink-2);font:12.5px var(--f-sans)}
+.labs{fill:var(--ink);font:600 12.5px var(--f-sans)}
+.s1f{fill:var(--s1)} .s2f{fill:var(--s2)} .s3f{fill:var(--s3)}
+.s1s{stroke:var(--s1)} .s2s{stroke:var(--s2)} .s3s{stroke:var(--s3)}
+.inkf{fill:var(--ink)} .ink2f{fill:var(--ink-2)} .mutedf{fill:var(--muted)}
+.inks{stroke:var(--ink)} .ink2s{stroke:var(--ink-2)} .muteds{stroke:var(--muted)}
+.ring{stroke:var(--surface);stroke-width:2}
+.line2{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.washs1{fill:var(--s1);fill-opacity:.09}
+.washg{fill:var(--ink);fill-opacity:.045}
+.washc{fill:var(--crit);fill-opacity:.06}
+.hit{fill:transparent;cursor:crosshair}
+.xh{stroke:var(--axis);stroke-width:1}
+
+/* diagrams */
+.dg{color:var(--ink)}
+.dg text{fill:currentColor;font:13px var(--f-sans)}
+.dg .m{font-family:var(--f-mono);font-size:12.5px}
+.dg .sub{fill:var(--ink-2);font-size:12px}
+.dg .bx{fill:var(--surface);stroke:var(--axis);stroke-width:1.2}
+.dg .bx-new{fill:var(--wash);stroke:var(--s1);stroke-width:1.4}
+.dg .ar{stroke:currentColor;stroke-width:1.3;fill:none}
+.dg .ar-new{stroke:var(--s1);stroke-width:1.5;fill:none}
+.dg .newt{fill:var(--s1)}
+.dg .grp{fill:none;stroke:var(--axis);stroke-width:1;stroke-dasharray:4 4}
+.dg .grp-new{fill:none;stroke:var(--s1);stroke-width:1;stroke-dasharray:4 4}
+.hollow1{fill:var(--surface);stroke:var(--s1);stroke-width:2}
+.dash{stroke-dasharray:6 4}
+.guide td:first-child{font-weight:600}
+.guide tr.pick td{background:var(--wash)}
+.w7-v{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2)}
+#w7-dec{grid-template-columns:1fr;gap:2px}
+#w7-dec dd{margin-bottom:7px}
+/* paired charts (5-column vs 2-column) */
+.pair{display:flex;flex-wrap:wrap;gap:14px 22px}
+.pair > div{flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.pair-t{font:600 13.5px var(--f-sans);color:var(--ink)}
+.pair-t span{font-weight:400;color:var(--muted);margin-left:6px}
+.sub-h{font-size:14.5px;font-weight:600;margin:8px 0 0}
+.r7-bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.r7-msg{font-size:13.5px;color:var(--crit);margin:0}
+.stat .v.ok{color:var(--good)}
+.stat .v.ng{color:var(--crit)}
+
+.foot{padding-block:48px 0;border-top:1px solid var(--hair);margin-top:48px;font-size:14px;color:var(--ink-2);display:flex;flex-direction:column;gap:10px;max-width:84ch}
+@media (max-width:560px){
+  body{font-size:15.5px}
+  .lede{font-size:17px}
+  .plate{padding:14px}
+  .eq{font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto !important;transition:none !important}}
+/* basis page */
+.gloss{display:grid;grid-template-columns:minmax(110px,max-content) 1fr;gap:9px 18px;margin:0;font-size:15px;line-height:1.6}
+.gloss dt{font-weight:600;color:var(--ink)}
+.gloss dd{margin:0;color:var(--ink-2);min-width:0}
+@media (max-width:560px){.gloss{grid-template-columns:1fr;gap:2px}.gloss dd{margin-bottom:8px}}
+.theme-btn{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);right:12px;z-index:40;font:500 12.5px var(--f-sans);padding:6px 11px;border-radius:999px;border:1px solid var(--hair);background:var(--raised);color:var(--ink-2);cursor:pointer}
+.theme-btn:hover{color:var(--ink);border-color:var(--axis)}
+</style>
+</head>
+<body>
+<button type="button" class="theme-btn" id="theme-btn" aria-label="테마 바꾸기">테마: 시스템</button>
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">검토 문서 · 아직 적용하지 않음 · IEEE 802.15.4ab MMS RIF</span>
+  <h1>RIF 판정 기준 전환</h1>
+  <p class="lede prose">지금의 판정기는 MD 문서가 정한 <strong>프래그먼트 하나당 오검출 1e-3</strong>을 목표로 설계되어 있습니다. 이 페이지는 그 기조를 FiRa 인증의 medium 보안 수준, 곧 <strong>거리 측정 한 번당 오수락 10⁻⁶</strong>으로 바꾸면 무엇이 달라지는지를 개념부터 차례로 보여 줍니다.</p>
+  <dl class="thesis">
+    <div><dt>지금</dt><dd>RIF 프래그먼트 하나를 판정하고, 잡음만 있을 때 잘못 받아들일 확률을 1e-3 이하로 둡니다. 근거는 내부 목표입니다.</dd></div>
+    <div><dt>제안</dt><dd>한 수신기가 거리 측정 한 번에 쓰는 RIF 8개(NumRIF = 4)를 묶어 판정하고, 잘못 받아들일 확률을 10⁻⁶ 이하로 둡니다.</dd></div>
+    <div><dt>효과</dt><dd>고정 칩 감도가 −109.6 dBm에서 −116.7 dBm으로 좋아지고, 검증은 셀 수 있는 근거(꼬리, 독립성)로 바뀝니다.</dd></div>
+    <div><dt>남은 확인</dt><dd>FiRa 원문 정의, RIF 1개 설정을 실제로 쓰는지, 점수 방식의 패킷 기준, 같은 채널 멀티패스에서의 깊은 꼬리.</dd></div>
+  </dl>
+  <nav aria-label="목차">
+    <ol class="toc">
+      <li><a href="#b1"><span class="n">1</span>무엇을 바꾸나</a></li>
+      <li><a href="#b2"><span class="n">2</span>꼬리</a></li>
+      <li><a href="#b3"><span class="n">3</span>문턱 수식</a></li>
+      <li><a href="#b4"><span class="n">4</span>묶으면 왜 좋아지나</a></li>
+      <li><a href="#b5"><span class="n">5</span>시뮬레이션 결과</a></li>
+      <li><a href="#b6"><span class="n">6</span>10⁻⁶ 확인 방법</a></li>
+      <li><a href="#b7"><span class="n">7</span>MD 평가의 변화</a></li>
+      <li><a href="#b8"><span class="n">8</span>바뀌는 범위</a></li>
+    </ol>
+  </nav>
+</header>
+
+<!-- ============================================================ 1 -->
+<section class="sec" id="b1">
+  <div class="sec-head"><span class="sec-no">1</span><h2>무엇을 바꾸나: 판정 단위와 목표값</h2></div>
+  <div class="prose stack">
+    <p>RIF 프래그먼트는 MMS 패킷 안에서 1 ms 간격으로 오는 STS 조각입니다. 수신기는 프래그먼트마다 CIR을 만들고, 거리 측정 한 번에는 이런 프래그먼트 8개를 씁니다. 지금은 프래그먼트 하나하나를 따로 판정하는 것이 목표의 단위입니다. 제안은 목표의 단위를 거리 측정 한 번, 곧 <strong>패킷</strong>으로 옮기는 것입니다.</p>
+  </div>
+  <figure class="plate">
+    <div class="scroll-x">
+    <svg class="dg" viewBox="0 0 900 250" role="img" aria-label="지금은 RIF 8개를 하나씩 1e-3으로 판정하고, 제안은 8개를 묶어 패킷 하나를 10의 -6승으로 판정한다">
+      <defs><marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <text x="20" y="26" class="m">거리 측정 1회 (패킷) = RIF 프래그먼트 8개, 1 ms 간격</text>
+      <g id="b1-boxes"></g>
+      <text x="20" y="160" class="m">지금 (MD 문서)</text>
+      <text x="20" y="180" class="sub">프래그먼트마다 판정, 각각 오검출 ≤ 1e-3</text>
+      <text x="20" y="214" class="m newt">제안 (FiRa medium)</text>
+      <text x="20" y="234" class="sub">8개를 묶어 한 번 판정, 패킷 오수락 ≤ 10⁻⁶</text>
+      <path class="ar" d="M296 172 L330 172" marker-end="url(#ah1)"/>
+      <path class="ar-new" d="M296 226 L330 226" marker-end="url(#ah1)"/>
+      <g id="b1-now"></g>
+      <rect class="bx-new" x="336" y="206" width="548" height="34" rx="6"/>
+      <text x="610" y="228" text-anchor="middle">Λ<tspan baseline-shift="sub" font-size="9">1</tspan> … Λ<tspan baseline-shift="sub" font-size="9">8</tspan>를 묶어 수락 / 거부 한 번</text>
+    </svg>
+    </div>
+    <figcaption>위쪽의 회색 상자 8개가 한 번의 거리 측정에 쓰이는 RIF입니다. 지금 기준은 상자마다 따로 1e-3을 지키고, 제안 기준은 8개를 하나로 묶은 결과가 10⁻⁶을 지킵니다. 숫자만 보면 1,000배 엄격해졌지만, 판정할 때 쓰는 증거가 8배로 늘어나므로 감도는 오히려 좋아질 수 있습니다(4장).</figcaption>
+  </figure>
+
+  <figure class="plate">
+    <h3>용어</h3>
+    <dl class="gloss">
+      <dt>H0 / H1</dt><dd>H0는 맞는 키의 신호가 없는 경우(잡음만, 또는 다른 키의 신호), H1은 맞는 키의 신호가 있는 경우입니다.</dd>
+      <dt>Λ, Λ̂</dt><dd>탭 하나의 판정 통계량. 새 칩은 원시 샘플로 잡음 크기를 계산한 Λ, 고정 칩은 CIR에서 잡음 크기를 추정한 Λ̂를 씁니다. 둘 다 H0에서 χ²₂ 분포를 따르도록 만든 값입니다.</dd>
+      <dt>오검출 (Pfa)</dt><dd>H0인데 "맞는 키가 있다"고 판정할 확률. 지금 기준은 프래그먼트 하나당 이 값을 1e-3 이하로 둡니다.</dd>
+      <dt>오수락</dt><dd>H0인데 거리 측정 한 번(패킷)을 받아들일 확률. 제안 기준은 이 값을 10⁻⁶ 이하로 둡니다. FiRa 인증의 medium 수준입니다(high는 2⁻⁴⁸).</dd>
+      <dt>문턱 T</dt><dd>통계량이 이 값 이상이면 받아들입니다. 오검출 목표에서 공식으로 계산합니다(3장).</dd>
+      <dt>꼬리</dt><dd>분포에서 드물게 나오는 큰 값의 영역. 문턱은 H0 분포의 꼬리 먼 곳에 놓입니다.</dd>
+      <dt>P(X ≥ t)</dt><dd>값이 t 이상일 확률(여누적분포). 이 페이지의 꼬리 그래프는 모두 이 값을 로그 눈금으로 그립니다.</dd>
+      <dt>꼬리 비율</dt><dd>같은 t에서 실제 빈도 ÷ 이론 확률. 1이면 이론대로, 1보다 크면 꼬리가 무거워 실제 오검출이 설계보다 많습니다.</dd>
+      <dt>소프트 결합</dt><dd>8개 프래그먼트의 Λ를 같은 탭끼리 더해 한 번 판정하는 방법. 합은 H0에서 χ²₁₆ 분포를 따릅니다.</dd>
+      <dt>L90</dt><dd>맞는 키를 90% 확률로 받아들이는 가장 약한 수신 세기[dBm]. 낮을수록(더 음수일수록) 감도가 좋습니다.</dd>
+    </dl>
+  </figure>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="sec" id="b2">
+  <div class="sec-head"><span class="sec-no">2</span><h2>꼬리: 드문 큰 값이 얼마나 자주 나오나</h2></div>
+  <div class="prose stack">
+    <p>확률 분포를 그리면 자주 나오는 값이 가운데 몰려 있고, 끝으로 갈수록 확률이 가늘게 줄어듭니다. 이 끝부분을 <strong>꼬리</strong>라고 합니다. 확률 밀도 곡선 아래 넓이는 모두 합쳐 1인데, 통계에서는 이것을 무게 1인 질량을 축 위에 펼쳐 놓은 것으로 봅니다. 먼 끝에 놓인 질량이 기준 분포보다 많으면 <strong>꼬리가 무겁다</strong>고 말합니다.</p>
+    <p>오검출률은 잡음만 있을 때 통계량이 문턱을 넘을 확률, 곧 문턱 너머 꼬리의 넓이입니다. 그래서 꼬리가 기준보다 무거우면 실제 오검출률이 설계값보다 커집니다. 아래 그림에서 잡음이 복소 평면의 한 축으로 몰릴수록(비원형) 꼬리가 무거워지는 모습을 볼 수 있습니다. MD 방식이 틀린 키에서 깨진 이유가 이것이고, Λ의 백색화는 이 몰림을 원형으로 되돌려 꼬리를 기준선(파랑)에 맞춥니다.</p>
+  </div>
+  <div class="eq">원형 잡음 (Λ가 가정하는 분포):   P(Λ ≥ t) = e<sup>−t/2</sup>                <span class="c">χ²₂, t가 2 늘 때마다 e배씩 줄어듦</span>
+분산만으로 정규화한 비원형 잡음:   2|C|²/Q = (1+ρ)·X² + (1−ρ)·Y²     <span class="c">X, Y ~ N(0, 1), ρ = |Π|/Q (0: 원형, 1: 한 축에 몰림)</span>
+꼬리 비율 r(t) = P<sub>실제</sub>(≥ t) / P<sub>이론</sub>(≥ t)                     <span class="c">r &gt; 1 이면 오검출이 설계보다 많음</span></div>
+
+  <figure class="plate" id="t1">
+    <h3>잡음이 한 축에 몰릴수록 꼬리가 무거워진다</h3>
+    <div class="controls">
+      <div class="ctl">
+        <label class="ctl-label" for="t1-rho">비원형 정도 ρ</label>
+        <input type="range" id="t1-rho" min="0" max="0.99" step="0.01" value="0.82">
+        <span class="val" id="t1-rho-v">0.82</span>
+      </div>
+      <div class="seg" role="group" aria-label="참고 값" id="t1-seg">
+        <button type="button" data-r="0" aria-pressed="false">열잡음 (ρ ≈ 0)</button>
+        <button type="button" data-r="0.82" aria-pressed="true">틀린 키 −82 dBm (κ ≈ 0.82)</button>
+        <button type="button" data-r="0.98" aria-pressed="false">틀린 키 −40 dBm (κ ≈ 0.98)</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/></svg>기준 χ²₂ (원형 잡음, 백색화한 Λ)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/></svg>비원형 잡음, 분산만으로 정규화</span>
+    </div>
+    <div class="split">
+      <div class="main"><svg class="chart" id="t1-svg" viewBox="0 0 640 340" role="img" aria-label="비원형 정도에 따른 꼬리 확률"></svg></div>
+      <div class="side"><dl class="readout" id="t1-read"></dl></div>
+    </div>
+    <figcaption>세로축은 로그 눈금입니다. 두 선 모두 왼쪽 끝(t = 0)에서 1로 시작해 평균이 같지만, ρ를 키우면 주황 선이 기준보다 천천히 내려가 먼 곳에서 크게 벌어집니다. 문턱이 멀수록(1e-3 → 10⁻⁶) 차이도 커집니다. κ는 덤프에서 재는 비원형 지표로 ρ와 같은 뜻입니다. 이 그림은 잡음이 가우시안이라고 본 단순화이며, 실제 MD 판정식과 꼭 같지는 않습니다(MD 문서에서는 탭 하나의 꼬리가 4~10배 무거웠습니다).</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="sec" id="b3">
+  <div class="sec-head"><span class="sec-no">3</span><h2>문턱 수식: 목표에서 문턱까지</h2></div>
+  <div class="prose stack">
+    <p>신호 창에는 탭이 57개 있고, 그중 하나라도 문턱을 넘으면 받아들입니다. 탭 하나가 넘을 확률이 e<sup>−T/2</sup>이므로, 57개 중 하나라도 넘을 확률은 많아야 그 57배입니다(합집합 상한). 여기에 여유 1.5배를 두어 문턱을 정합니다. 패킷 기준에서는 같은 공식에 패킷 목표를 넣고, 소프트 결합이면 χ²₂ 대신 χ²₁₆을 씁니다.</p>
+  </div>
+  <div class="eq">프래그먼트 하나:   57 · e<sup>−T/2</sup> = Pfa / 1.5   →   T = 2 ln(57 / Pfa) + 2 ln 1.5
+소프트 결합 8개:   57 · N<sub>d</sub> · P(χ²₁₆ ≥ T) = 10⁻⁶ / 1.5          <span class="c">N_d = 피크 이동 후보 수</span>
+8개 모두 통과:     프래그먼트 예산 p = (10⁻⁶)<sup>1/8</sup> = 0.178        <span class="c">8개가 서로 독립이라 확률이 곱해짐</span></div>
+  <figure class="plate">
+    <div class="tbl-wrap"><table class="guide">
+      <thead><tr><th>기준</th><th>판정 단위</th><th>목표</th><th class="num">탭 하나의 꼬리 확률</th><th class="num">문턱 T</th></tr></thead>
+      <tbody>
+        <tr><td>지금 (MD 문서)</td><td>프래그먼트 1개</td><td>1e-3</td><td class="num">1.2e-5</td><td class="num">22.71</td></tr>
+        <tr><td>제안, RIF 1개 설정</td><td>프래그먼트 1개 = 패킷</td><td>10⁻⁶</td><td class="num">1.2e-8</td><td class="num">36.53</td></tr>
+        <tr><td>제안, 8개 모두 통과</td><td>패킷 (프래그먼트 문턱)</td><td>10⁻⁶</td><td class="num">2.1e-3</td><td class="num">12.35</td></tr>
+        <tr class="pick"><td>제안, 소프트 결합</td><td>패킷 (8개 합, χ²₁₆)</td><td>10⁻⁶</td><td class="num">1.2e-8</td><td class="num">69.61</td></tr>
+      </tbody>
+    </table></div>
+    <figcaption>"탭 하나의 꼬리 확률"은 문턱이 놓이는 깊이입니다. 소프트 결합은 탭 하나(경로 하나)당 1.2e-8이라는 아주 깊은 곳에 문턱이 있습니다. 이 깊이는 시뮬레이션으로 직접 셀 수 없어 6장의 방법으로 확인합니다.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="sec" id="b4">
+  <div class="sec-head"><span class="sec-no">4</span><h2>묶으면 왜 좋아지나: 잡음은 √K, 신호는 K</h2></div>
+  <div class="prose stack">
+    <p>프래그먼트 K개의 Λ를 더하면 잡음 부분의 평균은 2K, 흔들림(표준편차)은 2√K로 늘어납니다. 반면 맞는 키의 신호는 모든 프래그먼트에서 같은 탭에 나타나 K배로 쌓입니다. 그래서 목표를 1,000배 엄격하게 잡아도, K = 8이면 신호와 잡음의 간격이 더 크게 벌어져 약한 신호를 더 잘 받아들입니다.</p>
+  </div>
+  <div class="eq">H0:  S = Σ Λ<sub>f</sub> ~ χ²<sub>2K</sub>            평균 2K,  표준편차 2√K
+H1:  S ~ 비중심 χ²<sub>2K</sub>(K·λ)      평균 2K + K·λ              <span class="c">λ = 프래그먼트 하나의 신호 크기 (비중심도)</span>
+검출 확률 Pd = P(S ≥ T)                                  <span class="c">이상 모델: 신호 탭 하나, 프래그먼트끼리 같은 세기</span></div>
+
+  <figure class="plate" id="t2">
+    <h3>H0와 H1의 분포, 그리고 문턱</h3>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="묶는 프래그먼트 수" id="t2-k">
+        <button type="button" data-k="1" aria-pressed="false">K = 1</button>
+        <button type="button" data-k="2" aria-pressed="false">K = 2</button>
+        <button type="button" data-k="4" aria-pressed="false">K = 4</button>
+        <button type="button" data-k="8" aria-pressed="true">K = 8</button>
+      </div>
+      <div class="ctl">
+        <label class="ctl-label" for="t2-lam">프래그먼트 하나의 신호 λ</label>
+        <input type="range" id="t2-lam" min="0" max="20" step="0.25" value="8">
+        <span class="val" id="t2-lam-v">8.0 dB</span>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="muteds" stroke-width="2"/></svg>H0: 잡음만 (χ²<sub>2K</sub>)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/></svg>H1: 맞는 키</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="8" y1="0" x2="8" y2="12" class="inks" stroke-width="2"/></svg>문턱 (10⁻⁶, K = 1이면 1e-3도 점선)</span>
+    </div>
+    <div class="split">
+      <div class="main"><svg class="chart" id="t2-svg" viewBox="0 0 640 300" role="img" aria-label="H0와 H1 분포와 문턱"></svg></div>
+      <div class="side"><dl class="readout" id="t2-read"></dl></div>
+    </div>
+    <figcaption>K를 1에서 8로 바꾸면 회색(잡음) 분포는 오른쪽으로 옮겨 가며 퍼지고 문턱도 함께 오르지만, 파랑(신호) 분포는 그보다 빨리 오른쪽으로 갑니다. 파란 면적(문턱 너머 H1)이 검출 확률입니다. 문턱 너머의 회색 면적은 10⁻⁶이라 그림에서는 보이지 않습니다.</figcaption>
+  </figure>
+
+  <figure class="plate" id="t3">
+    <h3>신호 크기에 따른 검출 확률: 판정 방식별 (이상 모델)</h3>
+    <div class="legend" id="t3-legend"></div>
+    <svg class="chart" id="t3-svg" viewBox="0 0 760 330" role="img" aria-label="프래그먼트 신호 크기에 따른 판정 방식별 검출 확률"></svg>
+    <figcaption id="t3-cap"></figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="sec" id="b5">
+  <div class="sec-head"><span class="sec-no">5</span><h2>시뮬레이션 결과: 같은 덤프 모델, 두 기준</h2></div>
+  <div class="prose stack">
+    <p>4장은 신호 탭 하나만 본 이상 모델입니다. 아래는 신호 창 57탭 전체, CFO, 고정 칩의 잡음 추정까지 넣은 통계 모델로 패킷을 만들어 판정한 결과입니다(32심볼, AWGN, 세기당 4,000패킷). 회색 점선 "지금"만 프래그먼트 1e-3 기준이고, 나머지는 모두 패킷 10⁻⁶을 지키는 방식입니다.</p>
+  </div>
+  <figure class="plate" id="r1">
+    <h3>패킷 검출 확률</h3>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="칩" id="r1-chip">
+        <button type="button" data-chip="c" aria-pressed="true">고정 칩 (Λ̂)</button>
+        <button type="button" data-chip="x" aria-pressed="false">새 칩 (Λ)</button>
+      </div>
+    </div>
+    <div class="legend" id="r1-legend"></div>
+    <svg class="chart" id="r1-svg" viewBox="0 0 760 340" role="img" aria-label="판정 방식별 패킷 검출 확률"></svg>
+    <figcaption id="r1-cap"></figcaption>
+    <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r1-tbl"></table></div></details>
+  </figure>
+  <figure class="plate">
+    <h3>L90 요약 [dBm]</h3>
+    <div class="tbl-wrap"><table class="guide">
+      <thead><tr><th>구성</th><th>기준</th><th class="num">고정 칩 (Λ̂)</th><th class="num">새 칩 (Λ)</th></tr></thead>
+      <tbody>
+        <tr><td>RIF 8개, 프래그먼트마다 판정</td><td>지금: 프래그먼트 1e-3 (패킷 보장 없음)</td><td class="num">−109.6</td><td class="num">−112.0</td></tr>
+        <tr class="pick"><td>RIF 8개, 소프트 결합 + 일관성 검사</td><td>제안: 패킷 10⁻⁶</td><td class="num">−116.5</td><td class="num">−117.3</td></tr>
+        <tr><td>RIF 8개, 8개 중 6개 이상</td><td>제안: 패킷 10⁻⁶</td><td class="num">−112.5</td><td class="num">−114.1</td></tr>
+        <tr><td>RIF 1개 설정 (32심볼)</td><td>지금: 1e-3</td><td class="num">−109.6</td><td class="num">−112.1</td></tr>
+        <tr><td>RIF 1개 설정 (32심볼)</td><td>제안: 10⁻⁶</td><td class="num">−106.1</td><td class="num">−110.2</td></tr>
+      </tbody>
+    </table></div>
+    <figcaption>RIF가 8개면 기준을 바꿔도 감도가 7 dB 가까이 좋아집니다. RIF가 1개뿐인 설정은 묶을 증거가 없어서, 목표가 엄격해진 만큼 손해를 봅니다(고정 칩 3.5 dB).</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="sec" id="b6">
+  <div class="sec-head"><span class="sec-no">6</span><h2>10⁻⁶을 어떻게 확인하나</h2></div>
+  <div class="prose stack">
+    <p>지금 기준(1e-3)은 원리상 셀 수 있지만, 실제로는 셀 수 있는 표본 수에서 판정이 흔들립니다. 제안 기준(10⁻⁶)은 아예 셀 수 없습니다. 그래서 제안 기준은 오검출 건수 대신 <strong>셀 수 있는 근거</strong>로 확인합니다. 소프트 결합이면 측정 가능한 깊이까지의 꼬리 비율, 그리고 프래그먼트끼리의 독립성입니다.</p>
+  </div>
+  <figure class="plate" id="v1">
+    <h3>지금 기준의 문제: 정상 판정기도 자주 떨어진다</h3>
+    <div class="legend" id="v1-legend"></div>
+    <svg class="chart" id="v1-svg" viewBox="0 0 760 320" role="img" aria-label="조건당 표본 수에 따른 합격 확률"></svg>
+    <figcaption>합격 기준이 "프래그먼트 Pfa의 단측 95% 상한 ≤ 1e-3"일 때, 참 오검출률이 목표 아래인 판정기가 합격할 확률입니다. 모델이 예상하는 참값은 2.5e-4~8.5e-4인데, 7e-4~8e-4이면 조건당 30,000개에서도 합격 확률이 24~47%입니다. 기준을 지키는 판정기도 절반 넘게 떨어지는 셈입니다.</figcaption>
+  </figure>
+
+  <div class="eq">경로 하나의 꼬리 깊이 (소프트, 10⁻⁶):   10⁻⁶ / 1.5 / 57 = 1.2e-8
+측정 가능한 깊이 (H0 30,000개 = 3,750패킷 × 57경로):   약 1e-4   <span class="c">그보다 깊으면 기대 건수가 20건 아래</span>
+실제 오수락 = 설계값 × r(T)   →   r(T) ≤ 1.5 이면 10⁻⁶ 안            <span class="c">r(T): 문턱 깊이의 꼬리 비율</span></div>
+
+  <figure class="plate" id="v2">
+    <h3>측정하는 곳과 외삽하는 곳</h3>
+    <div class="legend">
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="inks" stroke-width="2"/></svg>이론 P(χ²₁₆ ≥ t)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s1f"/></svg>측정, Λ (같은 채널 멀티패스, −82.5 dBm)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>측정, Λ̂ (같은 조건)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><rect x="0" y="1" width="16" height="10" class="washs1"/></svg>표본으로 확인 가능한 깊이</span>
+    </div>
+    <svg class="chart" id="v2-svg" viewBox="0 0 760 340" role="img" aria-label="소프트 합의 꼬리 확률: 측정 구간과 외삽 구간"></svg>
+    <figcaption>음영 구간에서는 측정점이 이론선 위에 거의 그대로 놓입니다. 문턱 69.61(경로당 1.2e-8)까지는 네 자릿수를 이론선으로 이어 가야 하므로, 측정 구간 안에서 꼬리 비율이 깊어질수록 커지는지를 보는 것이 핵심입니다.</figcaption>
+  </figure>
+
+  <figure class="plate" id="v3">
+    <h3>꼬리 비율과 깊이 (H0, 소프트 합, 경로 34.2만 개)</h3>
+    <div class="legend" id="v3-legend"></div>
+    <svg class="chart" id="v3-svg" viewBox="0 0 760 320" role="img" aria-label="꼬리 확률 깊이에 따른 꼬리 비율"></svg>
+    <figcaption>음영은 합격 범위 0.7~1.3, 점선은 문턱 여유가 감당하는 한계 1.5입니다. 프래그먼트마다 채널이 다르면 비율이 1 근처이거나 그 아래입니다. 실제 패킷처럼 8개가 같은 채널을 공유하면 Λ가 깊어질수록 조금 올라갑니다(1e-4에서 1.20~1.23). 다만 1e-4 지점은 기대 건수가 34건이라 측정 잡음이 ±17%이므로, LLS 멀티패스 덤프로 같은 확인을 해야 결론이 납니다.</figcaption>
+    <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="v3-tbl"></table></div></details>
+  </figure>
+</section>
+
+<!-- ============================================================ 7 -->
+<section class="sec" id="b7">
+  <div class="sec-head"><span class="sec-no">7</span><h2>MD 방식의 평가가 어떻게 바뀌나</h2></div>
+  <div class="prose stack">
+    <p>지금 기준에서 MD 방식이 탈락한 이유는 "중간 세기 틀린 키에서 프래그먼트 오검출이 최대 5.6e-2, 목표의 56배"였습니다. 패킷 기준에서 MD 방식도 8개 모두 통과로 묶으면, 프래그먼트 오검출 p가 8제곱으로 작아집니다. 그래서 탈락 이유가 "Pfa 실패"에서 "보장이 없고, 감도가 나쁘다"로 바뀝니다.</p>
+  </div>
+  <div class="eq">MD 방식, 8개 모두 통과:   P<sub>패킷</sub> = E[ p(채널)<sup>8</sup> ]      <span class="c">같은 패킷의 8개는 같은 채널을 공유</span>
+p⁸ = 10⁻⁶   ⇔   p = 0.178                          <span class="c">한 채널에서 프래그먼트 오검출이 0.178을 넘으면 그 채널은 목표 초과</span></div>
+  <figure class="plate" id="m1">
+    <h3>프래그먼트 오검출 p와 패킷 오수락 p⁸</h3>
+    <div class="legend">
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="inks" stroke-width="2"/></svg>p⁸ (8개 모두 통과)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>MD, 같은 채널 멀티패스 −42.5 dBm: 채널별 p의 분위수</span>
+      <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s3f"/></svg>MD, AWGN 최악 조건 (−82.5 dBm)</span>
+    </div>
+    <svg class="chart" id="m1-svg" viewBox="0 0 760 340" role="img" aria-label="프래그먼트 오검출과 패킷 오수락의 관계"></svg>
+    <figcaption>AWGN에서는 MD 방식도 8개를 묶으면 10⁻⁶ 아래로 크게 내려갑니다. 같은 채널을 공유하는 멀티패스에서는 채널마다 p가 달라, 평균은 8.5e-9이지만 가장 나쁜 채널(p = 0.175)은 8.8e-7로 한계에 거의 닿습니다. 모델에서 본 2,000개 채널 밖의 더 나쁜 채널을 공식으로 막을 방법이 없다는 점이 MD 방식의 약점입니다. 감도도 8개 모두 통과 기준 −110.0 dBm으로, Λ̂ 소프트 결합(−116.7)보다 6.7 dB 나쁩니다.</figcaption>
+  </figure>
+  <figure class="plate">
+    <div class="tbl-wrap"><table class="guide">
+      <thead><tr><th>방식</th><th>지금 기준의 평가</th><th>제안 기준의 평가</th></tr></thead>
+      <tbody>
+        <tr><td>MD 규칙</td><td>탈락: 프래그먼트 오검출 최대 5.6e-2</td><td>8개 모두 통과면 모델상 10⁻⁶ 아래. 보장 없음, 채널에 따라 1,000배 변동, 감도 −110.0 dBm, 소프트 결합 불가</td></tr>
+        <tr><td>Λ̂ (고정 칩)</td><td>통과: 오검출 7.3e-4 이하, 감도 −109.6 dBm</td><td>소프트 결합으로 10⁻⁶, 감도 −116.7 dBm. 잡음 추정 가정에 기대므로 깊은 꼬리 확인 필요</td></tr>
+        <tr><td>Λ (새 칩)</td><td>통과: 오검출 8.5e-4 이하, 감도 −112.0 dBm</td><td>소프트 결합으로 10⁻⁶, 감도 −117.6 dBm. 꼬리에 이론 근거가 가장 강함</td></tr>
+      </tbody>
+    </table></div>
+  </figure>
+</section>
+
+<!-- ============================================================ 8 -->
+<section class="sec" id="b8">
+  <div class="sec-head"><span class="sec-no">8</span><h2>바뀌는 범위와 남은 확인</h2></div>
+  <div class="split">
+    <figure class="plate main" style="flex-basis:420px">
+      <h3>고칠 곳</h3>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>대상</th><th>내용</th><th class="num">1e-3 표기</th></tr></thead>
+        <tbody>
+          <tr><td>설계 문서</td><td>1장 요구사항을 패킷 10⁻⁶으로, 프래그먼트 문턱 22.71은 구성 요소로, MD 결론 재서술</td><td class="num">15곳</td></tr>
+          <tr><td>검증 계획</td><td>프래그먼트 판정은 진단으로, MD 패킷 평가와 같은 채널 꼬리 검사 추가, 점수 방식 비교 재정의</td><td class="num">12곳</td></tr>
+          <tr><td>해설 페이지</td><td>첫 요약의 "56배", 2·3·7장의 "목표 1e-3" 선을 "프래그먼트 구성 요소 기준"으로</td><td class="num">25곳</td></tr>
+          <tr><td>MATLAB 도구</td><td>기본값은 유지, 한 번에 설정하는 <code>'Profile', 'fira-medium'</code> 추가</td><td class="num">–</td></tr>
+          <tr><td>MD 원본</td><td>수정하지 않음. 설계 문서에 기준 대체를 적음</td><td class="num">–</td></tr>
+        </tbody>
+      </table></div>
+    </figure>
+    <figure class="plate main" style="flex-basis:420px">
+      <h3>남은 확인</h3>
+      <dl class="gloss">
+        <dt>FiRa 원문</dt><dd>10⁻⁶이 측정 1회 기준인지, 연속 N회 기준인지. 지금 근거는 FiRa 인증을 인용한 논문입니다.</dd>
+        <dt>RIF 1개 설정</dt><dd>제품에서 실제로 쓰면 그 설정의 고정 칩 감도가 3.5 dB 나빠집니다.</dd>
+        <dt>점수 방식</dt><dd>일반 모드의 점수 방식이 RIF 8개를 어떻게 묶는지 알아야 패킷 단위로 비교할 수 있습니다.</dd>
+        <dt>깊은 꼬리</dt><dd>같은 채널 멀티패스 LLS 덤프로 P = 1e-4까지 꼬리 비율을 확인합니다. 1.3을 넘으면 표본을 늘리거나 여유를 키웁니다.</dd>
+        <dt>범위</dt><dd>FiRa 오수락은 거리 단축(첫 경로)까지 포함합니다. 이 판정기는 "맞는 키 신호가 있다"를 보장하는 필요조건입니다.</dd>
+      </dl>
+    </figure>
+  </div>
+  <div class="note">
+    <b>권장</b>
+    <span>패킷 오수락 10⁻⁶을 최상위 요구사항으로 두고 <code>'PfaTarget'</code>으로 바꿀 수 있게 둡니다. 프래그먼트 1e-3 분석은 패킷 근거의 기초이자 MD와의 비교를 위한 진단으로 남깁니다. 위 네 가지 확인은 "미확정"으로 표시해 두고 진행할 수 있습니다.</span>
+  </div>
+</section>
+
+<footer class="foot">
+  <p><strong>수치의 출처.</strong> 4장은 이상 모델(신호 탭 하나, 가우시안 잡음)을 페이지 안에서 계산한 값입니다. 5~7장은 lambda_patch/model의 통계 모델(<code>medium_level.py</code>, <code>policy_k8.py</code>, 같은 채널 시뮬레이션) 결과이며, MATLAB이나 LLS로 아직 확인하지 않았습니다. dBm은 MD 문서의 환산을 쓴 모델 값입니다.</p>
+  <p><strong>FiRa 수치.</strong> medium 10⁻⁶, high 2⁻⁴⁸은 <a href="https://arxiv.org/abs/2312.03964">Luo 외, "Secure Ranging with IEEE 802.15.4z HRP UWB" (arXiv 2312.03964)</a> VI-C절이 FiRa Certification Program을 인용한 값입니다. FiRa 원문은 회원 전용이라 직접 확인하지 못했습니다.</p>
+  <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(MD 방식), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code> 9장(패킷 판정), <code>lambda_patch/TEST_PLAN.md</code>. 2026-10-13 기준.</p>
+  <p>관련 페이지: <a href="index.html">RIF Λ 판정기</a>(전체 해설), <a href="consistency.html">RIF 일관성 검사 비교</a>(결정 6 자료). 결정 기록은 저장소의 <code>lambda_patch/DECISIONS.md</code>에 있습니다.</p>
+</footer>
+</div>
+
+<div id="tip" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  /* ------------------------------------------------------------------ helpers */
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(SVGNS, tag);
+    if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function txt(parent, x, y, s, cls, anchor) {
+    var t = el('text', {x: x, y: y, 'class': cls || 'tick'}, parent);
+    if (anchor) t.setAttribute('text-anchor', anchor);
+    t.textContent = s;
+    return t;
+  }
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function fmtE(x) {
+    if (x === 0) return '0';
+    var e = Math.floor(Math.log10(x)), m = x / Math.pow(10, e);
+    if (m >= 9.95) { m = 1; e += 1; }
+    return m.toFixed(1) + 'e' + e;
+  }
+  function fmtDb(x) { return (x < 0 ? '−' : '') + Math.abs(x).toFixed(1); }
+  function minus(s) { return String(s).replace(/-/g, '−'); }
+  function lin(d0, d1, r0, r1) { return function (v) { return r0 + (v - d0) / (d1 - d0) * (r1 - r0); }; }
+
+  /* tooltip */
+  var tip = document.getElementById('tip');
+  function showTip(evt, rows, title) {
+    clear(tip);
+    if (title) { var h = document.createElement('div'); h.className = 'tl'; h.textContent = title; tip.appendChild(h); }
+    rows.forEach(function (r) {
+      var row = document.createElement('div'); row.className = 'row';
+      if (r.key) row.appendChild(r.key());
+      var v = document.createElement('span'); v.className = 'tv'; v.textContent = r.v; row.appendChild(v);
+      if (r.l) { var l = document.createElement('span'); l.className = 'tl'; l.textContent = r.l; row.appendChild(l); }
+      tip.appendChild(row);
+    });
+    tip.hidden = false;
+    var x = evt.clientX + 14, y = evt.clientY + 14;
+    var w = tip.offsetWidth, h2 = tip.offsetHeight;
+    if (x + w > window.innerWidth - 8) x = evt.clientX - w - 14;
+    if (y + h2 > window.innerHeight - 8) y = evt.clientY - h2 - 14;
+    tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+  }
+  function hideTip() { tip.hidden = true; }
+  function keySvg(shape, cls) {
+    return function () {
+      var s = document.createElementNS(SVGNS, 'svg'); s.setAttribute('viewBox', '0 0 14 10');
+      if (shape === 'line') el('line', {x1: 0, y1: 5, x2: 14, y2: 5, 'class': cls, 'stroke-width': 2}, s);
+      else if (shape === 'sq') el('rect', {x: 3, y: 1, width: 8, height: 8, 'class': cls}, s);
+      else if (shape === 'tri') el('path', {d: 'M7 0.5 L11.5 9 L2.5 9 Z', 'class': cls}, s);
+      else if (shape === 'tick') el('line', {x1: 7, y1: 0, x2: 7, y2: 10, 'class': cls, 'stroke-width': 2}, s);
+      else el('circle', {cx: 7, cy: 5, r: 3.5, 'class': cls}, s);
+      return s;
+    };
+  }
+  function marker(parent, shape, x, y, cls) {
+    if (shape === 'sqo') return el('rect', {x: x - 4.5, y: y - 4.5, width: 9, height: 9, rx: 1, 'class': 'hollow1'}, parent);
+    if (shape === 'sq') return el('rect', {x: x - 4.5, y: y - 4.5, width: 9, height: 9, rx: 1, 'class': cls + ' ring'}, parent);
+    if (shape === 'tri') return el('path', {d: 'M' + x + ' ' + (y - 5.5) + ' L' + (x + 5) + ' ' + (y + 4) + ' L' + (x - 5) + ' ' + (y + 4) + ' Z', 'class': cls + ' ring'}, parent);
+    return el('circle', {cx: x, cy: y, r: 4.5, 'class': cls + ' ring'}, parent);
+  }
+
+  
+    function erfc(x) {
+    var z = Math.abs(x), t = 1 / (1 + 0.5 * z);
+    var r = t * Math.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 +
+            t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277)))))))));
+    return x >= 0 ? r : 2 - r;
+  }
+
+  var PKD = {"h1":{"dBm":[-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106],"n":[3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996],"x":{"soft":[0.0283,0.0976,0.277,0.5631,0.8388,0.975,0.9987,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"k2":[0.0003,0.0,0.0008,0.0015,0.009,0.0628,0.242,0.6289,0.9177,0.9952,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"and":[0.0,0.0,0.0,0.0,0.0013,0.0085,0.0561,0.243,0.535,0.8318,0.9652,0.9965,1.0,1.0,1.0,1.0,1.0],"single":[0.0,0.0,0.0003,0.0008,0.0028,0.0048,0.0135,0.044,0.1131,0.2472,0.5145,0.751,0.9392,0.9915,0.9997,1.0,1.0],"cur":[0.004,0.0083,0.015,0.0288,0.0566,0.1086,0.1939,0.3481,0.5323,0.74,0.9069,0.9762,0.998,0.9997,1.0,1.0,1.0]},"c":{"soft":[0.0088,0.0333,0.1059,0.2795,0.5641,0.8586,0.9807,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"k2":[0.0,0.0,0.0,0.0003,0.0003,0.003,0.0323,0.1594,0.4532,0.8168,0.9835,0.9995,1.0,1.0,1.0,1.0,1.0],"and":[0.0,0.0,0.0,0.0,0.0,0.0003,0.0063,0.0498,0.1889,0.4737,0.786,0.9439,0.9952,0.9995,1.0,1.0,1.0],"single":[0.0,0.0,0.0,0.0,0.0,0.0003,0.0003,0.0018,0.0028,0.0095,0.0285,0.0648,0.1547,0.3043,0.5295,0.771,0.9249],"cur":[0.0008,0.0018,0.0048,0.007,0.0143,0.0233,0.047,0.0933,0.1784,0.2985,0.494,0.6754,0.8616,0.9565,0.9925,0.9992,1.0]}},"pol":{"dBm":[-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106,-105,-104],"n":[3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000],"x":{"strict":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0093,0.0917,0.453,0.832,0.9847,0.9993,1.0,1.0,1.0,1.0,1.0],"soft1":[0.0847,0.225,0.508,0.7977,0.9527,0.9863,0.9967,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]},"c":{"strict":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0043,0.057,0.2967,0.717,0.9403,0.9937,1.0,1.0,1.0],"soft1":[0.0253,0.0883,0.2577,0.5577,0.83,0.9657,0.9967,0.999,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]}}};
+
+  /* ------------------------------------------------------------------ math */
+  var LF = [0];                                   /* log factorial */
+  for (var i = 1; i <= 3000; i++) LF.push(LF[i - 1] + Math.log(i));
+  function chi2tail(T, K) {                       /* P(chi-square, 2K DOF >= T) */
+    if (T <= 0) return 1;
+    var h = T / 2, s = 0, term = 1;
+    for (var j = 0; j < K; j++) { if (j) term *= h / j; s += term; }
+    return Math.min(1, Math.exp(-h) * s);
+  }
+  function chi2pdf(x, K) {
+    if (x <= 0) return 0;
+    return Math.exp((K - 1) * Math.log(x) - x / 2 - K * Math.LN2 - LF[K - 1]);
+  }
+  function poisRange(m) {
+    var sd = Math.sqrt(Math.max(m, 1));
+    return [Math.max(0, Math.floor(m - 12 * sd)), Math.ceil(m + 12 * sd) + 1];
+  }
+  function ncTail(T, K, lam) {                    /* P(noncentral chi-square 2K DOF, noncentrality lam >= T) */
+    var m = lam / 2;
+    if (m <= 1e-12) return chi2tail(T, K);
+    var r = poisRange(m), h = T / 2, s = 0, tail = chi2tail(T, K + r[0]);
+    for (var j = r[0]; j <= r[1]; j++) {
+      if (j > r[0]) tail += Math.exp(-h + (K + j - 1) * Math.log(h) - LF[K + j - 1]);   /* P(chi2_2n > T) grows by one Poisson term */
+      s += Math.exp(-m + j * Math.log(m) - LF[j]) * tail;
+    }
+    return Math.min(1, s);
+  }
+  function ncPdf(x, K, lam) {
+    var m = lam / 2;
+    if (m <= 1e-12) return chi2pdf(x, K);
+    var r = poisRange(m), s = 0;
+    for (var j = r[0]; j <= r[1]; j++) s += Math.exp(-m + j * Math.log(m) - LF[j]) * chi2pdf(x, K + j);
+    return s;
+  }
+  function solveT(K, nh, target) {                /* nh * P(chi2_2K >= T) = target */
+    var lo = 0, hi = 2 * K + 400;
+    for (var it = 0; it < 100; it++) { var mid = 0.5 * (lo + hi); if (nh * chi2tail(mid, K) > target) lo = mid; else hi = mid; }
+    return hi;
+  }
+  /* P((1+rho) X^2 + (1-rho) Y^2 >= t), X, Y ~ N(0,1): power normalized by the variance only (non-circular noise) */
+  function ncircTail(t, rho) {
+    var a = 1 + rho, b = 1 - rho;
+    if (t <= 0) return 1;
+    if (b < 1e-9) return erfc(Math.sqrt(t / (2 * a)));
+    var Y = Math.sqrt(t / b), n = 600, h = Y / n, s = 0;
+    for (var k = 0; k <= n; k++) {
+      var y = k * h, u = (t - b * y * y) / a;
+      var g = u <= 0 ? 1 : erfc(Math.sqrt(u / 2));
+      var f = Math.exp(-y * y / 2) / Math.sqrt(2 * Math.PI) * g;
+      s += f * (k === 0 || k === n ? 1 : (k % 2 ? 4 : 2));
+    }
+    return Math.min(1, 2 * s * h / 3 + erfc(Y / Math.SQRT2));
+  }
+  var W = 57, MARG = 1.5;
+  var T_FRAG3 = 2 * Math.log(W / 1e-3) + 2 * Math.log(MARG);   /* 22.71 */
+  var T_FRAG6 = 2 * Math.log(W / 1e-6) + 2 * Math.log(MARG);   /* 36.53 */
+
+  /* ------------------------------------------------------------------ generic line chart */
+  /* cfg: {W,H,ml,mr,mt,mb, x:{min,max,log,ticks,fmt,title}, y:{...}, series:[{name,pts,line,dash,width,mk,mc,key,noLine}],
+          bands:[{x0,x1,y0,y1,cls}], vlines:[{x,cls,dash,label}], hlines:[{y,cls,dash,label,anchor}], tipTitle(x), tipVal(v)} */
+  function lineChart(svg, cfg) {
+    clear(svg);
+    var Wd = cfg.W, H = cfg.H, ml = cfg.ml, mr = cfg.mr, mt = cfg.mt, mb = cfg.mb;
+    svg.setAttribute('viewBox', '0 0 ' + Wd + ' ' + H);
+    function tx(v) { return cfg.x.log ? Math.log10(v) : v; }
+    function ty(v) { return cfg.y.log ? Math.log10(v) : v; }
+    var X0 = lin(tx(cfg.x.min), tx(cfg.x.max), ml, Wd - mr), Y0 = lin(ty(cfg.y.min), ty(cfg.y.max), H - mb, mt);
+    var X = function (v) { return X0(tx(v)); }, Y = function (v) { return Y0(ty(Math.max(v, cfg.y.min))); };
+    (cfg.bands || []).forEach(function (b) {
+      var x0 = X(b.x0 !== undefined ? b.x0 : cfg.x.min), x1 = X(b.x1 !== undefined ? b.x1 : cfg.x.max);
+      var y0 = Y(b.y0 !== undefined ? b.y0 : cfg.y.min), y1 = Y(b.y1 !== undefined ? b.y1 : cfg.y.max);
+      el('rect', {x: Math.min(x0, x1), y: Math.min(y0, y1), width: Math.abs(x1 - x0), height: Math.abs(y1 - y0), 'class': b.cls || 'washs1'}, svg);
+    });
+    cfg.y.ticks.forEach(function (v) {
+      el('line', {x1: ml, x2: Wd - mr, y1: Y(v), y2: Y(v), 'class': 'gl'}, svg);
+      txt(svg, ml - 8, Y(v) + 4, cfg.y.fmt(v), 'tick', 'end');
+    });
+    cfg.x.ticks.forEach(function (v) { txt(svg, X(v), H - mb + 18, cfg.x.fmt(v), 'tick', 'middle'); });
+    el('line', {x1: ml, x2: Wd - mr, y1: H - mb, y2: H - mb, 'class': 'axl'}, svg);
+    if (cfg.x.title) txt(svg, (ml + Wd - mr) / 2, H - 6, cfg.x.title, 'axt', 'middle');
+    if (cfg.y.title) { var ym = (mt + H - mb) / 2; txt(svg, 14, ym, cfg.y.title, 'axt', 'middle').setAttribute('transform', 'rotate(-90 14 ' + ym + ')'); }
+    (cfg.hlines || []).forEach(function (h) {
+      var l = el('line', {x1: ml, x2: Wd - mr, y1: Y(h.y), y2: Y(h.y), 'class': h.cls || 'ink2s', 'stroke-width': 1.2}, svg);
+      if (h.dash) l.setAttribute('stroke-dasharray', h.dash);
+      if (h.label) txt(svg, h.anchor === 'start' ? ml + 6 : Wd - mr - 4, Y(h.y) + (h.below ? 15 : -6), h.label, 'lab', h.anchor === 'start' ? 'start' : 'end');
+    });
+    (cfg.vlines || []).forEach(function (v) {
+      var l = el('line', {x1: X(v.x), x2: X(v.x), y1: mt, y2: H - mb, 'class': v.cls || 'ink2s', 'stroke-width': 1.2}, svg);
+      if (v.dash) l.setAttribute('stroke-dasharray', v.dash);
+      if (v.label) txt(svg, X(v.x) + (v.left ? -5 : 5), mt + 12 + (v.dy || 0), v.label, 'lab', v.left ? 'end' : 'start');
+    });
+    cfg.series.forEach(function (s) {
+      if (s.noLine) return;
+      var d = '', pen = false;
+      s.pts.forEach(function (p) {
+        var ok = isFinite(p[1]) && (!cfg.y.log || p[1] > 0);
+        if (!ok) { pen = false; return; }
+        d += (pen ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1); pen = true;
+      });
+      var pth = el('path', {d: d, 'class': 'line2 ' + s.line}, svg);
+      if (s.dash) pth.setAttribute('stroke-dasharray', s.dash);
+      if (s.width) pth.setAttribute('stroke-width', s.width);
+    });
+    cfg.series.forEach(function (s) {
+      if (!s.mk) return;
+      s.pts.forEach(function (p) { if (isFinite(p[1]) && (!cfg.y.log || p[1] > 0)) marker(svg, s.mk, X(p[0]), Y(p[1]), s.mc); });
+    });
+    (cfg.labels || []).forEach(function (L) { txt(svg, X(L.x) + (L.dx || 0), Y(L.y) + (L.dy || 0), L.text, L.cls || 'labs', L.anchor || 'start'); });
+    /* hover: nearest x of the union of points */
+    var xs = {};
+    cfg.series.forEach(function (s) { s.pts.forEach(function (p) { xs[p[0]] = 1; }); });
+    var xl = Object.keys(xs).map(Number).sort(function (a, b) { return a - b; });
+    var xh = el('line', {x1: 0, x2: 0, y1: mt, y2: H - mb, 'class': 'xh', visibility: 'hidden'}, svg);
+    var hit = el('rect', {x: ml, y: mt, width: Wd - ml - mr, height: H - mt - mb, 'class': 'hit'}, svg);
+    hit.addEventListener('pointermove', function (ev) {
+      var bb = svg.getBoundingClientRect(), sx = (ev.clientX - bb.left) / bb.width * Wd, best = xl[0], bd = 1e9;
+      xl.forEach(function (x) { var dd = Math.abs(X(x) - sx); if (dd < bd) { bd = dd; best = x; } });
+      xh.setAttribute('x1', X(best)); xh.setAttribute('x2', X(best)); xh.setAttribute('visibility', 'visible');
+      var rows = [];
+      cfg.series.forEach(function (s) {
+        var p = null, pd = 1e99;
+        s.pts.forEach(function (q) { var dd = Math.abs(tx(q[0]) - tx(best)); if (dd < pd) { pd = dd; p = q; } });
+        if (p && pd < 1e-9 + (cfg.tipTol || 0)) rows.push({key: keySvg(s.key || 'line', s.keyCls || s.mc || s.line.split(' ')[0]), v: cfg.tipVal(p[1]), l: s.name});
+      });
+      showTip(ev, rows, cfg.tipTitle(best));
+    });
+    hit.addEventListener('pointerleave', function () { xh.setAttribute('visibility', 'hidden'); hideTip(); });
+    return {X: X, Y: Y};
+  }
+  function legend(id, series) {
+    var lg = document.getElementById(id); clear(lg);
+    series.forEach(function (s) {
+      var span = document.createElement('span'); span.className = 'key';
+      var k = document.createElementNS(SVGNS, 'svg'); k.setAttribute('viewBox', '0 0 16 12');
+      if (!s.noLine) {
+        var ln = el('line', {x1: 0, y1: 6, x2: 16, y2: 6, 'class': s.line, 'stroke-width': 2}, k);
+        if (s.dash) ln.setAttribute('stroke-dasharray', s.dash);
+      }
+      if (s.mk === 'sq') el('rect', {x: 4.5, y: 2.5, width: 7, height: 7, 'class': s.mc}, k);
+      else if (s.mk === 'sqo') el('rect', {x: 4.5, y: 2.5, width: 7, height: 7, 'class': 'hollow1', style: 'stroke-width:1.5'}, k);
+      else if (s.mk === 'circle') el('circle', {cx: 8, cy: 6, r: 3.5, 'class': s.mc}, k);
+      else if (s.mk === 'tri') el('path', {d: 'M8 1.5 L12.5 10 L3.5 10 Z', 'class': s.mc}, k);
+      span.appendChild(k); span.appendChild(document.createTextNode(s.name));
+      lg.appendChild(span);
+    });
+  }
+  function logTicks(lo, hi, step) { var a = []; for (var e = lo; e <= hi; e += (step || 1)) a.push(Math.pow(10, e)); return a; }
+  function fmtPow(v) { var e = Math.round(Math.log10(v)); return e === 0 ? '1' : '1e' + minus(e); }
+  function segWire(id, attr, cb) {
+    Array.prototype.forEach.call(document.querySelectorAll('#' + id + ' button'), function (b) {
+      b.addEventListener('click', function () {
+        Array.prototype.forEach.call(document.querySelectorAll('#' + id + ' button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        cb(b.getAttribute(attr));
+      });
+    });
+  }
+  function readout(id, rows) {
+    var rd = document.getElementById(id); clear(rd);
+    rows.forEach(function (r) {
+      if (r === 'sep') { var s = document.createElement('div'); s.className = 'sep'; rd.appendChild(s); return; }
+      var a = document.createElement('dt'); a.textContent = r[0]; rd.appendChild(a);
+      var b = document.createElement('dd'); b.textContent = r[1]; rd.appendChild(b);
+    });
+  }
+
+  /* ------------------------------------------------------------------ 1: packet diagram */
+  function b1Draw() {
+    var g = document.getElementById('b1-boxes'), g2 = document.getElementById('b1-now');
+    var x0 = 336, w = 60, gap = (548 - 8 * w) / 7;
+    for (var f = 0; f < 8; f++) {
+      var x = x0 + f * (w + gap);
+      el('rect', {x: x, y: 40, width: w, height: 56, rx: 6, 'class': 'bx'}, g);
+      var t1 = el('text', {x: x + w / 2, y: 64, 'text-anchor': 'middle', 'class': 'm'}, g); t1.textContent = 'RIF ' + (f + 1);
+      var t2 = el('text', {x: x + w / 2, y: 84, 'text-anchor': 'middle', 'class': 'sub'}, g); t2.textContent = 'Λ' + String.fromCharCode(8321 + f);
+      el('rect', {x: x, y: 154, width: w, height: 34, rx: 6, 'class': 'bx'}, g2);
+      var t3 = el('text', {x: x + w / 2, y: 176, 'text-anchor': 'middle', 'class': 'sub'}, g2); t3.textContent = '1e-3';
+      el('line', {x1: x + w / 2, x2: x + w / 2, y1: 98, y2: 150, 'class': 'grp'}, g);
+    }
+    var lab = el('text', {x: 20, y: 74, 'class': 'sub'}, g); lab.textContent = '프래그먼트마다 CIR → 신호 창 57탭의 Λ';
+  }
+
+  /* ------------------------------------------------------------------ 2: tail widget */
+  var t1State = {rho: 0.82};
+  function t1Draw() {
+    var rho = t1State.rho, ts = [];
+    for (var t = 0; t <= 40.001; t += 0.5) ts.push(t);
+    var ref = ts.map(function (t) { return [t, Math.exp(-t / 2)]; });
+    var nc = ts.map(function (t) { return [t, ncircTail(t, rho)]; });
+    lineChart(document.getElementById('t1-svg'), {
+      W: 640, H: 340, ml: 58, mr: 16, mt: 12, mb: 44,
+      x: {min: 0, max: 40, ticks: [0, 5, 10, 15, 20, 25, 30, 35, 40], fmt: String, title: '문턱 t (탭 하나의 정규화 전력)'},
+      y: {min: 1e-10, max: 1, log: true, ticks: logTicks(-10, 0, 2), fmt: fmtPow, title: 'P(값 ≥ t)'},
+      series: [{name: '기준 χ²₂', pts: ref, line: 's1s', key: 'line', keyCls: 's1s'},
+               {name: '비원형 ρ = ' + rho.toFixed(2), pts: nc, line: 's2s', key: 'line', keyCls: 's2s'}],
+      vlines: [{x: T_FRAG3, label: '1e-3 문턱 22.7', dash: '4 3'}, {x: T_FRAG6, label: '10⁻⁶ 문턱 36.5', dash: '4 3'}],
+      tipTitle: function (x) { return 't = ' + x; }, tipVal: function (v) { return fmtE(v); }
+    });
+    var p3r = Math.exp(-T_FRAG3 / 2), p3n = ncircTail(T_FRAG3, rho), p6r = Math.exp(-T_FRAG6 / 2), p6n = ncircTail(T_FRAG6, rho);
+    readout('t1-read', [
+      ['ρ', rho.toFixed(2)], 'sep',
+      ['t = 22.7에서 기준', fmtE(p3r)], ['t = 22.7에서 비원형', fmtE(p3n)], ['꼬리 비율', '×' + (p3n / p3r).toFixed(p3n / p3r < 10 ? 2 : 0)], 'sep',
+      ['t = 36.5에서 기준', fmtE(p6r)], ['t = 36.5에서 비원형', fmtE(p6n)], ['꼬리 비율', '×' + (p6n / p6r).toFixed(p6n / p6r < 10 ? 2 : 0)]
+    ]);
+    document.getElementById('t1-rho-v').textContent = rho.toFixed(2);
+  }
+
+  /* ------------------------------------------------------------------ 4: combining widgets */
+  var t2State = {K: 8, ldb: 8};
+  function thrSoft(K) { return solveT(K, W, 1e-6 / MARG); }
+  function t2Draw() {
+    var K = t2State.K, lam = Math.pow(10, t2State.ldb / 10), T = K === 1 ? T_FRAG6 : thrSoft(K);
+    var mean1 = 2 * K + K * lam, sd1 = Math.sqrt(4 * K + 4 * K * lam);
+    var xmax = Math.max(T * 1.25, mean1 + 4 * sd1, 2 * K + 8 * Math.sqrt(4 * K));
+    var n = 260, h0 = [], h1 = [], ymax = 0;
+    for (var i = 0; i <= n; i++) {
+      var x = xmax * i / n, a = chi2pdf(x, K), b = ncPdf(x, K, K * lam);
+      if (K === 1 && x === 0) a = 0.5;
+      h0.push([x, a]); h1.push([x, b]); ymax = Math.max(ymax, a, b);
+    }
+    var svg = document.getElementById('t2-svg');
+    var sc = lineChart(svg, {
+      W: 640, H: 300, ml: 58, mr: 16, mt: 12, mb: 44,
+      x: {min: 0, max: xmax, ticks: niceTicks(0, xmax, 6), fmt: function (v) { return String(Math.round(v)); }, title: K === 1 ? 'Λ (탭 하나)' : 'S = Λ₁ + … + Λ' + subNum(K) + ' (같은 탭의 합)'},
+      y: {min: 0, max: ymax * 1.12, ticks: [0], fmt: function () { return '0'; }, title: '확률 밀도'},
+      series: [{name: 'H0', pts: h0, line: 'muteds', key: 'line', keyCls: 'muteds'}, {name: 'H1', pts: h1, line: 's1s', key: 'line', keyCls: 's1s'}],
+      vlines: [{x: T, cls: 'inks', label: '문턱 ' + T.toFixed(1)}].concat(K === 1 ? [{x: T_FRAG3, cls: 'inks', dash: '3 3', label: '1e-3: ' + T_FRAG3.toFixed(1), left: true}] : []),
+      tipTitle: function (x) { return (K === 1 ? 'Λ = ' : 'S = ') + x.toFixed(1); }, tipVal: function (v) { return v.toExponential(2); }
+    });
+    var d = '';
+    h1.forEach(function (p) { if (p[0] >= T) d += (d ? 'L' : 'M') + sc.X(p[0]).toFixed(1) + ' ' + sc.Y(p[1]).toFixed(1); });
+    if (d) {
+      var last = h1[h1.length - 1];
+      d += 'L' + sc.X(last[0]).toFixed(1) + ' ' + sc.Y(0).toFixed(1) + 'L' + sc.X(T).toFixed(1) + ' ' + sc.Y(0).toFixed(1) + 'Z';
+      var area = el('path', {d: d, 'class': 'washs1'}, svg);
+      svg.insertBefore(area, svg.firstChild.nextSibling);
+    }
+    var pd = ncTail(T, K, K * lam);
+    readout('t2-read', [
+      ['K', K + '개 (' + (K === 1 ? '탭 하나의 Λ' : '합 S, χ²' + subNum(2 * K)) + ')'],
+      ['λ', t2State.ldb.toFixed(1) + ' dB (' + lam.toFixed(1) + ')'], 'sep',
+      ['문턱 (10⁻⁶)', T.toFixed(2)],
+      ['H0 평균 / 표준편차', (2 * K) + ' / ' + (2 * Math.sqrt(K)).toFixed(1)],
+      ['H1 평균', mean1.toFixed(1)],
+      ['검출 확률 Pd', pd.toFixed(3)]
+    ].concat(K === 1 ? [['Pd (1e-3 문턱)', ncTail(T_FRAG3, 1, lam).toFixed(3)]] : []));
+    document.getElementById('t2-lam-v').textContent = t2State.ldb.toFixed(1) + ' dB';
+    t3Draw();
+  }
+  function subNum(n) { return String(n).split('').map(function (c) { return String.fromCharCode(8320 + Number(c)); }).join(''); }
+  function niceTicks(a, b, n) {
+    var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span / n))), err = span / n / step;
+    if (err >= 5) step *= 5; else if (err >= 2) step *= 2;
+    var out = []; for (var v = Math.ceil(a / step) * step; v <= b + 1e-9; v += step) out.push(v);
+    return out;
+  }
+  function t3Rules(K) {
+    var Ta = 2 * Math.log(W / Math.pow(1e-6, 1 / K)) + 2 * Math.log(MARG), Ts = thrSoft(K);
+    return [
+      {name: '지금: 프래그먼트 1개, 1e-3 (패킷 보장 없음)', line: 'ink2s', dash: '2 3', key: 'line', keyCls: 'ink2s', pd: function (l) { return ncTail(T_FRAG3, 1, l); }},
+      {name: '프래그먼트 1개, 10⁻⁶', line: 's2s', key: 'line', keyCls: 's2s', pd: function (l) { return ncTail(T_FRAG6, 1, l); }},
+      {name: K + '개 모두 통과, 10⁻⁶', line: 's3s', key: 'line', keyCls: 's3s', pd: function (l) { return Math.pow(ncTail(Ta, 1, l), K); }},
+      {name: '소프트 결합 ' + K + '개, 10⁻⁶', line: 's1s', key: 'line', keyCls: 's1s', width: 2.6, pd: function (l) { return ncTail(Ts, K, K * l); }}
+    ];
+  }
+  function l90db(fn) {
+    var lo = -10, hi = 30;
+    for (var it = 0; it < 50; it++) { var mid = 0.5 * (lo + hi); if (fn(Math.pow(10, mid / 10)) < 0.9) lo = mid; else hi = mid; }
+    return hi;
+  }
+  function t3Draw() {
+    var K = t2State.K, rules = t3Rules(K);
+    if (K === 1) rules = rules.slice(0, 2);
+    var xs = []; for (var x = 0; x <= 20.001; x += 0.5) xs.push(x);
+    rules.forEach(function (r) { r.pts = xs.map(function (x) { return [x, r.pd(Math.pow(10, x / 10))]; }); r.l90 = l90db(r.pd); });
+    legend('t3-legend', rules);
+    lineChart(document.getElementById('t3-svg'), {
+      W: 760, H: 330, ml: 58, mr: 20, mt: 12, mb: 46,
+      x: {min: 0, max: 20, ticks: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20], fmt: String, title: '프래그먼트 하나의 신호 λ [dB]'},
+      y: {min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], fmt: function (v) { return v.toFixed(2); }, title: '검출 확률'},
+      series: rules, hlines: [{y: 0.9, label: 'Pd 0.9', below: true}],
+      vlines: [{x: t2State.ldb, cls: 'inks', dash: '3 3', label: '위 그림의 λ'}],
+      tipTitle: function (x) { return 'λ = ' + x + ' dB'; }, tipVal: function (v) { return v.toFixed(3); }
+    });
+    var base = rules[0].l90;
+    document.getElementById('t3-cap').textContent = '90% 검출에 필요한 λ: ' + rules.map(function (r) {
+      var dd = r.l90 - base; return r.name.split(':')[0].split(' (')[0] + ' ' + r.l90.toFixed(1) + ' dB' + (r === rules[0] ? '' : ' (' + (dd > 0 ? '+' : '−') + Math.abs(dd).toFixed(1) + ')');
+    }).join(' · ') + '. 괄호는 지금 기준 대비 필요한 신호의 차이로, 음수면 더 약한 신호로 충분합니다. 프래그먼트 1개를 10⁻⁶에 맞추면 문턱만 오르고 증거는 그대로라 손해이지만, ' + K + '개를 소프트 결합하면 목표가 1,000배 엄격해져도 이득입니다. 신호 탭 하나만 본 이상 모델이라 실제 감도 차이는 5장의 시뮬레이션 값을 보세요.';
+  }
+
+  /* ------------------------------------------------------------------ 5: simulation results */
+  var r1State = {chip: 'c'};
+  var R1SER = [
+    {k: 'soft', src: 'h1', line: 's1s', mk: 'sq', mc: 's1f', key: 'sq', name: '소프트 결합'},
+    {k: 'soft1', src: 'pol', line: 's1s', dash: '6 4', mk: 'sqo', mc: '', key: 'sq', keyCls: 's1f', name: '소프트 + 일관성'},
+    {k: 'k2', src: 'h1', line: 's3s', mk: 'circle', mc: 's3f', key: 'dot', name: '8개 중 6개 이상'},
+    {k: 'and', src: 'h1', line: 's3s', dash: '6 4', mk: 'tri', mc: 's3f', key: 'tri', name: '8개 모두 통과'},
+    {k: 'strict', src: 'pol', line: 's2s', mk: 'circle', mc: 's2f', key: 'dot', name: '프래그먼트마다 1e-3, 8개 모두'},
+    {k: 'single', src: 'h1', line: 'muteds', dash: '6 4', mk: 'tri', mc: 'mutedf', key: 'tri', name: '1개만 10⁻⁶'},
+    {k: 'cur', src: 'h1', line: 'ink2s', dash: '2 3', key: 'line', keyCls: 'ink2s', name: '지금: 프래그먼트 1e-3 (패킷 보장 없음)'}
+  ];
+  function l90pts(pts) {
+    for (var i = 0; i < pts.length - 1; i++) if (pts[i][1] < 0.9 && pts[i + 1][1] >= 0.9) return pts[i][0] + (0.9 - pts[i][1]) / (pts[i + 1][1] - pts[i][1]);
+    return NaN;
+  }
+  function r1Draw() {
+    var chip = r1State.chip;
+    R1SER.forEach(function (s) { var src = PKD[s.src]; s.pts = src.dBm.map(function (d, i) { return [d, src[chip][s.k][i]]; }); s.l90 = l90pts(s.pts); });
+    legend('r1-legend', R1SER);
+    lineChart(document.getElementById('r1-svg'), {
+      W: 760, H: 340, ml: 58, mr: 20, mt: 14, mb: 46,
+      x: {min: -122.5, max: -103.5, ticks: [-122, -120, -118, -116, -114, -112, -110, -108, -106, -104], fmt: minus, title: '맞는 키 수신 세기 (dBm, 모델 환산)'},
+      y: {min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], fmt: function (v) { return v.toFixed(2); }, title: '패킷 검출 확률'},
+      series: R1SER, hlines: [{y: 0.9, label: 'Pd 0.9', below: true}],
+      tipTitle: function (x) { return minus(x) + ' dBm · ' + (chip === 'c' ? '고정 칩 Λ̂' : '새 칩 Λ'); }, tipVal: function (v) { return v.toFixed(3); }
+    });
+    document.getElementById('r1-cap').textContent = 'L90: ' + R1SER.map(function (s) { return s.name.split(':')[0].split(' (')[0] + ' ' + (isNaN(s.l90) ? '–' : minus(s.l90.toFixed(1))); }).join(' · ') +
+      ' dBm. 같은 덤프 모델에서 기준만 바꾼 결과입니다. 소프트 결합은 지금보다 ' + (R1SER[6].l90 - R1SER[0].l90).toFixed(1) + ' dB 좋고, 프래그먼트마다 1e-3으로 판정해 8개 모두를 요구하는 방식은 지금보다도 나쁩니다.';
+    var tb = document.getElementById('r1-tbl'); clear(tb);
+    var hd = tb.createTHead().insertRow();
+    ['세기 (dBm)'].concat(R1SER.map(function (s) { return s.name; })).forEach(function (h) { var th = document.createElement('th'); th.textContent = h; th.className = 'num'; hd.appendChild(th); });
+    var body = tb.createTBody(), xs = {};
+    R1SER.forEach(function (s) { s.pts.forEach(function (p) { xs[p[0]] = 1; }); });
+    Object.keys(xs).map(Number).sort(function (a, b) { return a - b; }).forEach(function (x) {
+      var tr = body.insertRow(), c0 = tr.insertCell(); c0.className = 'num'; c0.textContent = minus(x);
+      R1SER.forEach(function (s) { var p = s.pts.filter(function (q) { return q[0] === x; })[0]; var td = tr.insertCell(); td.className = 'num'; td.textContent = p ? p[1].toFixed(3) : '–'; });
+    });
+    var trL = body.insertRow(), cL = trL.insertCell(); cL.className = 'num'; cL.textContent = 'L90';
+    R1SER.forEach(function (s) { var td = trL.insertCell(); td.className = 'num'; td.textContent = isNaN(s.l90) ? '–' : minus(s.l90.toFixed(2)); });
+  }
+
+  /* ------------------------------------------------------------------ 6: verification */
+  var PASSN = [1000, 5000, 10000, 30000, 60000, 100000, 170000];
+  var PASS = {'3e-4': [0, .56, .82, 1, 1, 1, 1], '5e-4': [0, .29, .44, .92, 1, 1, 1], '7e-4': [0, .14, .17, .47, .80, .94, 1], '8e-4': [0, .09, .10, .24, .48, .66, .86]};
+  function v1Draw() {
+    var ser = [
+      {name: '참 Pfa 3e-4', line: 's1s', mk: 'sq', mc: 's1f', key: 'sq', k: '3e-4'},
+      {name: '참 Pfa 5e-4', line: 's3s', mk: 'circle', mc: 's3f', key: 'dot', k: '5e-4'},
+      {name: '참 Pfa 7e-4', line: 's2s', mk: 'tri', mc: 's2f', key: 'tri', k: '7e-4'},
+      {name: '참 Pfa 8e-4', line: 'muteds', dash: '6 4', mk: 'circle', mc: 'mutedf', key: 'dot', k: '8e-4'}
+    ];
+    ser.forEach(function (s) { s.pts = PASSN.map(function (n, i) { return [n, PASS[s.k][i]]; }); });
+    legend('v1-legend', ser);
+    lineChart(document.getElementById('v1-svg'), {
+      W: 760, H: 320, ml: 58, mr: 20, mt: 14, mb: 46,
+      x: {min: 800, max: 200000, log: true, ticks: [1000, 3000, 10000, 30000, 100000], fmt: function (v) { return v.toLocaleString(); }, title: '조건당 프래그먼트 수 (로그)'},
+      y: {min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], fmt: function (v) { return Math.round(v * 100) + '%'; }, title: '합격 확률'},
+      series: ser, vlines: [{x: 30000, dash: '3 3', label: '계획의 30,000개'}],
+      tipTitle: function (x) { return 'n = ' + x.toLocaleString(); }, tipVal: function (v) { return Math.round(v * 100) + '%'; }
+    });
+  }
+  var TQ = [32, 40, 46];
+  var RAT = {xs: [1.01, 1.03, 1.23], cs: [1.00, 1.11, 0.87], xs2: [1.03, 1.10, 1.20], cs2: [1.04, 1.10, 1.08], xi: [1.00, 1.01, 1.02], ci: [0.93, 0.81, 0.69]};
+  function v2Draw() {
+    var Ts = thrSoft(8), pts = [];
+    for (var t = 0; t <= 80.001; t += 1) pts.push([t, chi2tail(t, 8)]);
+    var px = TQ.map(function (t, i) { return [t, RAT.xs[i] * chi2tail(t, 8)]; });
+    var pc = TQ.map(function (t, i) { return [t, RAT.cs[i] * chi2tail(t, 8)]; });
+    lineChart(document.getElementById('v2-svg'), {
+      W: 760, H: 340, ml: 62, mr: 20, mt: 14, mb: 46,
+      x: {min: 0, max: 80, ticks: [0, 10, 20, 30, 40, 50, 60, 70, 80], fmt: String, title: '문턱 t (8개 프래그먼트 Λ의 합)'},
+      y: {min: 1e-10, max: 1, log: true, ticks: logTicks(-10, 0, 2), fmt: fmtPow, title: 'P(S ≥ t), 경로 하나'},
+      bands: [{y0: 1e-4, y1: 1, cls: 'washs1'}],
+      series: [{name: '이론 χ²₁₆', pts: pts, line: 'inks', key: 'line', keyCls: 'inks'},
+               {name: '측정 Λ', pts: px, noLine: true, line: 's1s', mk: 'sq', mc: 's1f', key: 'sq'},
+               {name: '측정 Λ̂', pts: pc, noLine: true, line: 's2s', mk: 'circle', mc: 's2f', key: 'dot'}],
+      vlines: [{x: Ts, cls: 'inks', dash: '4 3', label: '문턱 ' + Ts.toFixed(1), left: true}],
+      hlines: [{y: 1e-6 / 1.5 / 57, dash: '4 3', label: '경로당 1.2e-8 (패킷 10⁻⁶)', anchor: 'start', below: true}, {y: 1e-4, dash: '2 3', cls: 'muteds', label: '측정 한계 약 1e-4', anchor: 'start'}],
+      tipTitle: function (x) { return 't = ' + x; }, tipVal: function (v) { return fmtE(v); }
+    });
+  }
+  function v3Draw() {
+    var ser = [
+      {name: 'Λ, 같은 채널 −82.5 dBm', k: 'xs', line: 's1s', mk: 'sq', mc: 's1f', key: 'sq'},
+      {name: 'Λ, 같은 채널 −42.5 dBm', k: 'xs2', line: 's1s', dash: '6 4', mk: 'sqo', mc: '', key: 'sq', keyCls: 's1f'},
+      {name: 'Λ̂, 같은 채널 −82.5 dBm', k: 'cs', line: 's2s', mk: 'circle', mc: 's2f', key: 'dot'},
+      {name: 'Λ̂, 같은 채널 −42.5 dBm', k: 'cs2', line: 's2s', dash: '6 4', mk: 'tri', mc: 's2f', key: 'tri'},
+      {name: 'Λ, 프래그먼트마다 다른 채널', k: 'xi', line: 'muteds', mk: 'circle', mc: 'mutedf', key: 'dot'},
+      {name: 'Λ̂, 프래그먼트마다 다른 채널', k: 'ci', line: 'muteds', dash: '6 4', mk: 'tri', mc: 'mutedf', key: 'tri'}
+    ];
+    var depth = [1e-2, 1e-3, 1e-4];
+    ser.forEach(function (s) { s.pts = depth.map(function (d, i) { return [d, RAT[s.k][i]]; }); });
+    legend('v3-legend', ser);
+    lineChart(document.getElementById('v3-svg'), {
+      W: 760, H: 320, ml: 58, mr: 20, mt: 14, mb: 46,
+      x: {min: 2e-2, max: 5e-5, log: true, ticks: depth, fmt: function (v) { return 'P = ' + fmtPow(v); }, title: '꼬리 깊이 (오른쪽으로 갈수록 깊음)'},
+      y: {min: 0.5, max: 1.7, ticks: [0.5, 0.7, 1, 1.3, 1.5, 1.7], fmt: function (v) { return v.toFixed(1); }, title: '꼬리 비율'},
+      bands: [{y0: 0.7, y1: 1.3, cls: 'washg'}],
+      series: ser,
+      hlines: [{y: 1, cls: 'ink2s', label: '이론'}, {y: 1.5, dash: '4 3', cls: 'inks', label: '여유 1.5의 한계'}],
+      tipTitle: function (x) { return '깊이 P = ' + fmtPow(x); }, tipVal: function (v) { return v.toFixed(2); }
+    });
+    var tb = document.getElementById('v3-tbl'); clear(tb);
+    var hd = tb.createTHead().insertRow();
+    ['조건', 'P = 1e-2 (t = 32)', 'P = 1e-3 (t = 40)', 'P = 1e-4 (t = 46)'].forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
+    var bd = tb.createTBody();
+    ser.forEach(function (s) {
+      var tr = bd.insertRow(), c0 = tr.insertCell(); c0.textContent = s.name;
+      RAT[s.k].forEach(function (v) { var td = tr.insertCell(); td.className = 'num'; td.textContent = v.toFixed(2); });
+    });
+  }
+
+  /* ------------------------------------------------------------------ 7: MD p^8 */
+  function m1Draw() {
+    var pts = [];
+    for (var p = 0.01; p <= 0.3001; p += 0.005) pts.push([p, Math.pow(p, 8)]);
+    var q = [[0.05, '중앙값'], [0.10, '90%'], [0.15, '99%'], [0.175, '최악']];
+    lineChart(document.getElementById('m1-svg'), {
+      W: 760, H: 340, ml: 62, mr: 20, mt: 14, mb: 46,
+      x: {min: 0.01, max: 0.3, ticks: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3], fmt: function (v) { return v.toFixed(2); }, title: '한 채널에서 MD 프래그먼트 오검출 p'},
+      y: {min: 1e-16, max: 1e-3, log: true, ticks: logTicks(-16, -4, 2), fmt: fmtPow, title: '패킷 오수락 p⁸'},
+      series: [{name: 'p⁸', pts: pts, line: 'inks', key: 'line', keyCls: 'inks'},
+               {name: 'MD, 같은 채널 −42.5 dBm', pts: q.map(function (a) { return [a[0], Math.pow(a[0], 8)]; }), noLine: true, line: 's2s', mk: 'circle', mc: 's2f', key: 'dot'},
+               {name: 'MD, AWGN −82.5 dBm', pts: [[0.051, Math.pow(0.051, 8)]], noLine: true, line: 's3s', mk: 'sq', mc: 's3f', key: 'sq'}],
+      hlines: [{y: 1e-6, cls: 'inks', dash: '4 3', label: '목표 10⁻⁶', anchor: 'start'}, {y: 8.46e-9, cls: 'muteds', dash: '2 3', label: '같은 채널 평균 8.5e-9', anchor: 'start', below: true}],
+      vlines: [{x: 0.178, dash: '4 3', label: 'p = 0.178', left: true}],
+      labels: q.map(function (a) { return {x: a[0], y: Math.pow(a[0], 8), text: a[1], dx: 7, dy: 14, cls: 'lab'}; }),
+      tipTitle: function (x) { return 'p = ' + x.toFixed(3); }, tipVal: function (v) { return fmtE(v); }, tipTol: 0.003
+    });
+  }
+
+  /* ------------------------------------------------------------------ boot */
+  function boot() {
+    b1Draw();
+    var rr = document.getElementById('t1-rho');
+    rr.addEventListener('input', function () {
+      t1State.rho = Number(rr.value);
+      Array.prototype.forEach.call(document.querySelectorAll('#t1-seg button'), function (x) { x.setAttribute('aria-pressed', 'false'); });
+      t1Draw();
+    });
+    segWire('t1-seg', 'data-r', function (v) { t1State.rho = Number(v); rr.value = v; t1Draw(); });
+    t1Draw();
+    var ll = document.getElementById('t2-lam');
+    ll.addEventListener('input', function () { t2State.ldb = Number(ll.value); t2Draw(); });
+    segWire('t2-k', 'data-k', function (v) { t2State.K = Number(v); t2Draw(); });
+    t2Draw();
+    segWire('r1-chip', 'data-chip', function (v) { r1State.chip = v; r1Draw(); });
+    r1Draw(); v1Draw(); v2Draw(); v3Draw(); m1Draw();
+  }
+  window.addEventListener('scroll', hideTip, {passive: true});
+  boot();
+})();
+</script>
+<script>
+(function () {
+  /* theme toggle: system -> light -> dark */
+  var themeBtn = document.getElementById('theme-btn');
+  function themeLabel() {
+    var t = document.documentElement.getAttribute('data-theme');
+    themeBtn.textContent = '테마: ' + (t === 'light' ? '라이트' : t === 'dark' ? '다크' : '시스템');
+  }
+  themeBtn.addEventListener('click', function () {
+    var t = document.documentElement.getAttribute('data-theme');
+    var next = t === null ? 'light' : t === 'light' ? 'dark' : null;
+    if (next) document.documentElement.setAttribute('data-theme', next); else document.documentElement.removeAttribute('data-theme');
+    try { if (next) localStorage.setItem('rif-theme', next); else localStorage.removeItem('rif-theme'); } catch (e) {}
+    themeLabel();
+  });
+  themeLabel();
+})();
+</script>
+</body>
+</html>
