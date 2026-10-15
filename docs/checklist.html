@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RIF 검증 체크리스트</title>
+<meta name="description" content="RIF Λ 판정기 패치를 MATLAB 합성 덤프, LLS 2열, 5열 bring-up과 최종 검증 순서로 시험하는 체크리스트 (상태와 결과 메모 기록)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<script>
+  (function () {  /* 저장된 테마를 첫 렌더링 전에 적용 */
+    try { var t = localStorage.getItem('rif-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  })();
+</script>
+<style>
+/* Layout: 한 칼럼(최대 880px) 작업 목록. 단계 A→B→C→D가 실제 진행 순서라 단계 문자와 항목 번호를 쓴다.
+   Color: 같은 해설 페이지 계열의 토큰. 파랑 = 진행 중·강조, 초록 = 통과, 빨강 = 확인 필요, 회색 = 미실행·건너뜀. */
+:root{
+  --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
+  --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.11);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --crit:#d03b3b; --good:#0ca30c;
+  --wash:#e6eef9; --code-bg:#e9eae6;
+  --f-sans:"IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+    --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+    --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --crit:#e05252; --good:#2db52d;
+    --wash:#1b2636; --code-bg:#242422;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+  --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+  --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --crit:#e05252; --good:#2db52d;
+  --wash:#1b2636; --code-bg:#242422;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:15.5px;line-height:1.65;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.wrap{max-width:880px;margin:0 auto;padding-block:32px 80px;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:clamp(28px,4.6vw,38px);font-weight:700;letter-spacing:-0.02em}
+h2{font-size:21px;font-weight:700;letter-spacing:-0.01em}
+h3{font-size:16px;font-weight:600}
+p,ul,ol,dl{margin:0}
+ul,ol{padding-left:1.25em}
+li + li{margin-top:4px}
+a{color:var(--s1)}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+strong{font-weight:600}
+.eyebrow{font:500 12px/1.5 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:17px;line-height:1.7;color:var(--ink-2);max-width:68ch}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+
+/* hero and summary */
+.hero{display:flex;flex-direction:column;gap:14px}
+.sync{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-2)}
+.sync .dot{width:8px;height:8px;border-radius:50%;background:var(--axis);flex:none}
+.sync[data-mode="shared"] .dot{background:var(--good)}
+.sync[data-mode="local"] .dot{background:var(--s2)}
+.sync[data-mode="readonly"] .dot{background:var(--muted)}
+.sync[data-mode="error"] .dot{background:var(--crit)}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.stage-sum{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0;text-decoration:none;color:inherit}
+.stage-sum:hover{border-color:var(--axis)}
+.stage-sum .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.stage-sum .nm{font-weight:600;font-size:14px}
+.stage-sum .ct{font:500 13px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.bar{display:flex;height:6px;border-radius:3px;background:var(--grid);overflow:hidden}
+.bar span{display:block;height:100%}
+.bar .b-pass{background:var(--good)} .bar .b-check{background:var(--crit)} .bar .b-run{background:var(--s1)} .bar .b-skip{background:var(--axis)}
+.stage-sum .sub{font-size:12.5px;color:var(--muted)}
+.gates{display:flex;flex-direction:column;gap:8px}
+.gates h2{font-size:15px}
+.gate-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.gate{border:1px solid var(--hair);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:var(--surface);min-width:0}
+.gate .gk{font:600 12px var(--f-mono);letter-spacing:.05em;color:var(--muted)}
+.gate .gt{font-size:14px;font-weight:600}
+.gate .gn{font-size:13px;color:var(--ink-2);white-space:pre-wrap}
+.gate a{font-size:13px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--axis);background:var(--raised);border-radius:8px;padding:7px 14px;font-size:14px;cursor:pointer}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--s1);border-color:var(--s1);color:#fff}
+.btn.primary:hover{filter:brightness(1.07)}
+.copy-out{width:100%;min-height:160px;font:13px/1.5 var(--f-mono);background:var(--surface);color:var(--ink);border:1px solid var(--axis);border-radius:8px;padding:10px}
+.hint{font-size:13px;color:var(--muted)}
+
+/* stages and items */
+.stage{display:flex;flex-direction:column;gap:14px;scroll-margin-top:16px}
+.stage-head{display:flex;gap:14px;align-items:flex-start}
+.stage-no{font:700 15px var(--f-mono);width:34px;height:34px;border-radius:8px;display:grid;place-items:center;background:var(--ink);color:var(--bg);flex:none}
+.stage-head .t{display:flex;flex-direction:column;gap:4px;min-width:0}
+.stage-head p{color:var(--ink-2);font-size:14.5px;max-width:68ch}
+.item{background:var(--surface);border:1px solid var(--hair);border-left:4px solid var(--axis);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0;scroll-margin-top:16px}
+.item[data-status="run"]{border-left-color:var(--s1)}
+.item[data-status="pass"]{border-left-color:var(--good)}
+.item[data-status="check"]{border-left-color:var(--crit)}
+.item[data-status="skip"]{border-left-color:var(--grid);opacity:.78}
+.item-head{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.iid{font:600 13px var(--f-mono);color:var(--s1)}
+.item-head h3{flex:1 1 260px;min-width:0}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font:500 11.5px/1.6 var(--f-mono);padding:0 7px;border-radius:5px;border:1px solid var(--axis);color:var(--ink-2);white-space:nowrap}
+.tag.req{border-color:var(--ink-2);color:var(--ink)}
+.tag.dec{border-color:var(--s2);color:var(--s2)}
+.tag.new{border-color:var(--s1);color:var(--s1)}
+.item .why{color:var(--ink-2);font-size:14.5px}
+.item .data{font-size:14px}
+.item .data b{font-weight:600}
+.cmd-box{position:relative;min-width:0}
+.cmd{margin:0;background:var(--code-bg);border-radius:8px;padding:10px 12px;padding-right:64px;overflow-x:auto;font:12.8px/1.6 var(--f-mono);white-space:pre;tab-size:4}
+.cmd code{background:none;padding:0;font-size:inherit}
+.copy{position:absolute;top:6px;right:6px;font:500 12px var(--f-mono);border:1px solid var(--axis);background:var(--raised);border-radius:6px;padding:2px 8px;cursor:pointer;color:var(--ink-2)}
+.copy:hover{color:var(--ink)}
+.expect{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:14px}
+.expect dt{font:600 12px/2 var(--f-mono);color:var(--muted);letter-spacing:.04em}
+.expect dd{margin:0;min-width:0}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;font-size:13.5px;width:100%}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-weight:600;color:var(--ink-2);font-size:12.5px}
+td.num,th.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+details > summary{cursor:pointer;color:var(--s1);font-size:14px}
+details[open] > summary{margin-bottom:8px}
+.rec{display:grid;grid-template-columns:150px 1fr;gap:8px 12px;align-items:start;border-top:1px dashed var(--grid);padding-top:10px}
+.rec label{font:600 12px/2.2 var(--f-mono);color:var(--muted);letter-spacing:.04em}
+.rec .fields{display:flex;flex-direction:column;gap:6px;min-width:0}
+.rec .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rec select{font:inherit;font-size:14px;padding:5px 8px;border-radius:7px;border:1px solid var(--axis);background:var(--raised);color:var(--ink)}
+.rec textarea{font:13.5px/1.55 var(--f-sans);width:100%;min-height:58px;resize:vertical;padding:7px 9px;border-radius:7px;border:1px solid var(--axis);background:var(--raised);color:var(--ink)}
+.rec textarea:disabled,.rec select:disabled{opacity:.7;cursor:not-allowed}
+.meta{font-size:12.5px;color:var(--muted)}
+.chip{font:600 12px/1.7 var(--f-sans);padding:0 8px;border-radius:999px;background:var(--grid);color:var(--ink-2);white-space:nowrap}
+.chip[data-s="run"]{background:var(--wash);color:var(--s1)}
+.chip[data-s="pass"]{background:color-mix(in srgb, var(--good) 16%, transparent);color:var(--good)}
+.chip[data-s="check"]{background:color-mix(in srgb, var(--crit) 16%, transparent);color:var(--crit)}
+.send{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.foot{border-top:1px solid var(--hair);padding-top:20px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:8px}
+@media (max-width:560px){
+  .rec{grid-template-columns:1fr}
+  .rec label{line-height:1.4}
+  .expect{grid-template-columns:1fr}
+  .expect dt{line-height:1.4;margin-top:4px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto !important;transition:none !important}}
+.theme-btn{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);right:12px;z-index:40;font:500 12.5px var(--f-sans);padding:6px 11px;border-radius:999px;border:1px solid var(--hair);background:var(--raised);color:var(--ink-2);cursor:pointer}
+.theme-btn:hover{color:var(--ink);border-color:var(--axis)}
+</style>
+</head>
+<body>
+<button type="button" class="theme-btn" id="theme-btn" aria-label="테마 바꾸기">테마: 시스템</button>
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">lambda_patch · 커밋 aa96c9a 기준 · 2026-10-15</span>
+  <h1>RIF 검증 체크리스트</h1>
+  <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾼 지금의 저장소로 직접 돌려 볼 시험입니다. 이번 MATLAB 수정은 아직 한 번도 실행되지 않았으니 단계 A부터 진행해 주세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남습니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
+  <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
+  <div class="summary" id="summary">
+    <a class="stage-sum" href="#sA" data-stage="A"><div class="top"><span class="nm">A · 합성 덤프</span><span class="ct">0 / 7 통과</span></div><div class="bar"></div><span class="sub">LLS 불필요, 가장 먼저</span></a>
+    <a class="stage-sum" href="#sB" data-stage="B"><div class="top"><span class="nm">B · 현재 LLS</span><span class="ct">0 / 10 통과</span></div><div class="bar"></div><span class="sub">2열 덤프, C++ 수정 없음</span></a>
+    <a class="stage-sum" href="#sC" data-stage="C"><div class="top"><span class="nm">C · bring-up</span><span class="ct">0 / 1 통과</span></div><div class="bar"></div><span class="sub">C++ 5열 덤프 구현 후</span></a>
+    <a class="stage-sum" href="#sD" data-stage="D"><div class="top"><span class="nm">D · 최종 검증</span><span class="ct">0 / 2 통과</span></div><div class="bar"></div><span class="sub">5열 덤프 전체</span></a>
+  </div>
+  <div class="gates">
+    <h2>결정에 바로 들어가는 시험</h2>
+    <div class="gate-list">
+      <div class="gate" data-gate="B-0"><span class="gk">결정 5 · 피크 이동 후보</span><span class="gt">B-0 패킷 전제</span><span class="chip" data-s="todo">미실행</span><span class="gn"></span><a href="#B-0">항목으로 가기</a></div>
+      <div class="gate" data-gate="B-H0-4"><span class="gk">결정 1 · 패킷 10⁻⁶ 유지 여부</span><span class="gt">B-H0-4 같은 채널 꼬리</span><span class="chip" data-s="todo">미실행</span><span class="gn"></span><a href="#B-H0-4">항목으로 가기</a></div>
+      <div class="gate" data-gate="B-S"><span class="gk">결정 6 · 일관성 검사 기준선</span><span class="gt">B-S 바꿔치기 폐기율</span><span class="chip" data-s="todo">미실행</span><span class="gn"></span><a href="#B-S">항목으로 가기</a></div>
+    </div>
+  </div>
+  <div class="tools">
+    <button type="button" class="btn primary" id="copy-sum">결과 요약 복사</button>
+    <span class="hint" id="copy-msg">모든 항목의 상태와 메모를 텍스트로 복사합니다. Claude에게 결과를 전할 때 붙여 넣으면 됩니다.</span>
+  </div>
+  <textarea class="copy-out" id="copy-out" readonly hidden aria-label="결과 요약 텍스트"></textarea>
+</header>
+
+<!-- ============================================================ A -->
+<section class="stage" id="sA" data-stage="A">
+  <div class="stage-head"><span class="stage-no">A</span><div class="t"><h2>합성 덤프: MATLAB 도구 점검</h2><p>LLS 없이 MATLAB만으로 수 분이면 끝납니다. 같은 시드로 만든 5열과 2열 세트는 CIR이 비트 단위로 같아서, CIR만 쓰는 결과는 정확히 같아야 합니다.</p></div></div>
+
+  <article class="item" id="P-0" data-id="P-0" data-stage="A">
+    <div class="item-head"><span class="iid">P-0</span><h3>준비: 패치 폴더가 먼저 잡히는지</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="why">원본 폴더에 같은 이름의 함수가 있습니다. MATLAB은 현재 폴더를 path보다 먼저 찾으므로, 원본 스크립트가 있는 폴더가 아닌 곳에서 실행합니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>addpath('&lt;repo&gt;/lambda_patch', '-begin');
+addpath('&lt;repo&gt;/lambda_patch/test');
+which rif_cir_analyze        % &lt;repo&gt;\lambda_patch\rif_cir_analyze.m 이어야 함</code></pre></div>
+    <dl class="expect"><dt>기준</dt><dd><code>which</code> 결과가 <code>lambda_patch</code> 안의 파일</dd></dl>
+    <div class="rec"><label for="st-P-0">상태 · 결과</label><div class="fields"><div class="row"><select id="st-P-0"></select><span class="meta" id="mt-P-0"></span></div><textarea id="nt-P-0" placeholder="예: lambda_patch 쪽으로 잡힘"></textarea></div></div>
+  </article>
+
+  <article class="item" id="A-1" data-id="A-1" data-stage="A">
+    <div class="item-head"><span class="iid">A-1</span><h3>5열 합성 세트 자동 시험</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="why">10단계(패킷 판정)의 소프트 결합 실행이 이제 <code>'Profile', 'fira-medium'</code>을 거칩니다. 문턱 69.61 항목이 OK이면 프로파일 경로도 맞게 동작하는 것입니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>gen_synthetic_dumps('D:/rif_test5');            % 5열 8,100개, 수 분
+res5 = run_synthetic_test('D:/rif_test5');      % 10단계, 77개 항목</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd><code>77 / 77 checks OK</code></dd><dt>기준</dt><dd><code>[CHECK]</code> 없음. 있으면 그 줄을 결과 칸에 그대로 적어 주세요.</dd></dl>
+    <div class="rec"><label for="st-A-1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-1"></select><span class="meta" id="mt-A-1"></span></div><textarea id="nt-A-1" placeholder="예: 77/77, 또는 [CHECK] 줄"></textarea></div></div>
+  </article>
+
+  <article class="item" id="A-2" data-id="A-2" data-stage="A">
+    <div class="item-head"><span class="iid">A-2</span><h3>2열 합성 세트 자동 시험 (현재 LLS 형식)</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="why">단계 B와 형식이 같은 세트입니다. 원시 샘플 Λ, PerClass, 스케일 검사, 형식 혼합 검사는 빠집니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>gen_synthetic_dumps('D:/rif_test2', 'Cols', 2); % 같은 시드, h0 / h0_mp20 / h1 / h1_drift
+res2 = run_synthetic_test('D:/rif_test2');      % 6단계, 49개 항목</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd><code>49 / 49 checks OK</code></dd></dl>
+    <div class="rec"><label for="st-A-2">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-2"></select><span class="meta" id="mt-A-2"></span></div><textarea id="nt-A-2" placeholder="예: 49/49"></textarea></div></div>
+  </article>
+
+  <article class="item" id="A-P" data-id="A-P" data-stage="A">
+    <div class="item-head"><span class="iid">A-P</span><h3><code>'Profile'</code> 옵션 동작</h3><span class="tags"><span class="tag req">필수</span><span class="tag new">이번 변경</span></span></div>
+    <p class="why">기본값 <code>'md'</code>는 기존 동작(프래그먼트 표만), <code>'fira-medium'</code>은 소프트 결합과 10⁻⁶을 한 번에 설정하고, 직접 준 옵션이 우선합니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>r = 'D:/rif_test2/h0';
+A = h0_pfa_analyze(r, 'Suggest', false, 'Chip', 'fixed', 'Plot', false);
+B = h0_pfa_analyze(r, 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'Plot', false);
+C = h0_pfa_analyze(r, 'Suggest', false, 'Chip', 'fixed', 'Combine', 'soft', 'Plot', false);
+K = h0_pfa_analyze(r, 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'Combine', 'kofn', 'Plot', false);
+isempty(A.PK)                 % true    기존 동작 (패킷 표 없음)
+B.pkInfo.T                    % 69.61
+isequal([B.PK.k], [C.PK.k])   % true    프로파일 = soft + 1e-6
+K.pkInfo.rule                 % 'kofn'  직접 준 옵션이 우선
+h0_pfa_analyze(r, 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'Combine', 'none')   % 오류가 나야 정상
+H = h1_pd_analyze('D:/rif_test2/h1', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Plot', false);
+H.opt.Combine                 % 'soft'</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>주석의 값. <code>'Combine', 'none'</code> 줄은 오류 <code>h0_pfa_analyze:profile</code></dd></dl>
+    <div class="rec"><label for="st-A-P">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-P"></select><span class="meta" id="mt-A-P"></span></div><textarea id="nt-A-P" placeholder="예: 모두 주석대로, 오류 메시지 확인"></textarea></div></div>
+  </article>
+
+  <article class="item" id="A-3" data-id="A-3" data-stage="A">
+    <div class="item-head"><span class="iid">A-3</span><h3>2열·5열 교차 확인</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="why">CIR만 쓰는 결과(MD 규칙, κ, CIR 추정 Λ̂)는 근사가 아니라 정확히 같아야 합니다. 하나라도 다르면 덤프 읽기나 형식 처리에 문제가 있습니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>R5  = h0_pfa_analyze('D:/rif_test5/h0', 'Suggest', false, 'Plot', false);
+R2  = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Plot', false);
+isequal(R5.E.k, R2.E.k)                                  % MD 오검출 수   → true
+isequal([R5.cond.kappa], [R2.cond.kappa])                % kappa          → true
+R5c = h0_pfa_analyze('D:/rif_test5/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
+R2c = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
+isequal(R5c.EL.k, R2c.EL.k)                              % Λ̂ 오검출 수    → true
+R15 = h1_pd_analyze('D:/rif_test5/h1', 'Moments', 'cir', 'Plot', false);
+R12 = h1_pd_analyze('D:/rif_test2/h1', 'Moments', 'cir', 'Plot', false);
+isequal(R15.table, R12.table)                            % H1 Pd 표       → true</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>네 줄 모두 <code>true</code></dd></dl>
+    <div class="rec"><label for="st-A-3">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-3"></select><span class="meta" id="mt-A-3"></span></div><textarea id="nt-A-3" placeholder="예: true / true / true / true"></textarea></div></div>
+  </article>
+
+  <article class="item" id="A-W" data-id="A-W" data-stage="A">
+    <div class="item-head"><span class="iid">A-W</span><h3>결과 JSON을 해설 페이지에서 비교</h3><span class="tags"><span class="tag">권장</span></span></div>
+    <p class="why">해설 페이지 10장 "1단계 결과: 5열 덤프 대 2열 덤프" 그림의 "MATLAB 결과 불러오기 (JSON)" 버튼으로 파일을 고릅니다. 파일은 브라우저 안에서만 읽습니다. 저장소에 들어 있는 미리 만든 세트로 한 번 더 내보내면 Python 미러와의 비교 타일이 나옵니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>export_web_results('D:/rif_test5', 'D:/rif_test2', 'D:/rif_results.json', 'Res5', res5, 'Res2', res2);
+export_web_results('&lt;repo&gt;/synthetic_dumps', '&lt;repo&gt;/synthetic_dumps_2col', 'D:/rif_results_repo.json');</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>교차 확인 타일 4개 모두 "같음", <code>run_synthetic_test</code> 타일 77/77 · 49/49, Python 미러 비교는 경계값 몇 건 외에 "같음"</dd><dt>페이지</dt><dd><a href="index.html#s10">RIF Λ 판정기 10장</a></dd></dl>
+    <div class="rec"><label for="st-A-W">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-W"></select><span class="meta" id="mt-A-W"></span></div><textarea id="nt-A-W" placeholder="예: 타일 4개 같음, Python 미러 1건 다름(경계값)"></textarea></div></div>
+  </article>
+
+  <article class="item" id="A-4" data-id="A-4" data-stage="A">
+    <div class="item-head"><span class="iid">A-4</span><h3>단계 B 리허설</h3><span class="tags"><span class="tag">선택</span></span></div>
+    <p class="why">단계 B와 같은 폴더 구성을 합성 2열로 만들어, LLS를 돌리기 전에 명령과 결과 표를 한 번 돌려 봅니다. 나중에 LLS 결과와 나란히 놓으면 모델과 LLS의 차이가 바로 보입니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>root = 'D:/rif_rehearsal';  sd = 100;
+for p = [120 100 95 90 88 86 84 82 80 78 76 72 60 40]            % B-H0-1
+    for j = 1:2
+        sd = sd + 1;
+        gen_synthetic_dumps(fullfile(root, 'h0_awgn', sprintf('c32_m%d_j%d', p, j), 'bin'), 'Preset', 'none', ...
+                            'Cols', 2, 'Power', -p, 'Key', 'wrong', 'Count', 500, 'Seed', sd);
+    end
+end
+for p = 100:120                                                  % B-H1-1
+    sd = sd + 1;
+    gen_synthetic_dumps(fullfile(root, 'h1_awgn', sprintf('c32_m%d_j1', p), 'bin'), 'Preset', 'none', ...
+                        'Cols', 2, 'Power', -p, 'Key', 'right', 'Count', 500, 'Seed', sd);
+end</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>단계 B의 명령이 이 폴더에서 그대로 돎</dd></dl>
+    <div class="rec"><label for="st-A-4">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-4"></select><span class="meta" id="mt-A-4"></span></div><textarea id="nt-A-4" placeholder="메모"></textarea></div></div>
+  </article>
+
+  <details>
+    <summary>단계 A 기대값 (미리 만든 합성 세트 기준)</summary>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>항목</th><th>5열</th><th>2열</th></tr></thead>
+      <tbody>
+        <tr><td>MD Pfa (−120 / −88 / −82 / −40 dBm)</td><td class="num">약 0.1 / 1.0 / 5.2 / 0.2%</td><td>같음</td></tr>
+        <tr><td>κ 중앙값</td><td class="num">0.38 / 0.57 / 0.82 / 0.98</td><td>같음</td></tr>
+        <tr><td>Λ̂ Pfa</td><td class="num">0~0.2%</td><td>같음</td></tr>
+        <tr><td>H1 L90</td><td>MD −111.2, Λ −112.3, Λ̂ −109.7 dBm</td><td>MD, Λ̂만</td></tr>
+        <tr><td>패킷 H0 (소프트, 8개)</td><td>수락 0, χ²₁₆ 꼬리 비율 0.86~1.33, 쌍 상관 ≤ 0.06</td><td>같음</td></tr>
+        <tr><td>패킷 H1</td><td>소프트 Pd(−116 dBm) 1.0, AND L90 Λ −112.8 / Λ̂ −111.4 dBm</td><td>Λ̂만</td></tr>
+        <tr><td>피크 이동 (<code>h1_drift</code>)</td><td>기울기 0.32, 후보 7개, −114 dBm Pd 0.86 → 0.98</td><td>같음</td></tr>
+      </tbody>
+    </table></div>
+    <p class="hint">MATLAB에서 새로 만든 세트는 난수가 달라 조금 다르며, 자동 시험의 범위는 그 흔들림을 감안했습니다.</p>
+  </details>
+</section>
+
+<!-- ============================================================ B -->
+<section class="stage" id="sB" data-stage="B">
+  <div class="stage-head"><span class="stage-no">B</span><div class="t"><h2>현재 LLS: 2열 덤프, 고정 칩 패킷 판정</h2><p>판정기의 결론은 패킷 근거(꼬리 비율, 독립성, 수락 수, 패킷 L90)로 냅니다. 프래그먼트 탭 꼬리 비율은 패킷 문턱 공식의 전제이고, 프래그먼트 Pfa는 진단입니다. B-0과 B-H0-4를 먼저 돌려 주세요.</p></div></div>
+
+  <article class="item" id="B-0" data-id="B-0" data-stage="B">
+    <div class="item-head"><span class="iid">B-0</span><h3>패킷 전제: 프레임 구성, 피크 이동, AGC</h3><span class="tags"><span class="tag req">필수</span><span class="tag dec">결정 5</span></span></div>
+    <p class="data"><b>덤프</b> H1 32심볼, −60 / −75 / −90 dBm, 각 400개(50패킷), AWGN 0.25 ppm과 예상되는 최대 잔여 오프셋</p>
+    <div class="cmd-box"><pre class="cmd"><code>A = check_packet_assumptions('D:/rif/h1_strong', 'D:/rif/h0_awgn');
+A.layout, A.drift, A.suggest.Drift, A.agc.std, A.rounding</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>모든 프레임이 8개. 기울기 약 0.25탭/프래그먼트(0.25 ppm, 1 ms 간격). AGC 표준편차 약 2.5 dB(참고). 라운딩 몫 1% 미만</dd><dt>쓰임</dt><dd>이동 후보(<code>'Drift'</code>)를 확정합니다. 그 전까지 임시값은 ±0.5 ppm, 후보 9개입니다. 패킷 전체 이동이 0.5탭 이하면 후보 1개(0)</dd></dl>
+    <div class="rec"><label for="st-B-0">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-0"></select><span class="meta" id="mt-B-0"></span></div><textarea id="nt-B-0" placeholder="예: layout 100% 8개, 기울기 0.27, 제안 후보 7개, AGC 2.4 dB"></textarea></div></div>
+  </article>
+
+  <article class="item" id="B-CH" data-id="B-CH" data-stage="B">
+    <div class="item-head"><span class="iid">B-CH</span><h3>같은 채널 조건 확인 (B-H0-4 전)</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="why">B-H0-4는 실제 패킷처럼 8개 프래그먼트가 같은 멀티패스 채널을 겪어야 의미가 있습니다. LLS가 채널을 프래그먼트마다 새로 뽑으면 모델의 "독립 채널" 조건이 되어 첫 검증 항목 구실을 못 합니다.</p>
+    <dl class="expect"><dt>방법</dt><dd>LLS 설정과 채널 코드에서 채널 생성 시점을 확인합니다. 또는 맞는 키 멀티패스 덤프에서 한 프레임 안 8개 CIR의 모양이 같고 프레임끼리만 다른지 봅니다.</dd><dt>기준</dt><dd>채널이 프레임(패킷) 안에서 고정</dd></dl>
+    <div class="rec"><label for="st-B-CH">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-CH"></select><span class="meta" id="mt-B-CH"></span></div><textarea id="nt-B-CH" placeholder="예: 채널을 프레임 시작에서 한 번 생성 (파일·함수 이름)"></textarea></div></div>
+  </article>
+
+  <article class="item" id="B-H0-4" data-id="B-H0-4" data-stage="B">
+    <div class="item-head"><span class="iid">B-H0-4</span><h3>같은 채널 멀티패스의 소프트 합 꼬리 (첫 검증 항목)</h3><span class="tags"><span class="tag req">필수</span><span class="tag dec">결정 1</span></span></div>
+    <p class="data"><b>덤프</b> H0(틀린 키) 32심볼, −82 / −40 dBm, LLS 실내 멀티패스. 먼저 5,000개로 P = 1e-2, 1e-3을 보고, 이상이 없으면 30,000개(3,750패킷)로 늘려 1e-4까지</p>
+    <p class="why">모델에서 채널을 공유하면 깊어질수록 비율이 조금 올라갔고(Λ 1.01~1.23, Λ̂ 0.87~1.11), Λ̂ 소프트 결합이 9,990패킷 중 1건을 받아들였습니다. 한 건이라 결론을 못 냈기 때문에 이 시험이 판정 기준 유지 여부를 정합니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>R0m = h0_pfa_analyze('D:/rif/h0_mp', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', ...
+                     'Drift', A.suggest.Drift, 'Save', 'D:/rif/report/B_h0_mp_pkt');
+[[R0m.PK.pow]' vertcat(R0m.PK.tailRatio)]   % 세기, 꼬리 비율 (P = 1e-2, 1e-3, 1e-4; 표본이 모자라면 NaN)
+[R0m.PK.k]                                   % 패킷 수락 수
+[R0m.PK.rhoPair]                             % 프래그먼트 쌍 상관</code></pre></div>
+    <dl class="expect"><dt>기준</dt><dd>모든 지점에서 꼬리 비율 0.7~1.3이고 깊어질수록 커지지 않을 것. 수락 0. |ρ| ≤ 3/√n</dd><dt>넘으면</dt><dd>결정 1(패킷 10⁻⁶ 기준)을 다시 봅니다. 표본을 늘리거나 문턱 여유를 키우는 쪽을 먼저 검토합니다.</dd></dl>
+    <div class="rec"><label for="st-B-H0-4">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-H0-4"></select><span class="meta" id="mt-B-H0-4"></span></div><textarea id="nt-B-H0-4" placeholder="예: −82 dBm 1.02 / 1.08 / 1.15, −40 dBm 0.97 / 1.01 / NaN, 수락 0, n = 30,000"></textarea></div></div>
+  </article>
+
+  <article class="item" id="B-H0" data-id="B-H0" data-stage="B">
+    <div class="item-head"><span class="iid">B-H0</span><h3>AWGN H0: 패킷 근거와 프래그먼트 전제·진단 (B-H0-1, B-H0-2)</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="data"><b>덤프</b> 32심볼 −120, −100, −95, −90, −88, −86, −84, −82, −80, −78, −76, −72, −60, −40 dBm / 64·128·256심볼 −120, −82, −40 dBm, 각 5,000개</p>
+    <div class="cmd-box"><pre class="cmd"><code>R0  = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Save', 'D:/rif/report/B_h0_md');                     % MD, κ
+R0c = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Moments', 'cir', 'Save', 'D:/rif/report/B_h0_cir');  % Λ̂ 프래그먼트
+R0p = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', ...
+                     'Drift', A.suggest.Drift, 'Save', 'D:/rif/report/B_h0_pkt');                           % 패킷</code></pre></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>구분</th><th>볼 곳</th><th>기준 (모델 기대값)</th></tr></thead>
+      <tbody>
+        <tr><td><b>합격 (패킷)</b></td><td><code>R0p</code> 패킷 표</td><td>꼬리 비율 P = 1e-2, 1e-3에서 0.7~1.3 (합성 0.86~1.33), |ρ| ≤ 3/√n, 수락 0</td></tr>
+        <tr><td><b>전제</b></td><td><code>R0c</code> Λ 표, t = 10, 14</td><td>Λ̂ 탭 꼬리 비율 0.7~1.3 (0.8~1.2). 벗어나면 패킷 결론도 낼 수 없음</td></tr>
+        <tr><td>진단</td><td><code>R0c</code> Λ 표</td><td>Λ̂ 프래그먼트 Pfa 점추정 ≤ 1e-3 (n = 5,000에서 k ≤ 5)</td></tr>
+        <tr><td>진단</td><td><code>R0</code> −88 ~ −76 dBm</td><td>MD 중간 세기 실패 재현: Pfa 1e-2 ~ 5.6e-2, D 중앙값 &lt; 10 dB</td></tr>
+        <tr><td>진단</td><td><code>R0</code> kappa 열</td><td>−120 dBm 0.38 / −40 dBm: 32심볼 0.98, 64심볼 0.91, 128심볼 0.66, 256심볼 0.38</td></tr>
+      </tbody>
+    </table></div>
+    <div class="rec"><label for="st-B-H0">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-H0"></select><span class="meta" id="mt-B-H0"></span></div><textarea id="nt-B-H0" placeholder="예: 패킷 꼬리 0.91~1.12, 수락 0 / Λ̂ 탭 꼬리 0.86~1.10 / MD −82 dBm 4.9e-2"></textarea></div></div>
+  </article>
+
+  <article class="item" id="B-H1" data-id="B-H1" data-stage="B">
+    <div class="item-head"><span class="iid">B-H1</span><h3>패킷 감도 (B-H1-1)</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="data"><b>덤프</b> H1 32·256심볼, −120 ~ −100 dBm, 1 dB 간격, 세기당 4,000개(500패킷)</p>
+    <div class="cmd-box"><pre class="cmd"><code>R1  = h1_pd_analyze('D:/rif/h1_awgn');                          % MD 프래그먼트 Pd·CI·위치·L90
+R1c = h1_pd_analyze('D:/rif/h1_awgn', 'Moments', 'cir');        % Λ̂ 프래그먼트
+R1p = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
+R1a = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Combine', 'kofn', 'KofN', 6);
+R1p.pkt.L90, R1a.pkt.L90, R1c.L90</code></pre></div>
+    <dl class="expect"><dt>기준</dt><dd>Λ̂ 소프트 패킷 L90 약 −116.7 dBm(이동 탐색 시 약 0.3 dB 덜함). 프래그먼트 Λ̂ L90(−109.6)보다 6 dB 이상 좋을 것. 패킷 위치 정확도 ≥ 98%</dd><dt>참고</dt><dd>6-of-8 약 −112.5 dBm. 프래그먼트: MD −111.3(실측 −111.9), Λ̂ −109.6(LLS 약 −110.1 예상), MD 대비 손해 ≤ 2.5 dB</dd></dl>
+    <div class="rec"><label for="st-B-H1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-H1"></select><span class="meta" id="mt-B-H1"></span></div><textarea id="nt-B-H1" placeholder="예: 소프트 −116.4, 6-of-8 −112.3, Λ̂ 프래그먼트 −110.0, 위치 99%"></textarea></div></div>
+  </article>
+
+  <article class="item" id="B-F" data-id="B-F" data-stage="B">
+    <div class="item-head"><span class="iid">B-F</span><h3>일관성 하한의 감도 비용</h3><span class="tags"><span class="tag">권장</span></span></div>
+    <div class="cmd-box"><pre class="cmd"><code>R1f0 = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift, 'Floor', 0);
+R1p.pkt.L90 - R1f0.pkt.L90     % 하한 F = 1의 비용 [dB]</code></pre></div>
+    <dl class="expect"><dt>기준</dt><dd>≤ 0.5 dB (모델 약 0.2 dB)</dd></dl>
+    <div class="rec"><label for="st-B-F">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-F"></select><span class="meta" id="mt-B-F"></span></div><textarea id="nt-B-F" placeholder="예: 0.21 dB"></textarea></div></div>
+  </article>
+
+  <article class="item" id="B-S" data-id="B-S" data-stage="B">
+    <div class="item-head"><span class="iid">B-S</span><h3>바꿔치기 폐기율</h3><span class="tags"><span class="tag">권장</span><span class="tag dec">결정 6</span></span></div>
+    <p class="why">맞는 키 패킷에서 5번 RIF의 Λ̂만 틀린 키 덤프의 것으로 바꾸고, 지금의 고정 하한이 그 패킷을 얼마나 버리는지 봅니다. 결정 6(안 3)의 일관성 검사를 구현한 뒤 같은 코드로 다시 잴 기준선입니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>r  = rif_cir_analyze('D:/rif/h1_awgn/c32_m110_j1/bin', 'Plot', 'none', 'Quiet', true, 'Chip', 'fixed');
+r0 = rif_cir_analyze('D:/rif/h0_awgn/c32_m82_j1/bin',  'Plot', 'none', 'Quiet', true, 'Chip', 'fixed');
+i5 = find(r.frag == 5);
+r.Lam_W(:, i5) = r0.Lam_W(:, 1:numel(i5));                 % 5번 RIF를 틀린 키 프래그먼트로 바꿔치기
+P0 = rif_packet(r, 'Combine', 'soft', 'Floor', 0);
+P1 = rif_packet(r, 'Combine', 'soft', 'Floor', 1);
+[mean(P0.valid), mean(P1.valid)]                           % 기대: 약 1.0, 약 0.6</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>F = 1에서 약 40% 폐기 (= 1 − e^(−F/2))</dd></dl>
+    <div class="rec"><label for="st-B-S">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-S"></select><span class="meta" id="mt-B-S"></span></div><textarea id="nt-B-S" placeholder="예: 0.99 / 0.62 → 37% 폐기"></textarea></div></div>
+  </article>
+
+  <article class="item" id="B-MD" data-id="B-MD" data-stage="B">
+    <div class="item-head"><span class="iid">B-MD</span><h3>MD 방식의 패킷 평가</h3><span class="tags"><span class="tag">권장</span><span class="tag">진단</span></span></div>
+    <p class="why">한 패킷의 8개가 같은 채널을 겪으므로, 실제로 8개 모두 통과한 비율이 독립 가정의 p⁸과 다를 수 있습니다. "MD 방식은 패킷 보장이 없다"는 근거로 기록합니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>r = rif_cir_analyze('D:/rif/h0_mp/c32_m40_j1/bin', 'Plot', 'none', 'Quiet', true);
+[~, ~, g] = unique(r.frame);                       % 프레임 = 패킷
+allPass = accumarray(g(:), double(r.valid(:)), [], @min);
+[mean(r.valid), mean(r.valid)^8, mean(allPass)]    % p, p^8 (독립 가정), 실제 8개 모두 통과 비율</code></pre></div>
+    <dl class="expect"><dt>참고</dt><dd>AWGN은 약 1e-10이라 0건. 멀티패스는 채널에 따라 다름 (모델: 평균 8.5e-9, 최악 채널 8.8e-7)</dd></dl>
+    <div class="rec"><label for="st-B-MD">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-MD"></select><span class="meta" id="mt-B-MD"></span></div><textarea id="nt-B-MD" placeholder="예: p 0.048, p^8 2.8e-11, 실제 0 / 3,750"></textarea></div></div>
+  </article>
+
+  <article class="item" id="B-1R" data-id="B-1R" data-stage="B">
+    <div class="item-head"><span class="iid">B-1R</span><h3>RIF 1개 설정 (B-H1-4, B-H0-6)</h3><span class="tags"><span class="tag">권장</span></span></div>
+    <div class="cmd-box"><pre class="cmd"><code>R0one = h0_pfa_analyze('D:/rif/h0_1rif', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'FragPerPacket', 1);
+R1one = h1_pd_analyze('D:/rif/h1_1rif', 'Chip', 'fixed', 'Profile', 'fira-medium', 'FragPerPacket', 1);
+R1one.pkt.L90</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>Λ̂ L90 −106.1 / −109.1 / −111.4 dBm (32 / 64 / 128심볼). 문턱 36.53</dd><dt>기준</dt><dd>꼬리 비율 0.7~1.3 (t ≤ 18에서 확인, 문턱까지는 외삽)</dd></dl>
+    <div class="rec"><label for="st-B-1R">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-1R"></select><span class="meta" id="mt-B-1R"></span></div><textarea id="nt-B-1R" placeholder="예: −106.4 / −109.0 / −111.6"></textarea></div></div>
+  </article>
+
+  <article class="item" id="B-R" data-id="B-R" data-stage="B">
+    <div class="item-head"><span class="iid">B-R</span><h3>나머지 권장 세트</h3><span class="tags"><span class="tag">권장</span></span></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ID</th><th>조건</th><th>기대 (모델)</th></tr></thead>
+      <tbody>
+        <tr><td class="num">B-H0-3</td><td>H0 32·256심볼, −82 / −40 dBm, FreqOffset = 0, ClkOffset = 0</td><td>256심볼도 κ ≈ 1, MD Pfa ≈ 2.7e-3</td></tr>
+        <tr><td class="num">B-H0-5</td><td>H0 32심볼, Tx off (안 되면 −150 dBm)</td><td>열잡음 기준선</td></tr>
+        <tr><td class="num">B-H1-2</td><td>H1 64·128심볼, −120 ~ −100 dBm</td><td>길이별 L90</td></tr>
+        <tr><td class="num">B-H1-3</td><td>H1 32심볼, B-H0-4의 멀티패스, 2 dB 간격</td><td>위치 정확도 τrms 10 ns 약 97%, 20 ns 약 61%</td></tr>
+      </tbody>
+    </table></div>
+    <div class="rec"><label for="st-B-R">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-R"></select><span class="meta" id="mt-B-R"></span></div><textarea id="nt-B-R" placeholder="돌린 ID와 핵심 값"></textarea></div></div>
+  </article>
+</section>
+
+<!-- ============================================================ C -->
+<section class="stage" id="sC" data-stage="C">
+  <div class="stage-head"><span class="stage-no">C</span><div class="t"><h2>5열 덤프 bring-up (C++ 수정 후)</h2><p>상관기와 같은 루프, 같은 샘플, 같은 AccLen−1 구간에서 <code>momQ += |z|²</code>, <code>momPi += z²</code>를 누적하고, 프래그먼트마다 초기화합니다. 조건당 200~500개면 됩니다.</p></div></div>
+  <article class="item" id="C-1" data-id="C-1" data-stage="C">
+    <div class="item-head"><span class="iid">C-1~4</span><h3>Q·Π 구현 확인</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ID</th><th>조건</th><th>확인</th><th>기준</th></tr></thead>
+      <tbody>
+        <tr><td class="num">C-1</td><td>H0 −120 dBm</td><td><code>median(R.qRatio)</code>, <code>median(R.rhoPk)</code></td><td>0.9~1.1, ≤ 0.1</td></tr>
+        <tr><td class="num">C-2</td><td>H0 −40 dBm</td><td><code>qRatio</code>, <code>rhoPk</code></td><td>≈ 1, ≈ 0.97</td></tr>
+        <tr><td class="num">C-3</td><td>H1 −60 dBm</td><td><code>validL</code>, <code>kpk</code></td><td>전부 1, 127 근처</td></tr>
+        <tr><td class="num">C-4</td><td>C-1과 같은 시드로 2열 / 5열</td><td>1·2열(CIR) 비교</td><td>동일</td></tr>
+      </tbody>
+    </table></div>
+    <p class="hint"><code>qRatio</code>가 1/64나 64 근처면 라운딩 스케일 불일치, 열잡음에서 <code>rhoPk</code> ≈ 1이면 Π를 <code>z·conj(z)</code>로 계산한 것입니다.</p>
+    <div class="rec"><label for="st-C-1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-C-1"></select><span class="meta" id="mt-C-1"></span></div><textarea id="nt-C-1" placeholder="예: qRatio 0.99, rhoPk 0.05 / −40 dBm 0.97 / validL 1 / CIR 동일"></textarea></div></div>
+  </article>
+</section>
+
+<!-- ============================================================ D -->
+<section class="stage" id="sD" data-stage="D">
+  <div class="stage-head"><span class="stage-no">D</span><div class="t"><h2>5열 최종 검증: 새 칩 패킷 판정</h2><p>원시 샘플 Λ의 최종 확인입니다. 같은 덤프로 고정 칩 Λ̂도 함께 봅니다.</p></div></div>
+  <article class="item" id="D-H0" data-id="D-H0" data-stage="D">
+    <div class="item-head"><span class="iid">D-H0</span><h3>핵심 H0 30,000개</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="data"><b>덤프</b> 32심볼 −120, −88, −82, −76, −40 dBm / 256심볼 −82, −40 dBm (CFO 0 포함) / 같은 채널 멀티패스 −82, −40 dBm, 각 30,000개. 나머지 H0는 5,000개</p>
+    <div class="cmd-box"><pre class="cmd"><code>R0   = h0_pfa_analyze('D:/rif5/h0_awgn', 'Suggest', false, 'Save', 'D:/rif/report/D_h0');   % raw Λ
+R0h  = h0_pfa_analyze('D:/rif5/h0_awgn', 'Suggest', false, 'PerClass', true);              % HW 근사
+R0n  = h0_pfa_analyze('D:/rif5/h0_awgn', 'Suggest', false, 'Chip', 'new', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
+R0nm = h0_pfa_analyze('D:/rif5/h0_mp', 'Suggest', false, 'Chip', 'new', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);   % 같은 채널</code></pre></div>
+    <dl class="expect"><dt>합격</dt><dd>새 칩 패킷 꼬리 비율 0.7~1.3 (P = 1e-2, 1e-3, 1e-4), |ρ| ≤ 3/√n, 수락 0 (합성 0.88~1.10, 같은 채널 모델 Λ 1.01~1.23)</dd><dt>전제</dt><dd>탭 꼬리 비율 0.7~1.3 (0.83~1.25), PerClass는 raw와 통계 오차 안</dd><dt>진단</dt><dd>프래그먼트 Pfa 점추정 ≤ 1e-3 (2.5e-4~8.5e-4)</dd></dl>
+    <div class="rec"><label for="st-D-H0">상태 · 결과</label><div class="fields"><div class="row"><select id="st-D-H0"></select><span class="meta" id="mt-D-H0"></span></div><textarea id="nt-D-H0" placeholder="조건별 꼬리 비율, 수락 수"></textarea></div></div>
+  </article>
+  <article class="item" id="D-H1" data-id="D-H1" data-stage="D">
+    <div class="item-head"><span class="iid">D-H1</span><h3>새 칩 패킷 감도</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <div class="cmd-box"><pre class="cmd"><code>R1  = h1_pd_analyze('D:/rif5/h1_awgn');
+R1c = h1_pd_analyze('D:/rif5/h1_awgn', 'Moments', 'cir');
+R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
+R1n.pkt.L90, R1.L90, R1c.L90</code></pre></div>
+    <dl class="expect"><dt>합격</dt><dd>새 칩 패킷 L90이 고정 칩 패킷보다 나쁘지 않을 것 (Λ −117.6 / Λ̂ −116.7 dBm)</dd><dt>진단</dt><dd>프래그먼트 Λ가 MD보다 약 0.6 dB 좋음, Λ̂는 raw 대비 손해 1.5~3.5 dB, AWGN 위치 정확도 ≥ 98%</dd></dl>
+    <div class="rec"><label for="st-D-H1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-D-H1"></select><span class="meta" id="mt-D-H1"></span></div><textarea id="nt-D-H1" placeholder="예: 새 칩 −117.3, 고정 칩 −116.5"></textarea></div></div>
+  </article>
+</section>
+
+<section class="send" id="send">
+  <h2>Claude에게 보낼 결과</h2>
+  <ol>
+    <li>A-1, A-2의 요약 두 줄과 <code>[CHECK]</code> 줄, A-P와 A-3의 결과, <code>rif_results.json</code></li>
+    <li>B-0의 <code>A.drift</code>, <code>A.suggest.Drift</code>, <code>A.layout</code>, <code>A.agc</code>: 이동 후보 확정(결정 5)</li>
+    <li>B-H0-4 패킷 표의 꼬리 비율(P = 1e-2 / 1e-3 / 1e-4)과 수락 수: 결정 1 유지 판단</li>
+    <li>단계 B의 나머지 표와 그림: <code>h0_pfa_analyze</code>의 "Packet decision" 표, <code>h1_pd_analyze</code>의 패킷 L90</li>
+  </ol>
+  <p class="hint">이 페이지에 적은 메모는 "결과 요약 복사"로 한 번에 옮길 수 있습니다. 공유 기록에 연결된 페이지라면 Claude가 직접 읽을 수도 있습니다.</p>
+</section>
+
+<footer class="foot">
+  <p>단계 E(거리 ≠ 0, 고정소수점, 다중 안테나, BPRF)는 선택이라 넣지 않았습니다. <code>TEST_PLAN.md</code> 6장을 보세요.</p>
+  <p>관련 페이지: <a href="index.html">RIF Λ 판정기</a>(전체 해설), <a href="basis.html">RIF 판정 기준 전환</a>(결정 1 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(결정 6 자료). 결정 기록은 저장소의 <code>lambda_patch/DECISIONS.md</code>에 있습니다.</p>
+</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var STATUS = [['todo', '미실행'], ['run', '진행 중'], ['pass', '통과'], ['check', '확인 필요'], ['skip', '건너뜀']];
+  var LABEL = {}; STATUS.forEach(function (s) { LABEL[s[0]] = s[1]; });
+  var STAGES = {A: '합성 덤프', B: '현재 LLS', C: 'bring-up', D: '최종 검증'};
+  var LS_KEY = 'rif-checklist-v1';
+  var items = Array.prototype.slice.call(document.querySelectorAll('.item'));
+  var state = {};                 /* id -> {status, note, by, at} */
+  var mode = 'pending';           /* pending | shared | local | readonly | error */
+  var db = null, user = null, myId = null;
+  var chains = {}, timers = {};
+
+  function $(id) { return document.getElementById(id); }
+  function rec(id) { return state[id] || {status: 'todo', note: ''}; }
+  function lsLoad() { try { var v = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
+  function lsSave() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {} }
+  function fmtTime(iso) {
+    var d = new Date(iso); if (isNaN(d)) return '';
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return (d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function setSync(m, text) { mode = m; var s = $('sync'); s.setAttribute('data-mode', m); $('sync-text').textContent = text; }
+
+  /* ---------------------------------------------------------------- controls */
+  items.forEach(function (el) {
+    var id = el.getAttribute('data-id'), sel = $('st-' + id), ta = $('nt-' + id);
+    STATUS.forEach(function (s) { var o = document.createElement('option'); o.value = s[0]; o.textContent = s[1]; sel.appendChild(o); });
+    sel.addEventListener('change', function () { edit(id, {status: sel.value}); flush(id); });
+    ta.addEventListener('input', function () {
+      edit(id, {note: ta.value});
+      clearTimeout(timers[id]); timers[id] = setTimeout(function () { flush(id); }, 1200);
+    });
+    ta.addEventListener('blur', function () { if (timers[id]) { clearTimeout(timers[id]); flush(id); } });
+  });
+  document.querySelectorAll('pre.cmd').forEach(function (pre) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'copy'; b.textContent = '복사';
+    b.addEventListener('click', function () {
+      var t = pre.textContent;
+      function done(ok) { b.textContent = ok ? '복사됨' : '선택됨'; setTimeout(function () { b.textContent = '복사'; }, 1400); }
+      function fallback() { var r = document.createRange(); r.selectNodeContents(pre); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); done(false); }
+      try { navigator.clipboard.writeText(t).then(function () { done(true); }, fallback); } catch (e) { fallback(); }
+    });
+    pre.parentNode.appendChild(b);
+  });
+
+  function edit(id, patch) {
+    var r = rec(id), n = {status: r.status, note: r.note || '', by: myId, at: new Date().toISOString()};
+    if (patch.status !== undefined) n.status = patch.status;
+    if (patch.note !== undefined) n.note = patch.note;
+    state[id] = n; renderItem(id); renderSummary();
+    if (mode !== 'shared') lsSave();
+  }
+  function flush(id) {
+    timers[id] = null;
+    if (mode !== 'shared' || !db) return;
+    var body = {status: rec(id).status, note: rec(id).note || '', by: myId, at: rec(id).at};
+    chains[id] = (chains[id] || Promise.resolve()).then(function () {
+      return db.doc('items/' + id).set(body);
+    }).catch(function (e) {
+      var code = e && e.code;
+      if (code === 'invalid_argument') { setSync('readonly', '이 페이지의 기록을 바꿀 권한이 없습니다. 보기만 할 수 있습니다.'); lockAll(); }
+      else if (code === 'quota_exceeded') setSync('error', '기록 저장소가 가득 찼습니다. 바꾼 내용이 저장되지 않았습니다.');
+      else setSync('error', '저장하지 못했습니다. 잠시 뒤 다시 바꿔 보세요.');
+    });
+  }
+  function lockAll() { setLocked(true); }
+  function setLocked(on) { items.forEach(function (el) { var id = el.getAttribute('data-id'); $('st-' + id).disabled = on; $('nt-' + id).disabled = on; }); }
+
+  /* ---------------------------------------------------------------- render */
+  var names = {};
+  function renderItem(id) {
+    var r = rec(id), el = $(id), sel = $('st-' + id), ta = $('nt-' + id);
+    el.setAttribute('data-status', r.status);
+    if (sel.value !== r.status) sel.value = r.status;
+    if (document.activeElement !== ta && ta.value !== (r.note || '')) ta.value = r.note || '';
+    var m = [];
+    if (r.at && r.status !== 'todo' || r.note) {
+      if (r.by && names[r.by]) m.push(names[r.by]);
+      if (r.at) m.push(fmtTime(r.at));
+    }
+    $('mt-' + id).textContent = m.join(' · ');
+  }
+  function renderSummary() {
+    document.querySelectorAll('.stage-sum').forEach(function (card) {
+      var st = card.getAttribute('data-stage'), list = items.filter(function (el) { return el.getAttribute('data-stage') === st; });
+      var c = {pass: 0, check: 0, run: 0, skip: 0, todo: 0};
+      list.forEach(function (el) { c[rec(el.getAttribute('data-id')).status]++; });
+      var n = list.length;
+      card.querySelector('.ct').textContent = c.pass + ' / ' + n + ' 통과';
+      var bar = card.querySelector('.bar'); while (bar.firstChild) bar.removeChild(bar.firstChild);
+      ['pass', 'check', 'run', 'skip'].forEach(function (k) {
+        if (!c[k]) return; var s = document.createElement('span'); s.className = 'b-' + k; s.style.width = (100 * c[k] / n) + '%'; bar.appendChild(s);
+      });
+      var extra = [];
+      if (c.check) extra.push('확인 필요 ' + c.check);
+      if (c.run) extra.push('진행 중 ' + c.run);
+      card.querySelector('.sub').textContent = extra.length ? extra.join(' · ') : card.getAttribute('data-sub');
+    });
+    document.querySelectorAll('.gate').forEach(function (g) {
+      var r = rec(g.getAttribute('data-gate')), chip = g.querySelector('.chip');
+      chip.setAttribute('data-s', r.status); chip.textContent = LABEL[r.status];
+      g.querySelector('.gn').textContent = r.note ? (r.note.length > 140 ? r.note.slice(0, 140) + '…' : r.note) : '';
+    });
+  }
+  function renderAll() { items.forEach(function (el) { renderItem(el.getAttribute('data-id')); }); renderSummary(); resolveNames(); }
+  document.querySelectorAll('.stage-sum').forEach(function (card) { card.setAttribute('data-sub', card.querySelector('.sub').textContent); });
+
+  function resolveNames() {
+    if (!user) return;
+    var ids = [];
+    Object.keys(state).forEach(function (k) { var b = state[k] && state[k].by; if (b && ids.indexOf(b) < 0) ids.push(b); });
+    if (!ids.length) return;
+    user.profiles(ids).then(function (ps) {
+      var changed = false;
+      ids.forEach(function (i) { var nm = (ps[i] && ps[i].name) || ''; if (names[i] !== nm) { names[i] = nm; changed = true; } });
+      if (changed) items.forEach(function (el) { renderItem(el.getAttribute('data-id')); });
+    });
+  }
+
+  /* ---------------------------------------------------------------- summary copy */
+  $('copy-sum').addEventListener('click', function () {
+    var lines = ['RIF 검증 체크리스트 결과 (' + new Date().toISOString().slice(0, 10) + ')'];
+    ['A', 'B', 'C', 'D'].forEach(function (st) {
+      lines.push(''); lines.push('[' + st + '] ' + STAGES[st]);
+      items.filter(function (el) { return el.getAttribute('data-stage') === st; }).forEach(function (el) {
+        var id = el.getAttribute('data-id'), r = rec(id), h = el.querySelector('h3').textContent.replace(/\s+/g, ' ').trim();
+        var note = (r.note || '').replace(/\s*\n\s*/g, ' / ').trim();
+        lines.push('- ' + el.querySelector('.iid').textContent + ' ' + h + ': ' + LABEL[r.status] + (note ? ' — ' + note : ''));
+      });
+    });
+    var text = lines.join('\n'), out = $('copy-out'), msg = $('copy-msg');
+    function fallback() { out.hidden = false; out.value = text; out.focus(); out.select(); msg.textContent = '복사가 막혀 있어 아래에 텍스트를 선택해 두었습니다. Ctrl+C로 복사하세요.'; }
+    try {
+      navigator.clipboard.writeText(text).then(function () { out.hidden = true; msg.textContent = '복사했습니다. 항목 ' + items.length + '개의 상태와 메모입니다.'; }, fallback);
+    } catch (e) { fallback(); }
+  });
+
+  /* ---------------------------------------------------------------- storage */
+  function goLocal(text) { state = lsLoad(); setSync('local', text); setLocked(false); renderAll(); }
+  renderAll();
+  setLocked(true);                /* until we know where records are kept */
+  if (!window.claude || typeof window.claude.use !== 'function') {
+    goLocal('이 브라우저에만 저장됩니다. 다른 사람이나 다른 기기와 공유되지 않습니다.');
+    return;
+  }
+  Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function (res) {
+    db = res[0]; user = res[1];
+    if (!db) { goLocal('공유 기록에 연결되지 않아 이 브라우저에만 저장됩니다.'); return; }
+    var idp = user ? user.id() : Promise.resolve(null);
+    var canp = user ? user.can('data.write') : Promise.resolve(null);
+    Promise.all([idp, canp]).then(function (v) {
+      myId = v[0];
+      if (v[1] === false) { setSync('readonly', '이 기록은 보기만 할 수 있습니다. 상태를 바꾸려면 페이지 소유자에게 편집 권한을 요청하세요.'); lockAll(); }
+      else { setSync('shared', '공유 기록: 이 페이지를 여는 사람 모두가 같은 상태와 메모를 봅니다.'); setLocked(false); }
+      db.collection('items').onSnapshot(function (snap) {
+        var next = {};
+        snap.docs.forEach(function (d) { if (d.exists) next[d.id] = d.data(); });
+        /* keep a note that is being typed here until it is saved */
+        Object.keys(timers).forEach(function (k) { if (timers[k] && state[k]) next[k] = state[k]; });
+        state = next; renderAll();
+      }, function () { setSync('error', '공유 기록과 연결이 끊겼습니다. 페이지를 새로 고치세요.'); });
+    });
+  }, function () { goLocal('공유 기록에 연결되지 않아 이 브라우저에만 저장됩니다.'); });
+})();
+</script>
+<script>
+(function () {
+  /* theme toggle: system -> light -> dark */
+  var themeBtn = document.getElementById('theme-btn');
+  function themeLabel() {
+    var t = document.documentElement.getAttribute('data-theme');
+    themeBtn.textContent = '테마: ' + (t === 'light' ? '라이트' : t === 'dark' ? '다크' : '시스템');
+  }
+  themeBtn.addEventListener('click', function () {
+    var t = document.documentElement.getAttribute('data-theme');
+    var next = t === null ? 'light' : t === 'light' ? 'dark' : null;
+    if (next) document.documentElement.setAttribute('data-theme', next); else document.documentElement.removeAttribute('data-theme');
+    try { if (next) localStorage.setItem('rif-theme', next); else localStorage.removeItem('rif-theme'); } catch (e) {}
+    themeLabel();
+  });
+  themeLabel();
+})();
+</script>
+</body>
+</html>

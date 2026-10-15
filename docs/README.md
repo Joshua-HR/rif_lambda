@@ -1,20 +1,21 @@
 # RIF Λ 판정기 해설 페이지 (GitHub Pages)
 
-정적 페이지 세 개입니다. 빌드 과정이 없고, 위젯의 시뮬레이션과 그래프는 브라우저에서 돕니다.
+정적 페이지 네 개입니다. 빌드 과정이 없고, 위젯의 시뮬레이션과 그래프는 브라우저에서 돕니다.
 
 | 파일 | 내용 |
 |---|---|
 | `index.html` | RIF Λ 판정기 전체 해설 (아래 "내용") |
 | `basis.html` | RIF 판정 기준 전환: 프래그먼트 1e-3 → 패킷(거리 측정 1회) 10⁻⁶(FiRa medium) 검토. 개념, 수식, 대화형 그래프, 검증 방법, MD 평가의 변화 (결정 1) |
 | `consistency.html` | RIF 일관성 검사 비교: 네 가지 정상 폐기율 안의 폐기, 바꿔치기 탐지, 감도 손해 (결정 6) |
+| `checklist.html` | RIF 검증 체크리스트: 단계 A~D의 시험 명령, 기대값, 합격 기준과 항목별 상태·결과 메모. Pages판은 기록이 각자 브라우저에만 저장되고, claude.ai판은 함께 보는 사람과 공유됩니다 |
 
-세 페이지는 바닥글에서 서로 링크됩니다. 결정과 재검토 조건은 `../lambda_patch/DECISIONS.md`에 있습니다.
-`basis.html`과 `consistency.html`은 작업 폴더의 원본에서 만든 결과물이라 직접 고치지 않습니다.
+페이지들은 바닥글에서 서로 링크됩니다. 결정과 재검토 조건은 `../lambda_patch/DECISIONS.md`에 있습니다.
+`basis.html`, `consistency.html`, `checklist.html`은 작업 폴더의 원본에서 만든 결과물이라 직접 고치지 않습니다.
 외부로 나가는 요청은 Google Fonts 하나뿐이며, 사내망에서 막혀도 렌더링을 막지 않고 시스템 글꼴(맑은 고딕 등)로 표시됩니다.
 
 ## 사내 GitHub(GitHub Enterprise) Pages로 게시
 
-1. 이 `docs/` 폴더(HTML 세 개, `.nojekyll`)를 저장소의 게시할 브랜치에 커밋합니다.
+1. 이 `docs/` 폴더(HTML 네 개, `.nojekyll`)를 저장소의 게시할 브랜치에 커밋합니다.
 2. 저장소 **Settings → Pages → Build and deployment**
    - Source: **Deploy from a branch**
    - Branch: 게시할 브랜치(예: `main`), Folder: **`/docs`** → Save

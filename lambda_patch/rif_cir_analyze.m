@@ -257,7 +257,7 @@ end
 if ~isempty(o.Save) && ~exist(o.Save, 'dir')
     mkdir(o.Save);
 end
-cmap = lines(o.Period);
+cmap = rif_series_style(o.Period);    % distinct comb-phase colors (lines() repeats the 1st as the 8th)
 if any(strcmpi(o.Plot, {'detail', 'both'}))
     i0 = min(max(round(o.Index), 1), n);
     fig = figure('Color', 'w', 'Position', [60 60 1250 780], 'Visible', o.Visible, ...
@@ -390,8 +390,8 @@ title('comb depth D = max F[e] / min F[e]   (dashed: gate)');
 
 % (3) Z versus D with the decision boundary
 subplot(2, 2, 3); hold on;
-scatter(R.D_dB(good), R.Z_dB(good), 28, colv, 'filled');
-scatter(R.D_dB(~good), R.Z_dB(~good), 28, colx, 'filled');
+hv = scatter(R.D_dB(good), R.Z_dB(good), 28, colv, 'filled');
+hx = scatter(R.D_dB(~good), R.Z_dB(~good), 28, colx, 'filled');
 xl = [min([R.D_dB, 0]) - 1, max([R.D_dB, o.DTh + 5]) + 1];
 yl = [min([R.Z_dB, 0]) - 1, max([R.Z_dB, o.THigh + 5]) + 1];
 line([xl(1) o.DTh], o.TLow * [1 1], 'Color', 'k', 'LineStyle', '--');
@@ -400,7 +400,7 @@ line(o.DTh * [1 1], yl, 'Color', 'k', 'LineStyle', ':');
 xlim(xl); ylim(yl); grid on; box on;
 xlabel('D [dB]'); ylabel('Z [dB]');
 title(sprintf('decision plane   valid %d / %d', sum(good), n));
-legend({'valid', 'invalid'}, 'Location', 'best');
+legend([hv hx], {'valid', 'invalid'}, 'Location', 'best');
 
 % (4) peak position versus fragment
 subplot(2, 2, 4); hold on;

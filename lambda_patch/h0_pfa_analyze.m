@@ -342,13 +342,13 @@ end
 function plot_lambda(C, EL, TLam, o)
 tg = tail_grid();
 nC = numel(C);
-cm = lines(nC);
+[cm, ls] = rif_series_style([C.len], [C.pow]);
 ax = subplot(1, 2, 1); hold on;
 h = zeros(nC + 1, 1); nm = cell(nC + 1, 1);
 for c = 1:nC
     y = C(c).tailCnt / max(C(c).nTap, 1);
     y(y == 0) = NaN;
-    h(c) = plot(tg, y, '-', 'Color', cm(c, :), 'LineWidth', 1.2);
+    h(c) = plot(tg, y, ls{c}, 'Color', cm(c, :), 'LineWidth', 1.2);
     nm{c} = sprintf('%d sym, %d dBm', C(c).len, -C(c).pow);
 end
 h(end) = plot(tg, exp(-tg / 2), 'k--', 'LineWidth', 1.5);
@@ -486,7 +486,7 @@ end
 % ======================================================================
 function plot_packets(PK, info, o)
 nC = numel(PK);
-cm = lines(nC);
+[cm, ls] = rif_series_style([PK.len], [PK.pow]);
 ax = subplot(1, 2, 1); hold on;
 if strcmp(info.rule, 'soft')
     tg = info.tailT;
@@ -494,7 +494,7 @@ if strcmp(info.rule, 'soft')
     for c = 1:nC
         y = PK(c).tailCnt / max(PK(c).nPath, 1);
         y(y == 0) = NaN;
-        h(c) = plot(tg, y, '-', 'Color', cm(c, :), 'LineWidth', 1.2);
+        h(c) = plot(tg, y, ls{c}, 'Color', cm(c, :), 'LineWidth', 1.2);
         nm{c} = sprintf('%d sym, %d dBm', PK(c).len, -PK(c).pow);
     end
     h(end) = plot(tg, arrayfun(@(t) chi2tail_(t, info.K), tg), 'k--', 'LineWidth', 1.5);
@@ -657,16 +657,13 @@ ink     = [11 11 11] / 255;
 ink2    = [82 81 78] / 255;
 muted   = [137 135 129] / 255;
 gridc   = [225 224 217] / 255;
-slots   = [42 120 214; 235 104 52; 27 175 122; 237 161 0] / 255;  % blue, orange, aqua, yellow (fixed by length)
-lenSet  = [32 64 128 256];
 nC = numel(C);
 nmax = max([C.n]);
 
-col = zeros(nC, 3); ls = cell(nC, 1); nm = cell(nC, 1);
+% color per power, line style per RIF length (rif_series_style): every condition looks different
+[col, ls] = rif_series_style([C.len], [C.pow]);
+nm = cell(nC, 1);
 for c = 1:nC
-    q = find(lenSet == C(c).len, 1);
-    if isempty(q), col(c, :) = muted; else col(c, :) = slots(q, :); end
-    if C(c).pow <= 60, ls{c} = '--'; else ls{c} = '-'; end
     nm{c} = sprintf('%d sym, %d dBm', C(c).len, -C(c).pow);
 end
 
@@ -707,6 +704,7 @@ legend(h, nm, 'Location', 'southeast', 'FontSize', 7, 'Box', 'off');
 % (3) Z versus D of all H0 fragments with the decision boundary
 ax = subplot(2, 2, 3); hold on;
 powSet = unique([C.pow]);
+pcol = rif_series_style(32 * ones(size(powSet)), powSet);   % same power colors as panels (1), (2), (4)
 hp = zeros(numel(powSet), 1); pn = cell(numel(powSet), 1);
 for q = 1:numel(powSet)
     Zs = []; Ds = [];
@@ -714,8 +712,7 @@ for q = 1:numel(powSet)
         Zs = [Zs, C(c).Z]; Ds = [Ds, C(c).D]; %#ok<AGROW>
     end
     idx = unique(round(linspace(1, numel(Zs), min(numel(Zs), 8000))));
-    if powSet(q) >= 100, pc = slots(1, :); elseif powSet(q) <= 60, pc = slots(2, :); else pc = muted; end
-    hp(q) = plot(Ds(idx), Zs(idx), '.', 'Color', pc, 'MarkerSize', 6);
+    hp(q) = plot(Ds(idx), Zs(idx), '.', 'Color', pcol(q, :), 'MarkerSize', 6);
     pn{q} = sprintf('%d dBm', -powSet(q));
 end
 style_ax(ax, surf_, muted, gridc);

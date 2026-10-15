@@ -212,9 +212,11 @@ end
 % ---------------------------------------------------------------- plots
 if logical(o.Plot)
     figure('Color', 'w', 'Name', 'H1 Pd and detection position', 'Position', [80 80 1150 460]);
-    cm = lines(numel(ul));
+    cm = rif_series_style(numel(ul));                 % one color per RIF length
+    gk = [0.35 0.35 0.35];                            % neutral color of the style keys
+    if strcmpi(o.Moments, 'cir'), lamName = '\Lambda-hat (CIR)'; else lamName = '\Lambda'; end
     subplot(1, 2, 1); hold on; grid on; box on;
-    h = zeros(numel(ul), 1); nm = cell(numel(ul), 1);
+    h = zeros(numel(ul) + 2, 1); nm = cell(numel(ul) + 2, 1);
     for q = 1:numel(ul)
         [pw, Pd, Lo, Hi] = series(C, ul(q));
         errorbar(pw, Pd(:, 1), Pd(:, 1) - Lo(:, 1), Hi(:, 1) - Pd(:, 1), '--o', 'Color', cm(q, :), 'MarkerSize', 4);
@@ -222,26 +224,31 @@ if logical(o.Plot)
                         'MarkerSize', 4, 'MarkerFaceColor', cm(q, :));
         nm{q} = sprintf('%d sym', ul(q));
     end
-    line(xlim, [0.9 0.9], 'Color', [0.5 0.5 0.5], 'LineStyle', ':');
-    line(xlim, [0.99 0.99], 'Color', [0.5 0.5 0.5], 'LineStyle', ':');
+    h(end - 1) = plot(NaN, NaN, '--o', 'Color', gk, 'MarkerSize', 4);                         nm{end - 1} = 'MD rule';
+    h(end) = plot(NaN, NaN, '-s', 'Color', gk, 'MarkerSize', 4, 'MarkerFaceColor', gk);      nm{end} = lamName;
+    line(xlim, [0.9 0.9], 'Color', [0.5 0.5 0.5], 'LineStyle', ':', 'HandleVisibility', 'off');
+    line(xlim, [0.99 0.99], 'Color', [0.5 0.5 0.5], 'LineStyle', ':', 'HandleVisibility', 'off');
     ylim([0 1.02]);
     xlabel('SignalPower [dBm]'); ylabel('Pd per fragment');
-    title(sprintf('Pd with %.0f%% CI   (dashed: MD rule, solid: \\Lambda)', 100 * o.Conf));
+    title(sprintf('Pd with %.0f%% CI   (dashed: MD rule, solid: %s)', 100 * o.Conf, lamName));
     legend(h, nm, 'Location', 'southeast');
 
     subplot(1, 2, 2); hold on; grid on; box on;
     for q = 1:numel(ul)
         [pw, ~, ~, ~, ~, Acc] = series(C, ul(q));
         plot(pw, Acc(:, 1), '--o', 'Color', cm(q, :), 'MarkerSize', 4);
-        plot(pw, Acc(:, 2), '-s', 'Color', cm(q, :), 'MarkerSize', 4, 'MarkerFaceColor', cm(q, :));
+        h(q) = plot(pw, Acc(:, 2), '-s', 'Color', cm(q, :), 'MarkerSize', 4, 'MarkerFaceColor', cm(q, :));
     end
+    h(end - 1) = plot(NaN, NaN, '--o', 'Color', gk, 'MarkerSize', 4);
+    h(end) = plot(NaN, NaN, '-s', 'Color', gk, 'MarkerSize', 4, 'MarkerFaceColor', gk);
+    legend(h, nm, 'Location', 'southeast');
     ylim([0 1.02]);
     xlabel('SignalPower [dBm]'); ylabel('share of detections at the right tap');
     title(sprintf('detection position: peak tap within %d \\pm %d', o.PeakTap, o.Tol));
     if doPkt
         figure('Color', 'w', 'Name', 'H1 packet Pd', 'Position', [100 100 700 460]);
         hold on; grid on; box on;
-        h = zeros(numel(ul), 1); nm = cell(numel(ul), 1);
+        h = zeros(numel(ul) + 1, 1); nm = cell(numel(ul) + 1, 1);
         for q = 1:numel(ul)
             cs = find([R.pkt.cond.len] == ul(q));
             [pw, ord] = sort([R.pkt.cond(cs).dBm]);
@@ -252,11 +259,12 @@ if logical(o.Plot)
             plot(pw2, Pd2(:, 2), ':', 'Color', cm(q, :));
             nm{q} = sprintf('%d sym', ul(q));
         end
-        line(xlim, [0.9 0.9], 'Color', [0.5 0.5 0.5], 'LineStyle', ':');
+        h(end) = plot(NaN, NaN, ':', 'Color', gk);  nm{end} = ['fragment ' lamName];
+        line(xlim, [0.9 0.9], 'Color', [0.5 0.5 0.5], 'LineStyle', ':', 'HandleVisibility', 'off');
         ylim([0 1.02]);
         xlabel('SignalPower [dBm]'); ylabel('Pd per packet');
-        title(sprintf('packet Pd (%s, %d fragments, target %.0e); dotted: fragment \\Lambda', R.pkt.info.rule, ...
-                      R.pkt.info.K, R.pkt.info.PfaTarget));
+        title(sprintf('packet Pd (%s, %d fragments, target %.0e); dotted: fragment %s', R.pkt.info.rule, ...
+                      R.pkt.info.K, R.pkt.info.PfaTarget, lamName));
         legend(h, nm, 'Location', 'southeast');
     end
 end

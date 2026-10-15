@@ -178,6 +178,7 @@ momPi[k] += z * z;           // z^2 (복소)
 | `test/gen_synthetic_dumps.m` | 신규 | 파형 모델로 5열(또는 2열) 합성 덤프 생성 |
 | `rif_packet.m` | 신규 | 패킷 판정 (FiRa medium, 9장) |
 | `check_packet_assumptions.m` | 신규 | LLS 덤프로 패킷 전제 확인 (9.5절) |
+| `rif_series_style.m` | 신규 | 그림 계열의 색·선 모양. 색은 세기마다 하나(10개까지 구분색, 그 이상은 순서 있는 색), 선 모양은 RIF 길이마다 하나라 모든 조건이 구분됨. 원본 `h0_pfa_analyze`의 주 그림은 길이마다 색 하나라 같은 길이의 세기들이 같은 색이었고, MATLAB `lines()`는 8번째 계열부터 색이 반복됨 |
 | `test/run_synthetic_test.m` | 신규 | 합성 덤프로 자동 확인 (5열: 10단계 77개 항목, 2열: 6단계 49개 항목) |
 | `test/export_web_results.m` | 신규 | 5열·2열 세트의 분석 결과를 웹 페이지용 JSON으로 저장 (웹 페이지 10장 "1단계 결과" 그림) |
 
@@ -226,6 +227,7 @@ momPi[k] += z * z;           // z^2 (복소)
 - 모든 조건이 5열이면 Λ 표를 추가로 출력합니다. 문턱은 `T = 2·ln(|W_s|/Target) + 2·ln(Margin)`으로 고정하고 탐색하지 않습니다.
   - 열: k, Pfa, 단측 Clopper-Pearson 상한, 판정, 탭 꼬리 비율 `P(Λ≥t)/e^(−t/2)` (t = 10, 14, 18), κ 중앙값
 - 그림 `h0_lambda.png`: 조건별 탭 CCDF와 이론 e^(−t/2), 조건별 Pfa와 상한.
+- 그림의 색은 세기, 선 모양은 RIF 길이를 나타냅니다(`rif_series_style`). 주 그림 `h0_pfa.png`도 원본과 달리 이 규칙을 따릅니다.
 - MD 문턱 탐색(`'Suggest'`)은 원본과 같습니다.
 
 ### 5.4 `h1_pd_analyze.m`

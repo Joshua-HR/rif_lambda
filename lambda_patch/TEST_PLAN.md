@@ -2,7 +2,7 @@
 
 - 작성일: 2026-10-07 / 개정: 2026-10-15 (합격 기준을 패킷 오수락 10⁻⁶ 근거로 전환, `DECISIONS.md` 결정 1)
 - 대상: `lambda_patch/`의 MATLAB 분석 패치(`rif_cir_analyze`, `h0_pfa_analyze`, `h1_pd_analyze`)와 LLS(C++) RIF CIR 덤프
-- 관련 문서: 설계 `LAMBDA_PATCH_DESIGN.md`, 결정 기록 `DECISIONS.md`, 해설 페이지 `../docs/index.html`
+- 관련 문서: 설계 `LAMBDA_PATCH_DESIGN.md`, 결정 기록 `DECISIONS.md`, 해설 페이지 `../docs/index.html`, 체크리스트 페이지 `../docs/checklist.html`(이 계획의 단계 A~D를 항목별 상태·결과 기록과 함께 정리)
 - 이 문서의 기대값은 모델(`model/`)과 합성 덤프에서 나온 값입니다. MATLAB과 LLS 실측으로 확인하기 전까지는 기대값으로만 보세요.
 
 ---
