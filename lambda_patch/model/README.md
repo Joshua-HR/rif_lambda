@@ -23,5 +23,7 @@ numpy 없이 표준 라이브러리와 `multiprocessing`(6 프로세스)만 씁�
 | `medium_level.py` | FiRa medium(패킷 10⁻⁶) 결합 규칙별 패킷 Pd와 H0 근거: `KF=8 python3 medium_level.py h1 4000 -122 -106 out.json`, `... h0 4000 out.json` | 설계 문서 9.3 첫 표 | 약 3분 + 1분 |
 | `policy_k8.py` | 8개 RIF 정책 비교 (strict, soft, 일관성 하한): `python3 policy_k8.py 3000 -121 -104 out.json` | 설계 문서 9.3 정책 표 | 약 2분 |
 | `single_len.py` | RIF 1개 설정, 길이별 L90 (1e-3, 10⁻⁶): `python3 single_len.py 3000 out.json` | 설계 문서 9.3 마지막 표 | 약 1분 |
+| `shared_channel_md.py` | 패킷의 8개 프래그먼트가 멀티패스 채널 하나를 공유할 때(τrms 20 ns, 확산 6 dB 우세, 틀린 키 −42.5 / −82.5 dBm): MD 규칙의 채널별 프래그먼트 오검출 p, 8개 모두 통과의 패킷 오수락 E[p⁸], Λ̂ 소프트·AND 수락 수 (채널 1,998개, 9,990패킷) | 설계 문서 2.1절, 기준 전환 페이지 7장 | 미측정 |
+| `shared_channel_tail.py` | 같은 조건에서 이동 0 소프트 합의 꼬리 비율 P(S ≥ t)/P(χ²₁₆ ≥ t), P = 1e-2 / 1e-3 / 1e-4 지점, 채널 공유와 프래그먼트별 채널 비교 (조건당 6,000패킷, 경로 34.2만 개) | 설계 문서 9.6·9.7절, 기준 전환 페이지 6장 | 미측정 |
 
 dBm은 MD 문서의 환산(−100 dBm ↔ 펄스당 SNR −11.4 dB, 즉 A²[dB] = dBm + 82.5)을 쓴 모델 값입니다.

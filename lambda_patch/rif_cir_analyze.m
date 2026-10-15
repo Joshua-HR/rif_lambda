@@ -27,7 +27,8 @@ function R = rif_cir_analyze(src, varargin)
 %       'Save'      ''          folder to save PNG figures ('' = do not save)
 %       'Visible'   'on'        figure visibility ('off' for batch runs)
 %       'Quiet'     false       true: do not print the per-fragment table (large sets)
-%       'Pfa'       1e-3        design Pfa per fragment of the Lambda detector
+%       'Pfa'       1e-3        design Pfa per fragment of the Lambda detector (fragment diagnostic; the
+%                               requirement is per packet: rif_packet.m, 'Profile','fira-medium' of h0/h1)
 %       'Margin'    1.5         Lambda threshold margin (designed for Pfa / Margin)
 %       'PerClass'  false       true: one Q/Pi per comb phase (HW-like 8 accumulators) instead of per tap
 %       'RhoMax'    0.98        clamp of |Pi|/Q

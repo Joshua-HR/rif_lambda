@@ -71,6 +71,7 @@ strong{font-weight:600}
 .hero{display:flex;flex-direction:column;gap:22px;padding-block:8px 36px}
 .thesis{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
 .thesis > div{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.thesis > .wide{grid-column:1/-1;border-left:3px solid var(--s1)}
 .thesis dt{font:600 12.5px var(--f-mono);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
 .thesis dd{margin:0;font-size:15px;line-height:1.6}
 .toc{display:flex;flex-wrap:wrap;gap:6px 8px;padding:0;list-style:none}
@@ -220,12 +221,13 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
 <header class="hero">
   <span class="eyebrow">IEEE 802.15.4ab · MMS RIF · SemiSyncOnlyMode 유효성 판정</span>
   <h1>RIF Λ 판정기</h1>
-  <p class="lede prose">RIF 프래그먼트 하나를 받았을 때, 맞는 키의 STS가 들어왔는지를 CIR만 보고 판정합니다. 기존 방식은 잡음 바닥을 CIR에서 <strong>추정</strong>했고, 수정 방식은 상관기에 들어간 원시 샘플에서 <strong>계산</strong>합니다. 이 페이지는 그 차이가 왜 결정적인지를 처음부터 순서대로 보여 줍니다.</p>
+  <p class="lede prose">RIF 프래그먼트를 받았을 때, 맞는 키의 STS가 들어왔는지를 CIR만 보고 판정합니다. 기존 방식은 잡음 바닥을 CIR에서 <strong>추정</strong>했고, 수정 방식은 상관기에 들어간 원시 샘플에서 <strong>계산</strong>합니다. 이 페이지는 그 차이가 왜 결정적인지, 그리고 거리 측정 한 번에 쓰는 프래그먼트를 묶어 어떻게 오수락 10⁻⁶을 지키는지를 처음부터 순서대로 보여 줍니다.</p>
   <dl class="thesis">
-    <div><dt>문제</dt><dd>중간 세기의 틀린 키(약 −95~−76 dBm)와 멀티패스에서 기존 판정기의 오검출률이 목표 1e-3의 최대 약 56배까지 올라갑니다.</dd></div>
+    <div class="wide"><dt>기준</dt><dd>요구사항은 거리 측정 한 번(패킷)의 오수락 <strong>10⁻⁶</strong>(FiRa medium)입니다(9장). 1~8장의 프래그먼트당 1e-3은 MD 문서의 내부 목표로, 패킷 보장의 구성 요소이자 MD 방식과 비교하는 진단 기준입니다.</dd></div>
+    <div><dt>문제</dt><dd>중간 세기의 틀린 키(약 −95~−76 dBm)와 멀티패스에서 기존 판정기의 프래그먼트 오검출률이 진단 기준 1e-3의 최대 약 56배까지 올라갑니다. 분포가 조건마다 달라 패킷으로 묶어도 보장이 생기지 않습니다.</dd></div>
     <div><dt>원인</dt><dd>바닥을 위상당 약 10개 탭으로 추정하고, 틀린 키 자기잡음은 복소 평면의 한 직선에 몰려(비원형) 꼬리가 무겁습니다.</dd></div>
     <div><dt>해결</dt><dd>원시 샘플로 분산 Q와 의사분산 Π를 정확히 계산하고, 백색화한 Λ로 판정합니다. 문턱은 공식 하나로 정해집니다. Q·Π를 누적할 수 없는 고정 칩에서는 CIR에서 추정하는 변형을 씁니다(약 2.5 dB 손해).</dd></div>
-    <div><dt>패킷</dt><dd>거리 측정 한 번에 쓰는 RIF 8개를 묶어 FiRa medium(오수락 10⁻⁶)을 지킵니다. 소프트 결합이면 고정 칩에서도 감도가 지금보다 약 7 dB 좋습니다.</dd></div>
+    <div><dt>패킷</dt><dd>거리 측정 한 번에 쓰는 RIF 8개를 묶어 FiRa medium(오수락 10⁻⁶)을 지킵니다. 소프트 결합이면 고정 칩에서도 감도가 프래그먼트 하나로 판정할 때보다 약 7 dB 좋습니다.</dd></div>
   </dl>
   <nav aria-label="목차">
     <ol class="toc">
@@ -410,6 +412,9 @@ valid = Z ≥ ( D &lt; 10 dB ? 9.6 dB : 14.4 dB )        <span class="c">열잡�
     <svg class="chart" id="w4-svg" viewBox="0 0 720 340" role="img" aria-label="원형 잡음과 비원형 잡음의 꼬리 확률 비교, 로그 축"></svg>
     <figcaption>가로축은 문턱을 평균 전력의 배수로 나타낸 값 t입니다. 원형은 P = e^(−t) (자유도 2인 카이제곱), 비원형은 P = erfc(√(t/2)) (자유도 1)입니다. 기존 낮은 문턱 9.6 dB(t = 9.12)에서 비원형 쪽이 <strong id="w4-ratio">약 23배</strong> 더 자주 넘습니다. 잔여 CFO가 프래그먼트 동안 위상을 돌리면 직선이 퍼져 원형에 가까워집니다. MD 측정에서 256심볼(회전 3.3 rad)의 오검출이 0건이었던 이유이고, CFO를 보상하면 그 꼬리는 다시 무거워집니다.</figcaption>
   </figure>
+  <div class="prose stack">
+    <p>이 실패는 프래그먼트 진단 기준(1e-3)에서 본 것입니다. 요구사항인 패킷 기준에서는 MD 방식도 8개 모두 통과로 묶으면 오수락이 p⁸로 작아지지만, 채널에 따라 p가 달라 보장이 없고 감도가 6.7 dB 나쁩니다(9장 "10⁻⁶을 어떻게 확인하나").</p>
+  </div>
 </section>
 
 <!-- ============================================================ 4 -->
@@ -534,7 +539,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
   <div class="prose stack">
     <p>탭 하나가 Λ ≥ T를 넘을 확률은 e^(−T/2)입니다. 신호 창 |W_s|개 탭 가운데 하나라도 넘을 확률은 그 |W_s|배를 넘지 않습니다(합집합 한계). 여기에 Q와 Π를 유한한 샘플로 계산하면서 생기는 작은 오차를 덮는 1.5배 여유를 둡니다.</p>
   </div>
-  <div class="eq">T = 2·ln( |W_s| / Pfa ) + 2·ln( 1.5 )        <span class="c">|W_s| = 57, Pfa = 1e-3  →  T = 22.71</span></div>
+  <div class="eq">T = 2·ln( |W_s| / Pfa ) + 2·ln( 1.5 )        <span class="c">|W_s| = 57, Pfa = 1e-3 (프래그먼트 진단 기준)  →  T = 22.71</span></div>
   <figure class="plate" id="w5">
     <h3>문턱 계산기</h3>
     <div class="controls">
@@ -545,7 +550,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
         <select id="w5-m"><option value="1">없음 (×1)</option><option value="1.5" selected>×1.5</option><option value="2">×2</option></select></div>
     </div>
     <div class="stats" id="w5-out"></div>
-    <figcaption>MD 방식의 9.6/14.4 dB는 몬테카를로로 맞춘 값이라 길이, 채널, CFO가 바뀌면 다시 맞춰야 했습니다. Λ의 문턱은 길이(32~256심볼), PRF, 신호 세기, 채널, CFO와 무관합니다. 신호 창을 두 배로 넓혀도 약 0.25 dB만 올라가므로, 거리 불확실성 때문에 창을 넓혀야 할 때도 부담이 작습니다.</figcaption>
+    <figcaption>MD 방식의 9.6/14.4 dB는 몬테카를로로 맞춘 값이라 길이, 채널, CFO가 바뀌면 다시 맞춰야 했습니다. Λ의 문턱은 길이(32~256심볼), PRF, 신호 세기, 채널, CFO와 무관합니다. 신호 창을 두 배로 넓혀도 약 0.25 dB만 올라가므로, 거리 불확실성 때문에 창을 넓혀야 할 때도 부담이 작습니다. 이 계산기는 프래그먼트 하나의 문턱입니다. RIF가 1개인 구성은 Pfa 1e-6을 고르면 그대로 패킷 문턱(36.53)이고, RIF 8개를 묶는 패킷 문턱(소프트 결합 69.61)은 9장에 있습니다.</figcaption>
   </figure>
 </section>
 
@@ -554,6 +559,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
   <div class="sec-head"><span class="sec-no">7</span><h2>검증 결과</h2></div>
   <div class="prose stack">
     <p>모든 수치는 MD 측정값(열잡음 통계, L90)을 0.5 dB 이내로 재현하도록 맞춘 통계 모델과, 실제 ±1 시퀀스를 쓰는 파형 모델에서 나왔습니다. dBm은 MD 6장의 환산(−100 dBm에서 펄스당 SNR −11.4 dB)으로 바꾼 근사값입니다.</p>
+    <p>이 장은 프래그먼트 하나의 결과입니다. 그림의 "기준 1e-3"은 프래그먼트 진단 기준(MD 문서의 내부 목표)입니다. 요구사항인 패킷 10⁻⁶에서 중요한 것은 이 점추정보다 Λ의 꼬리가 χ²₂를 따른다는 성질이고, 그 성질 덕분에 9장에서 프래그먼트를 묶은 문턱을 공식으로 정할 수 있습니다.</p>
   </div>
 
   <figure class="plate" id="r1">
@@ -575,7 +581,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
       <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s1f"/></svg>Λ (정규화 + 백색화)</span>
     </div>
     <svg class="chart" id="r2-svg" viewBox="0 0 760 420" role="img" aria-label="9개 H0 조건에서 세 판정 방식의 오검출률 비교"></svg>
-    <figcaption>원시 샘플로 분산을 정확히 계산하기만 하면(삼각형) 중간 세기와 멀티패스에서는 MD 규칙보다 낫지만, 강한 틀린 키에서는 오히려 나쁩니다. 비원형 꼬리가 그대로 남아 틀린 키 조건 전부에서 1.4e-3~8.3e-3로 목표를 넘습니다. 백색화까지 해야(사각형) 모든 조건이 목표 아래로 들어옵니다. 두 단계가 모두 필요합니다. 32심볼, 조건마다 60,000 프래그먼트, 왼쪽 끝 표식은 0건입니다.</figcaption>
+    <figcaption>원시 샘플로 분산을 정확히 계산하기만 하면(삼각형) 중간 세기와 멀티패스에서는 MD 규칙보다 낫지만, 강한 틀린 키에서는 오히려 나쁩니다. 비원형 꼬리가 그대로 남아 틀린 키 조건 전부에서 1.4e-3~8.3e-3로 기준 1e-3을 넘습니다. 백색화까지 해야(사각형) 모든 조건이 기준 아래로 들어옵니다. 두 단계가 모두 필요합니다. 32심볼, 조건마다 60,000 프래그먼트, 왼쪽 끝 표식은 0건입니다.</figcaption>
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r2-tbl"></table></div></details>
   </figure>
 
@@ -603,7 +609,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
       <span class="key"><svg viewBox="0 0 16 12"><line x1="8" y1="0" x2="8" y2="12" class="inks" stroke-width="2"/></svg>점수 방식 (MD 실측, 참고)</span>
     </div>
     <svg class="chart" id="r3-svg" viewBox="0 0 760 290" role="img" aria-label="RIF 길이별 L90 감도 비교"></svg>
-    <figcaption>Λ는 Pfa를 보장하면서도 MD 규칙보다 약 0.6 dB 좋습니다. MD 방식에서 Pfa를 지키려고 문턱을 하나로 올리면 약 5.3 dB를 잃습니다. 점수 방식 대비 여유는 32/64/128/256심볼에서 +3.0/+5.5/+7.4/+6.8 dB입니다. Λ와 MD 값은 모델 값이며 모델은 MD 실측보다 약 0.5 dB 비관적입니다.</figcaption>
+    <figcaption>프래그먼트 하나의 감도입니다. Λ는 Pfa를 보장하면서도 MD 규칙보다 약 0.6 dB 좋습니다. MD 방식에서 프래그먼트 1e-3을 지키려고 문턱을 하나로 올리면 약 5.3 dB를 잃습니다. 점수 방식 대비 여유는 32/64/128/256심볼에서 +3.0/+5.5/+7.4/+6.8 dB입니다(참고: 점수 방식이 RIF를 묶는 방식이 확인되지 않아, 같은 패킷 오수락에서의 비교는 아직 하지 않았습니다). Λ와 MD 값은 모델 값이며 모델은 MD 실측보다 약 0.5 dB 비관적입니다.</figcaption>
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r3-tbl"></table></div></details>
   </figure>
 
@@ -633,13 +639,13 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
   </figure>
 
   <figure class="plate">
-    <h3>MMS 패킷 단위 소프트 결합 (선택 단계)</h3>
+    <h3>MMS 패킷 단위 소프트 결합 (요구사항의 기본 판정, 9장)</h3>
     <div class="stats">
-      <div class="stat"><span class="k">프래그먼트 1개, Λ</span><span class="v">−111.9 dBm</span><span class="s">L90, 32심볼</span></div>
-      <div class="stat"><span class="k">프래그먼트 4개 ΣΛ</span><span class="v">−116.8 dBm</span><span class="s">L90, 같은 Pfa 1e-3</span></div>
-      <div class="stat"><span class="k">이득</span><span class="v">+4.9 dB</span><span class="s">문턱은 χ²₈ 공식 (36.96)</span></div>
+      <div class="stat"><span class="k">프래그먼트 1개, Λ</span><span class="v">−112.0 dBm</span><span class="s">L90, 32심볼, 진단 기준 1e-3</span></div>
+      <div class="stat"><span class="k">RIF 8개 ΣΛ</span><span class="v">−117.6 dBm</span><span class="s">L90, 패킷 오수락 10⁻⁶</span></div>
+      <div class="stat"><span class="k">이득</span><span class="v">+5.6 dB</span><span class="s">문턱은 χ²₁₆ 공식 (69.61)</span></div>
     </div>
-    <figcaption>프래그먼트마다 STS가 다르므로 H0에서 Λ를 K개 더한 값은 자유도 2K인 카이제곱을 따릅니다. 결합 문턱도 공식으로 정해지고, 802.15.4ab MMS의 여러 프래그먼트 에너지 누적과 맞습니다. 프래그먼트 사이 탭 정렬이 전제입니다.</figcaption>
+    <figcaption>프래그먼트마다 STS가 다르므로 H0에서 Λ를 K개 더한 값은 자유도 2K인 카이제곱을 따릅니다. 결합 문턱도 공식으로 정해지고, 802.15.4ab MMS의 여러 프래그먼트 에너지 누적과 맞습니다. 목표가 1,000배 엄격해져도 증거가 8배로 늘어 감도는 좋아집니다. 프래그먼트 사이 탭 정렬(피크 이동 보정)이 전제이며, 규칙별 비교와 일관성 검사는 9장에 있습니다.</figcaption>
   </figure>
 </section>
 
@@ -678,7 +684,7 @@ H0에서  P(Λ̂ ≥ t) = (1 + t/n)^(−(n−1)/2)        <span class="c">Hotell
   </figure>
 
   <figure class="plate" id="r5">
-    <h3>H0 오검출률: CIR 추정 Λ̂도 모든 조건에서 목표 아래 (32심볼, 조건당 30,000)</h3>
+    <h3>H0 오검출률: CIR 추정 Λ̂도 모든 조건에서 기준 1e-3 아래 (32심볼, 조건당 30,000)</h3>
     <div class="legend">
       <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>MD 규칙</span>
       <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="hollow1" style="stroke-width:1.6"/></svg>Λ̂ (CIR 추정, 신호 창 밖 전체)</span>
@@ -705,23 +711,23 @@ H0에서  P(Λ̂ ≥ t) = (1 + t/n)^(−(n−1)/2)        <span class="c">Hotell
   <figure class="plate">
     <h3>칩 상황별 선택</h3>
     <div class="tbl-wrap"><table class="guide">
-      <thead><tr><th>칩 상황</th><th>판정 방식</th><th>필요한 것</th><th class="num">L90 (32심볼)</th><th>Pfa 보장</th></tr></thead>
+      <thead><tr><th>칩 상황</th><th>판정 방식</th><th>필요한 것</th><th class="num">패킷 L90 (RIF 8개, 10⁻⁶)</th><th class="num">프래그먼트 L90 (1e-3)</th><th>Pfa 보장</th></tr></thead>
       <tbody>
-        <tr><td>새 칩 / RTL 수정 가능</td><td>Λ (원시 샘플 Q·Π)</td><td>위상별 누산기 3 × 8, 입력 샘플당 곱 3개</td><td class="num">−112.0 dBm</td><td>있음</td></tr>
-        <tr class="pick"><td>고정 칩, CIR 읽기 가능</td><td>Λ̂ (CIR 추정, 신호 창 밖 전체)</td><td>펌웨어 연산 (제곱합 2종, 신호 창 57탭 비교)</td><td class="num">−109.6 dBm</td><td>있음</td></tr>
-        <tr><td>고정 칩, 현행 유지</td><td>MD 규칙 (두 단계 문턱)</td><td>없음</td><td class="num">−111.3 dBm</td><td>없음 (최대 5.6e-2)</td></tr>
-        <tr><td>고정 칩, 현행을 안전하게</td><td>MD 단일 문턱 15.5 dB</td><td>문턱 변경</td><td class="num">−106.0 dBm</td><td>있음</td></tr>
+        <tr><td>새 칩 / RTL 수정 가능</td><td>Λ (원시 샘플 Q·Π)</td><td>위상별 누산기 3 × 8, 입력 샘플당 곱 3개</td><td class="num">−117.6 dBm</td><td class="num">−112.0 dBm</td><td>있음</td></tr>
+        <tr class="pick"><td>고정 칩, CIR 읽기 가능</td><td>Λ̂ (CIR 추정, 신호 창 밖 전체)</td><td>펌웨어 연산 (제곱합 2종, 신호 창 57탭 비교)</td><td class="num">−116.7 dBm</td><td class="num">−109.6 dBm</td><td>있음</td></tr>
+        <tr><td>고정 칩, 현행 유지</td><td>MD 규칙 (두 단계 문턱)</td><td>없음</td><td class="num">−110.0 dBm (8개 모두 통과)</td><td class="num">−111.3 dBm</td><td>없음 (프래그먼트 최대 5.6e-2)</td></tr>
+        <tr><td>고정 칩, 현행을 안전하게</td><td>MD 단일 문턱 15.5 dB</td><td>문턱 변경</td><td class="num">–</td><td class="num">−106.0 dBm</td><td>프래그먼트만</td></tr>
       </tbody>
     </table></div>
-    <figcaption>고정 칩에서 Pfa를 보장하는 방법 중에서는 Λ̂가 가장 좋습니다. 확인할 전제는 두 가지입니다. 첫째, 신호 창 밖 탭이 H0에서 신호 창 안과 같은 분포여야 합니다(CIR 양 끝의 누적 경계 효과나 16비트 포화가 없어야 함). 둘째, H1에서 멀티패스 꼬리가 신호 창 밖까지 이어지면 Q̂가 커져 Pd가 조금 떨어집니다(Pfa에는 영향 없음). 둘 다 지금 있는 2열 덤프로 확인할 수 있습니다.</figcaption>
+    <figcaption>고정 칩에서 Pfa를 보장하는 방법 중에서는 Λ̂가 가장 좋습니다. 패킷 기준에서는 8개 소프트 결합으로 원시 샘플 Λ와의 차이가 0.9 dB로 줄어듭니다(9장). MD 단일 문턱의 패킷 감도는 계산하지 않았습니다. 확인할 전제는 두 가지입니다. 첫째, 신호 창 밖 탭이 H0에서 신호 창 안과 같은 분포여야 합니다(CIR 양 끝의 누적 경계 효과나 16비트 포화가 없어야 함). 둘째, H1에서 멀티패스 꼬리가 신호 창 밖까지 이어지면 Q̂가 커져 Pd가 조금 떨어집니다(Pfa에는 영향 없음). 둘 다 지금 있는 2열 덤프로 확인할 수 있습니다.</figcaption>
   </figure>
 </section>
 
 <!-- ============================================================ 9 -->
 <section class="sec" id="s9">
-  <div class="sec-head"><span class="sec-no">9</span><h2>패킷 판정: FiRa medium 기준</h2></div>
+  <div class="sec-head"><span class="sec-no">9</span><h2>패킷 판정: FiRa medium 기준 (요구사항)</h2></div>
   <div class="prose stack">
-    <p>지금까지는 프래그먼트 하나를 판정했습니다. 실제 거리 측정 한 번에는 한 수신기가 RIF 프래그먼트 <strong>8개</strong>(NumRIF = 4)를 쓰고, 보안 요구도 측정 단위로 정해집니다. FiRa 인증의 medium 보안 수준은 측정 한 번의 오수락을 <strong>10⁻⁶</strong> 이하로 요구합니다(high는 2⁻⁴⁸). MD 문서의 프래그먼트당 1e-3은 이 판정의 구성 요소로 남습니다.</p>
+    <p>지금까지는 프래그먼트 하나를 판정했습니다. 실제 거리 측정 한 번에는 한 수신기가 RIF 프래그먼트 <strong>8개</strong>(NumRIF = 4)를 쓰고, 보안 요구도 측정 단위로 정해집니다. FiRa 인증의 medium 보안 수준은 측정 한 번의 오수락을 <strong>10⁻⁶</strong> 이하로 요구합니다(high는 2⁻⁴⁸). 이 판정기의 요구사항은 이 패킷 목표입니다(2026-10-15 결정). MD 문서의 프래그먼트당 1e-3은 구성 요소이자 진단 기준으로 남습니다. 10⁻⁶은 측정 1회당으로 적용했고(보수적 해석), FiRa 원문은 회원 전용이라 직접 확인하지 못해 그것을 인용한 논문의 수치를 씁니다.</p>
     <p>STS는 매 심볼 바뀌므로, 맞는 키가 없는 신호에서는 8개 프래그먼트의 Λ가 서로 독립인 χ²₂입니다. 그래서 8개를 어떻게 묶든 문턱을 공식으로 정할 수 있습니다. 묶는 방식은 Λ(새 칩)와 Λ̂(고정 칩)에 똑같이 적용됩니다.</p>
   </div>
 
@@ -778,7 +784,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
     <div class="tbl-wrap"><table class="guide">
       <thead><tr><th>판정 방식</th><th>패킷 오수락</th><th class="num">L90 고정 칩 (Λ̂)</th><th class="num">L90 새 칩 (Λ)</th><th>한 프래그먼트 공격</th></tr></thead>
       <tbody>
-        <tr><td>지금 (프래그먼트 하나, 1e-3)</td><td>보장 없음</td><td class="num">−109.6</td><td class="num">−112.0</td><td>–</td></tr>
+        <tr><td>이전 기준 (프래그먼트 하나, 1e-3)</td><td>보장 없음</td><td class="num">−109.6</td><td class="num">−112.0</td><td>–</td></tr>
         <tr><td>프래그먼트마다 1e-3 판정, 8개 모두 통과</td><td>약 10⁻²⁴</td><td class="num">−108.2</td><td class="num">−110.6</td><td>이른 가짜 피크는 못 잡음</td></tr>
         <tr><td>8개 모두 통과 (예산 0.178)</td><td>10⁻⁶</td><td class="num">−111.3</td><td class="num">−112.5</td><td>빈 프래그먼트면 대부분 거부 (약 90%)</td></tr>
         <tr><td>8개 중 6개 이상</td><td>10⁻⁶</td><td class="num">−112.5</td><td class="num">−114.1</td><td>2개까지 빠져도 통과</td></tr>
@@ -822,13 +828,14 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
   <figure class="plate">
     <h3>10⁻⁶을 어떻게 확인하나</h3>
     <div class="prose stack">
-      <p>10⁻⁶은 시뮬레이션으로 셀 수 없습니다. 대신 판정 방식마다 셀 수 있는 근거를 확인하고 나머지는 공식으로 잇습니다. 아래 수치는 통계 모델의 H0 5개 조건(열잡음, 틀린 키 −88.5, −82.5, −42.5 dBm, 멀티패스) × 4,000패킷입니다.</p>
+      <p>10⁻⁶은 시뮬레이션으로 셀 수 없습니다. 대신 판정 방식마다 셀 수 있는 근거를 확인하고 나머지는 공식으로 잇습니다. 이 근거들이 판정기의 합격 기준입니다. 아래 수치는 통계 모델의 H0 5개 조건(열잡음, 틀린 키 −88.5, −82.5, −42.5 dBm, 멀티패스) × 4,000패킷이고, 같은 채널 항목만 별도 시뮬레이션입니다.</p>
     </div>
     <dl class="readout">
       <dt>8개 모두 통과 / 6개 이상</dt><dd>프래그먼트 문턱에서의 비율이 예산 안: 최대 0.103 (예산 0.178), 최대 0.036 (예산 0.058). 예산이 커서 조건당 프래그먼트 수천 개면 판정됩니다.</dd>
       <dt>소프트 합</dt><dd>탭별 합의 꼬리가 χ²₁₆을 따름: P(S ≥ t) / P(χ²₁₆ ≥ t) = 0.72~1.05 (t = 10~30). 패킷 오수락은 대개 프래그먼트마다 중간 크기의 값 8개가 쌓여 생기므로, 측정 가능한 범위의 확인이 문턱 부근까지 대부분 결정합니다.</dd>
       <dt>독립성</dt><dd>같은 패킷 프래그먼트 쌍이 함께 넘는 비율이 p²와 같음(비율 0.7~1.2). 합성 덤프의 쌍 상관은 0.000 (n = 1,984). 세기가 다른 조건을 그냥 합쳐 상관을 구하면 평균 차이 때문에 0.19 같은 가짜 상관이 나오므로, 조건마다 평균을 빼고 모읍니다.</dd>
-      <dt>MD 규칙</dt><dd>중간 세기에서 프래그먼트 5.1e-2 → 8개 모두 통과로 묶으면 독립 가정에서 약 5e-11. 하지만 해석적 보장이 없고, 같은 채널을 공유하는 실제 패킷에서는 프래그먼트끼리 상관이 생길 수 있습니다.</dd>
+      <dt>같은 채널 멀티패스 (첫 검증 항목)</dt><dd>실제 패킷처럼 8개가 같은 채널(τrms 20 ns, 확산 우세)을 겪으면 소프트 합의 꼬리 비율이 깊어질수록 조금 올라갑니다: Λ 1.01~1.23, Λ̂ 0.87~1.11 (P = 1e-2~1e-4, 조건당 6,000패킷). 프래그먼트마다 채널이 다르면 Λ 1.00~1.02, Λ̂ 0.69~1.02입니다. 같은 채널 모델에서 Λ̂ 소프트 결합이 9,990패킷 중 1건을 받아들였습니다(10⁻⁶이면 기대 0.01건, 우연히 나올 확률 약 1%). 한 건이라 결론을 낼 수 없으므로 LLS 같은 채널 덤프로 P = 1e-4까지 확인하는 것이 첫 검증 항목입니다. 비율이 1.3을 넘거나 깊어질수록 계속 커지면 기준을 다시 봅니다.</dd>
+      <dt>MD 규칙</dt><dd>중간 세기에서 프래그먼트 5.1e-2 → 8개 모두 통과로 묶으면 독립 가정에서 약 5e-11. 같은 채널을 공유하는 멀티패스에서는 채널마다 p가 달라 평균 8.5e-9이지만, 가장 나쁜 채널(p = 0.175)은 8.8e-7로 한계(p = 0.178)에 거의 닿습니다. 모델에서 본 채널 밖의 더 나쁜 채널을 공식으로 막을 수 없어 보장이 없고, 감도도 −110.0 dBm으로 Λ̂ 소프트 결합보다 6.7 dB 나쁩니다. Z의 분포가 조건마다 달라 소프트 결합도 쓸 수 없습니다.</dd>
     </dl>
   </figure>
 
@@ -838,7 +845,8 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
       <thead><tr><th>옵션</th><th>값</th><th>뜻</th></tr></thead>
       <tbody>
         <tr><td><code>'Chip'</code></td><td><code>'fixed'</code> / <code>'new'</code></td><td>고정 칩: CIR에서 Q̂·Π̂ 추정 (Λ̂, 2열 덤프 가능). 새 칩: 원시 샘플 Q·Π (Λ, 5열 덤프)</td></tr>
-        <tr><td><code>'Combine'</code></td><td><code>'soft'</code> · <code>'and'</code> · <code>'kofn'</code> · <code>'strict'</code> · <code>'single'</code> · <code>'none'</code></td><td>패킷 판정 방식. <code>'none'</code>은 지금처럼 프래그먼트 단위</td></tr>
+        <tr><td><code>'Profile'</code></td><td><code>'fira-medium'</code> / <code>'md'</code></td><td>기준을 한 번에 설정. <code>'fira-medium'</code> = <code>'Combine','soft'</code> + <code>'PfaTarget',1e-6</code>(요구사항). <code>'md'</code>(기본)는 기존 동작(프래그먼트 표만). 직접 준 옵션이 우선</td></tr>
+        <tr><td><code>'Combine'</code></td><td><code>'soft'</code> · <code>'and'</code> · <code>'kofn'</code> · <code>'strict'</code> · <code>'single'</code> · <code>'none'</code></td><td>패킷 판정 방식. <code>'none'</code>(<code>'md'</code> 프로파일의 기본)은 프래그먼트 단위만</td></tr>
         <tr><td><code>'FragPerPacket'</code></td><td>8 (1이면 RIF 1개 설정)</td><td>같은 프레임의 프래그먼트를 이 개수로 묶음</td></tr>
         <tr><td><code>'PfaTarget'</code></td><td>1e-6</td><td>패킷 목표 (FiRa medium)</td></tr>
         <tr><td><code>'Floor'</code></td><td>1</td><td>일관성 하한 (0이면 끔)</td></tr>
@@ -869,10 +877,10 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
       <path class="ar" d="M518 114 L560 114 L560 156 L600 156" marker-end="url(#ah4)"/>
       <rect class="bx" x="604" y="10" width="286" height="70" rx="8"/>
       <text x="747" y="38" text-anchor="middle" class="m">h0_pfa_analyze.m</text>
-      <text x="747" y="60" text-anchor="middle" class="sub">탭 꼬리 비율 ≈ 1, 프래그먼트 Pfa</text>
+      <text x="747" y="60" text-anchor="middle" class="sub">패킷·탭 꼬리 비율 ≈ 1</text>
       <rect class="bx" x="604" y="120" width="286" height="70" rx="8"/>
       <text x="747" y="148" text-anchor="middle" class="m">h1_pd_analyze.m</text>
-      <text x="747" y="170" text-anchor="middle" class="sub">MD 대 Λ의 L90 / L99</text>
+      <text x="747" y="170" text-anchor="middle" class="sub">패킷 L90, MD 대 Λ</text>
     </svg>
     </div>
     <figcaption>MATLAB 패치는 저장소의 <code>lambda_patch/</code>에 있습니다(원본 두 스크립트의 수정판과 새 <code>h1_pd_analyze.m</code>). 2열 덤프를 넣어도 동작하므로 C++ 수정 전에 1단계부터 시작할 수 있습니다. 설계와 C++ 계약은 <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>에 정리했습니다.</figcaption>
@@ -884,12 +892,12 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
       <li><strong>MATLAB 패치 단독 시험:</strong> <code>lambda_patch/test/gen_synthetic_dumps.m</code>으로 파형 모델 덤프를 5열과 2열로 각각 만들고, <code>run_synthetic_test.m</code>으로 확인합니다(5열 77개, 2열 49개 항목, 마지막 단계는 FiRa medium 기준의 패킷 판정). 두 세트를 교차 비교해 MD·κ·Λ̂ 결과가 정확히 같은지도 봅니다. C++ 수정 없이 MATLAB 쪽 동작을 먼저 검증할 수 있습니다(아래 그림).</li>
       <li><strong>지금, 기존 2열 덤프로:</strong> κ(비원형 지수)를 확인하고, <code>run_h0.sh</code>에 중간 세기(c32_m70~m100, 2~3 dB 간격)를 추가해 MD 규칙의 실패를 실제 시뮬레이터에서 재현합니다.</li>
       <li><strong>C++:</strong> 상관기와 같은 루프, 같은 샘플로 Q와 Π를 누적해 덤프를 5열로 늘립니다(아래 코드).</li>
-      <li><strong>H0 검증:</strong> <code>h0_pfa_analyze(root, 'Suggest', false)</code>. MD 표와 Λ 표가 함께 나옵니다.</li>
+      <li><strong>H0 검증 (프래그먼트):</strong> <code>h0_pfa_analyze(root, 'Suggest', false)</code>. MD 표와 Λ 표가 함께 나옵니다. 탭 꼬리 비율은 패킷 문턱 공식의 전제이고, 프래그먼트 Pfa는 진단입니다.</li>
       <li><strong>H1 감도:</strong> <code>h1_pd_analyze(rootH1)</code>로 Pd와 95% 신뢰구간, 검출 위치 정확도(피크가 기대 탭 ± 2 이내인 비율), L90/L99를 비교합니다.</li>
       <li><strong>HW 근사:</strong> <code>'PerClass', true</code>로 클래스당 누산기 8개면 충분한지 확인합니다.</li>
       <li><strong>고정 칩:</strong> Q·Π 누산기를 넣을 수 없으면 <code>'Moments', 'cir'</code>로 CIR 추정 Λ̂를 씁니다. C++ 수정 없이 지금의 2열 덤프로 H0 Pfa와 H1 L90을 바로 확인할 수 있습니다(8장).</li>
       <li><strong>패킷 전제 확인:</strong> <code>check_packet_assumptions</code>로 LLS 덤프의 프레임 구성(프레임당 RIF 8개), 피크 이동 기울기, AGC 레벨 변화, 라운딩, 프래그먼트 간 독립성을 봅니다. 피크 이동 후보(<code>'Drift'</code>)도 여기서 정해집니다.</li>
-      <li><strong>패킷 판정:</strong> <code>'Chip', 'fixed'</code>(지금) 또는 <code>'new'</code>(나중)와 <code>'Combine', 'soft'</code>로 H0 근거(꼬리 비율, 독립성)와 H1 패킷 L90을 확인합니다. RIF 1개 설정은 <code>'FragPerPacket', 1</code>입니다(9장).</li>
+      <li><strong>패킷 판정 (합격 기준):</strong> <code>'Chip', 'fixed'</code>(지금) 또는 <code>'new'</code>(나중)와 <code>'Profile', 'fira-medium'</code>으로 H0 근거(꼬리 비율, 독립성)와 H1 패킷 L90을 확인합니다. 첫 확인은 같은 채널 멀티패스 덤프의 꼬리 비율입니다. RIF 1개 설정은 <code>'FragPerPacket', 1</code>입니다(9장).</li>
     </ol>
   </div>
 
@@ -1028,7 +1036,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
           <tr><td class="num">60,000</td><td class="num">47건</td><td class="num">100%</td><td class="num">48%</td></tr>
         </tbody>
       </table></div>
-      <figcaption>합격 기준이 단측 95% 상한 ≤ 1e-3일 때입니다. 5,000개로는 정상인 검출기도 자주 떨어지므로, 탭 단위 꼬리 비율(표본 n × 57개)을 1차 근거로 봅니다.</figcaption>
+      <figcaption>프래그먼트 Pfa를 단측 95% 상한 ≤ 1e-3으로 판정한다면 이렇게 됩니다. 5,000개로는 정상인 검출기도 자주 떨어지므로 이 상한은 합격 기준으로 쓰지 않고, 탭 단위 꼬리 비율(표본 n × 57개)과 점추정으로 진단합니다. 판정기의 합격 기준은 패킷 근거(9장)입니다.</figcaption>
     </figure>
   </div>
 
@@ -1070,18 +1078,18 @@ R1c  = h1_pd_analyze('&lt;H1 root&gt;', 'Moments', 'cir');
 
 % 패킷 판정 (FiRa medium 10^-6, RIF 8개): 전제 확인 → 고정 칩 소프트 결합
 A    = check_packet_assumptions('&lt;강한 H1 root&gt;', '&lt;H0 root&gt;');
-R0p  = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false, 'Chip', 'fixed', 'Combine', 'soft', 'Drift', A.suggest.Drift);
-R1p  = h1_pd_analyze('&lt;H1 root&gt;', 'Chip', 'fixed', 'Combine', 'soft', 'Drift', A.suggest.Drift);
-R1n  = h1_pd_analyze('&lt;H1 root, 5열&gt;', 'Chip', 'new', 'Combine', 'soft');                % 새 칩
+R0p  = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
+R1p  = h1_pd_analyze('&lt;H1 root&gt;', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
+R1n  = h1_pd_analyze('&lt;H1 root, 5열&gt;', 'Chip', 'new', 'Profile', 'fira-medium');          % 새 칩
 R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 'single', 'FragPerPacket', 1);</pre>
   </div>
 </section>
 
 <footer class="foot">
-  <p><strong>가정과 한계.</strong> 수치는 통계 모델(MD 5.1장의 빗 프로파일, 펄스당 가우시안 근사)과 파형 모델(이상 펄스, 부동소수점, 단일 안테나, HPRF)에서 나왔습니다. 실제 시뮬레이터의 덤프로 다시 확인해야 합니다.</p>
+  <p><strong>가정과 한계.</strong> 수치는 통계 모델(MD 5.1장의 빗 프로파일, 펄스당 가우시안 근사)과 파형 모델(이상 펄스, 부동소수점, 단일 안테나, HPRF)에서 나왔습니다. 실제 시뮬레이터의 덤프로 다시 확인해야 합니다. 패킷 10⁻⁶은 FiRa 원문이 아니라 그것을 인용한 논문에서 왔습니다.</p>
   <p>Λ의 보장은 H0 신호가 내 키 시퀀스와 독립일 때 성립합니다. 키를 알거나 일부 아는 공격(재전송, 일부 비트 반전)은 대상이 아니며, 표준이 RIF에 요구하는 ToA 무결성 검증은 별도 과제입니다.</p>
-  <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(MD 방식), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>(패치 설계), <code>lambda_patch/TEST_PLAN.md</code>(검증 계획), <code>lambda_patch/model/</code>(수치를 다시 만드는 Python 스크립트). 2026-10-07 기준.</p>
-  <p>관련 페이지: <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶ 기준으로의 전환 검토), <a href="consistency.html">RIF 일관성 검사 비교</a>(일관성 검사 폐기율 결정 자료). 결정 기록: <code>lambda_patch/DECISIONS.md</code>.</p>
+  <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(MD 방식), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>(패치 설계), <code>lambda_patch/TEST_PLAN.md</code>(검증 계획), <code>lambda_patch/model/</code>(수치를 다시 만드는 Python 스크립트). 2026-10-15 기준(판정 기준을 패킷 10⁻⁶으로 전환).</p>
+  <p>관련 페이지: <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶ 기준으로 바꾼 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(일관성 검사 폐기율 결정 자료). 결정 기록: <code>lambda_patch/DECISIONS.md</code>.</p>
 </footer>
 </div>
 
@@ -1555,7 +1563,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
       st.appendChild(d);
     }
     stat('MD 규칙 오검출', fmtE(w2Data.kMD / n), w2Data.kMD.toLocaleString() + ' / ' + n.toLocaleString() + ' 프래그먼트');
-    stat('Λ 오검출 (같은 프래그먼트)', w2Data.kL ? fmtE(w2Data.kL / n) : '0', w2Data.kL + ' / ' + n.toLocaleString() + ' · 목표 1e-3');
+    stat('Λ 오검출 (같은 프래그먼트)', w2Data.kL ? fmtE(w2Data.kL / n) : '0', w2Data.kL + ' / ' + n.toLocaleString() + ' · 프래그먼트 기준 1e-3');
     stat('Λ̂ 오검출 (고정 칩용, CIR 추정)', w2Data.kC ? fmtE(w2Data.kC / n) : '0', w2Data.kC + ' / ' + n.toLocaleString() + ' · 8장');
     stat('D < 10 dB 비율', Math.round(100 * w2Data.lowD / n) + '%', '낮은 문턱 9.6 dB가 적용된 비율');
   }
@@ -1775,7 +1783,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     var yl = txt(svg, 14, (mt + H - mb) / 2, '프래그먼트당 오검출률', 'axt', 'middle');
     yl.setAttribute('transform', 'rotate(-90 14 ' + ((mt + H - mb) / 2) + ')');
     el('line', {x1: ml, x2: W - mr, y1: Y(-3), y2: Y(-3), 'class': 'ink2s', 'stroke-width': 1.2}, svg);
-    txt(svg, W - mr - 4, Y(-3) - 6, '목표 1e-3', 'lab', 'end');
+    txt(svg, W - mr - 4, Y(-3) - 6, '기준 1e-3', 'lab', 'end');
     function path(key) {
       var d = '';
       SWEEP.forEach(function (s, i) { var v = Math.max(s[key] / s.n, 1e-5); d += (i ? 'L' : 'M') + X(s.dBm).toFixed(1) + ' ' + Y(Math.log10(v)).toFixed(1); });
@@ -1823,7 +1831,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
       txt(svg, X(e), H - mb + 18, '1e' + minus(e), 'tick', 'middle');
     }
     el('line', {x1: X(-3), x2: X(-3), y1: mt, y2: H - mb, 'class': 'ink2s', 'stroke-width': 1.2}, svg);
-    txt(svg, X(-3) + 5, H - mb - 6, '목표 1e-3', 'lab', 'start');
+    txt(svg, X(-3) + 5, H - mb - 6, '기준 1e-3', 'lab', 'start');
     txt(svg, (ml + W - mr) / 2, H - 6, '프래그먼트당 오검출률 (로그)', 'axt', 'middle');
     CONDS.forEach(function (c, i) {
       var y = mt + rowH * i + rowH / 2;
@@ -2075,7 +2083,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
       txt(svg, X(e), H - mb + 18, '1e' + minus(e), 'tick', 'middle');
     }
     el('line', {x1: X(-3), x2: X(-3), y1: mt, y2: H - mb, 'class': 'ink2s', 'stroke-width': 1.2}, svg);
-    txt(svg, X(-3) + 5, H - mb - 6, '목표 1e-3', 'lab', 'start');
+    txt(svg, X(-3) + 5, H - mb - 6, '기준 1e-3', 'lab', 'start');
     txt(svg, (ml + W - mr) / 2, H - 6, '프래그먼트당 오검출률 (로그)', 'axt', 'middle');
     var ser = [['kMD', 'circle', 's2f', 'MD 규칙'], ['kC', 'sqo', '', 'Λ̂ (CIR 추정)'], ['kL', 'sq', 's1f', 'Λ (원시 샘플)']];
     CIRH0.forEach(function (c, i) {
@@ -2200,7 +2208,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     txt(svg, x0, H - mb + 17, '0건', 'tick', 'middle');
     if (-3 >= lo && -3 <= hi) {
       el('line', {x1: X(-3), x2: X(-3), y1: mt, y2: H - mb, 'class': 'ink2s', 'stroke-width': 1.2}, svg);
-      txt(svg, X(-3), H - mb + 31, '목표', 'lab', 'middle');
+      txt(svg, X(-3), H - mb + 31, '기준', 'lab', 'middle');
     }
     txt(svg, (ml + W - mr) / 2, H - 6, '프래그먼트당 오검출률 (로그)', 'axt', 'middle');
     rows.forEach(function (c, i) {
@@ -2722,7 +2730,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     {k: 'and', src: 'h1', line: 's3s dash', mk: 'tri', mc: 's3f', key: 'tri', name: '8개 모두 (예산 0.178)'},
     {k: 'strict', src: 'pol', line: 's2s', mk: 'circle', mc: 's2f', key: 'dot', name: '프래그먼트마다 1e-3, 8개 모두'},
     {k: 'single', src: 'h1', line: 'muteds dash', mk: 'tri', mc: 'mutedf', key: 'tri', name: '1개만 (10⁻⁶)'},
-    {k: 'cur', src: 'h1', line: 'ink2s', mk: null, mc: 'ink2f', key: 'line', name: '지금: 프래그먼트 하나, 1e-3 (패킷 보장 없음)'}
+    {k: 'cur', src: 'h1', line: 'ink2s', mk: null, mc: 'ink2f', key: 'line', name: '이전 기준: 프래그먼트 하나, 1e-3 (패킷 보장 없음)'}
   ];
   function r8Pts(s, chip) {
     var src = PKD[s.src];
@@ -2795,8 +2803,8 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     cap.textContent = 'L90 (' + (chip === 'c' ? '고정 칩 Λ̂' : '새 칩 Λ') + '): ' + R8SER.map(function (s) {
       return s.name.split(':')[0].split(' (')[0] + ' ' + (isNaN(L[s.k]) ? '–' : minus(L[s.k].toFixed(1)));
     }).join(' · ') + ' dBm. 소프트 합은 프래그먼트 하나하나가 약한 세기에서도 8개의 증거를 모아 판정하므로, ' +
-      '지금(프래그먼트 하나)보다 약 ' + (L.cur - L.soft).toFixed(1) + ' dB 좋습니다. 프래그먼트마다 1e-3으로 판정해 8개 모두를 요구하면 오히려 지금보다 나빠집니다. ' +
-      '모든 방식이 패킷 오수락 10⁻⁶ 이하를 지키며(지금 방식 제외), 이동 탐색(후보 7개)을 켜면 소프트 계열이 약 0.3 dB 물러납니다.';
+      '이전 기준(프래그먼트 하나)보다 약 ' + (L.cur - L.soft).toFixed(1) + ' dB 좋습니다. 프래그먼트마다 1e-3으로 판정해 8개 모두를 요구하면 오히려 이전 기준보다 나빠집니다. ' +
+      '모든 방식이 패킷 오수락 10⁻⁶ 이하를 지키며(이전 기준 제외), 이동 탐색(후보 7개)을 켜면 소프트 계열이 약 0.3 dB 물러납니다.';
     var tb = document.getElementById('r8-tbl'); clear(tb);
     var hd = tb.createTHead().insertRow();
     ['세기 (dBm)'].concat(R8SER.map(function (s) { return s.name; })).forEach(function (h) {

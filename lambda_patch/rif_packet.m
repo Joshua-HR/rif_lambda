@@ -7,6 +7,7 @@ function P = rif_packet(R, varargin)
 %       new chip   ('Chip','new',   5-column dumps)  Lambda from the raw-sample moments Q, Pi
 %       fixed chip ('Chip','fixed', any dump)        chi2(2) equivalent of Lambda-hat (Q, Pi from the CIR)
 %   The STS changes every symbol, so the fragments of a packet are independent under H0.
+%   The defaults (soft, 1e-6) are the 'fira-medium' profile of h0_pfa_analyze / h1_pd_analyze.
 %
 %   P = rif_packet(R)                   R: rif_cir_analyze output of ONE job folder (needs Lam_W)
 %   P = rif_packet(R, Name, Value, ...)

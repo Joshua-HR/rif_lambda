@@ -28,6 +28,10 @@ function R = h0_pfa_analyze(root, varargin)
 %       'Moments'   'raw'   'raw': Q/Pi from 5-column dumps, 'cir': estimated from the CIR (any dump,
 %                           fixed silicon); passed to rif_cir_analyze
 %       'Chip'      ''      mode shortcut: 'fixed' = 'Moments','cir', 'new' = 'Moments','raw'
+%       'Profile'   'md'    criterion shortcut: 'md' = fragment target of the MD document, no packet decision;
+%                           'fira-medium' = 'Combine','soft', 'PfaTarget',1e-6 (packet = one ranging, FiRa
+%                           medium). Options given explicitly win, e.g. 'Profile','fira-medium','Combine','kofn'.
+%                           The fragment tables (MD rule, Lambda at 'Target') are printed in both profiles.
 %
 %   Packet decision (FiRa target per ranging; see rif_packet.m), off with 'Combine','none' (default)
 %       'Combine'       'none'  'soft' | 'and' | 'kofn' | 'strict' | 'single' | 'none'
@@ -82,8 +86,10 @@ p.addParameter('PfaTarget', 1e-6, @isnumeric);
 p.addParameter('KofN', [], @isnumeric);
 p.addParameter('Floor', 1, @isnumeric);
 p.addParameter('Drift', 0, @isnumeric);
+p.addParameter('Profile', 'md', @(x) ischar(x) && any(strcmpi(x, {'md', 'fira-medium'})));
 p.parse(root, varargin{:});
 o = p.Results;
+o = apply_profile(o, p.UsingDefaults, 'h0_pfa_analyze');
 o.Moments = chip_moments(o.Chip, o.Moments, ~any(strcmp(p.UsingDefaults, 'Moments')));
 o.Suggest = logical(o.Suggest);
 o.Rebuild = logical(o.Rebuild);
@@ -547,6 +553,20 @@ n = s(1);
 c = [n, s(6) - s(2) * s(3) / n, s(4) - s(2) ^ 2 / n, s(5) - s(3) ^ 2 / n];
 end
 
+
+% ======================================================================
+function o = apply_profile(o, defaults, fname)
+% 'Profile' fills the options it implies; options given explicitly win.
+%   'md'           fragment criterion of the MD document, no packet decision (default)
+%   'fira-medium'  packet criterion: soft combining, PfaTarget 1e-6 per ranging (FiRa medium)
+if ~strcmpi(o.Profile, 'fira-medium'), return; end
+if any(strcmp(defaults, 'Combine'))
+    o.Combine = 'soft';
+elseif strcmpi(o.Combine, 'none')
+    error([fname ':profile'], '''Profile'', ''fira-medium'' is a packet criterion (got ''Combine'', ''none'').');
+end
+if any(strcmp(defaults, 'PfaTarget')), o.PfaTarget = 1e-6; end
+end
 
 % ======================================================================
 function m = chip_moments(chip, moments, given)

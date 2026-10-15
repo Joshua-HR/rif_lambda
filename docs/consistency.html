@@ -223,7 +223,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">결정 자료 · 미결 항목 6/7 · 일관성 검사의 정상 측정 폐기율</span>
+  <span class="eyebrow">결정 자료 · 결정 6 (잠정) · 일관성 검사의 정상 측정 폐기율</span>
   <h1>RIF 일관성 검사 비교</h1>
   <p class="lede prose">패킷을 받아들인 뒤 8개 RIF가 서로 맞는지 다시 보는 검사를 넣으려고 합니다. 이 검사를 엄격하게 하면 바꿔치기된 프래그먼트를 더 잘 잡지만, 맞는 키로 정상적으로 잰 측정도 더 많이 버립니다. 네 가지 안의 결과를 같은 축에서 비교합니다.</p>
   <dl class="thesis">
@@ -237,7 +237,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
     <span>· 보안 검토나 인증이 감도 부근에서도 바꿔치기 탐지를 요구할 때 → 안 1, 또는 안 1과 안 3을 합친 변형</span>
     <span>· LLS 시험에서 신호 크기 추정 오차 때문에 정상 폐기율이 0.1%에서 크게 벗어날 때(예: 0.3% 초과)</span>
     <span>· 이른 가짜 피크 검사 등 다른 검사가 더해져 정상 폐기율 예산을 나눠야 할 때</span>
-    <span>· 용도별 보안 정책(미결 7번)에서 보안 판단용과 일반 용도의 안을 따로 정할 때</span>
+    <span>· 용도별 보안 정책(결정 7: 보안 판단은 측정 폐기, 일반 용도는 걸린 프래그먼트를 빼고 다시 판정)에서 보안 판단용과 일반 용도에 서로 다른 폐기율 안이 필요해질 때 (예: 보안 판단용만 안 4)</span>
     <span>· 멀티패스, 간섭, AGC 변화로 정상 프래그먼트의 흔들림이 모델보다 클 때, 또는 RIF 2·4개 구성에서 탐지율이 부족할 때</span>
     <span>기록: 저장소 <code>lambda_patch/DECISIONS.md</code> 결정 6.</span>
   </div>

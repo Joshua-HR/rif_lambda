@@ -200,7 +200,7 @@ end
 function res = suite_packet(root, chip, show, res, pre)
 % packet decision for one chip mode; the assumption checks run once, with 'fixed'
 tag = sprintf('%s %s', pre, chip);
-P0 = h0_pfa_analyze(fullfile(root, 'h0'), 'Suggest', false, 'Chip', chip, 'Combine', 'soft', 'Plot', show);
+P0 = h0_pfa_analyze(fullfile(root, 'h0'), 'Suggest', false, 'Chip', chip, 'Profile', 'fira-medium', 'Plot', show);   % = soft, 1e-6
 res = chk(res, [tag ' h0 soft: packet threshold T'], P0.pkInfo.T, 69.5, 69.7);
 res = chk(res, [tag ' h0 soft: packets accepted (all conditions)'], sum([P0.PK.k]), 0, 1);
 tr = arrayfun(@(x) x.tailRatio(1), P0.PK);
@@ -211,7 +211,7 @@ Pa = h0_pfa_analyze(fullfile(root, 'h0'), 'Suggest', false, 'Chip', chip, 'Combi
 res = chk(res, [tag ' h0 and: largest per-fragment rate (budget 0.178)'], max([Pa.PK.fragRate]), 0.02, 0.178);
 res = chk(res, [tag ' h0 and: every condition within the budget'], double(all([Pa.PK.budgetOk] == 1)), 1, 1);
 
-H = h1_pd_analyze(fullfile(root, 'h1'), 'Chip', chip, 'Combine', 'soft', 'Plot', false);
+H = h1_pd_analyze(fullfile(root, 'h1'), 'Chip', chip, 'Profile', 'fira-medium', 'Plot', false);
 pd = [H.pkt.cond.Pd]; acc = [H.pkt.cond.PosAcc]; db = [H.pkt.cond.dBm];
 res = chk(res, [tag ' h1 soft: packet Pd at -116 dBm'], sum(pd(db == -116)), 0.8, 1);
 res = chk(res, [tag ' h1 soft: worst packet position accuracy'], min(acc(pd >= 0.1)), 0.95, 1);

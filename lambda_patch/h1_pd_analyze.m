@@ -24,6 +24,8 @@ function R = h1_pd_analyze(root, varargin)
 %       'Chip'      ''      mode shortcut: 'fixed' = 'Moments','cir', 'new' = 'Moments','raw'
 %       'Combine'   'none'  packet decision of rif_packet.m: 'soft' | 'and' | 'kofn' | 'strict' | 'single'
 %       'FragPerPacket' 8, 'PfaTarget' 1e-6, 'KofN' [], 'Floor' 1, 'Drift' 0   as in rif_packet.m
+%       'Profile'   'md'    'md' = fragment criterion only; 'fira-medium' = 'Combine','soft', 'PfaTarget',1e-6
+%                           (packet = one ranging). Options given explicitly win. Same as h0_pfa_analyze.
 %       'Sig', 'Noise', 'Period'  as in rif_cir_analyze
 %       'Plot'      true
 %
@@ -57,8 +59,10 @@ p.addParameter('PfaTarget', 1e-6, @isnumeric);
 p.addParameter('KofN', [], @isnumeric);
 p.addParameter('Floor', 1, @isnumeric);
 p.addParameter('Drift', 0, @isnumeric);
+p.addParameter('Profile', 'md', @(x) ischar(x) && any(strcmpi(x, {'md', 'fira-medium'})));
 p.parse(root, varargin{:});
 o = p.Results;
+o = apply_profile(o, p.UsingDefaults, 'h1_pd_analyze');
 o.Moments = chip_moments(o.Chip, o.Moments, ~any(strcmp(p.UsingDefaults, 'Moments')));
 doPkt = ~strcmpi(o.Combine, 'none');
 pkArgs = {'Combine', o.Combine, 'FragPerPacket', o.FragPerPacket, 'PfaTarget', o.PfaTarget, 'KofN', o.KofN, ...
@@ -258,6 +262,20 @@ if logical(o.Plot)
 end
 end
 
+
+% ======================================================================
+function o = apply_profile(o, defaults, fname)
+% 'Profile' fills the options it implies; options given explicitly win.
+%   'md'           fragment criterion of the MD document, no packet decision (default)
+%   'fira-medium'  packet criterion: soft combining, PfaTarget 1e-6 per ranging (FiRa medium)
+if ~strcmpi(o.Profile, 'fira-medium'), return; end
+if any(strcmp(defaults, 'Combine'))
+    o.Combine = 'soft';
+elseif strcmpi(o.Combine, 'none')
+    error([fname ':profile'], '''Profile'', ''fira-medium'' is a packet criterion (got ''Combine'', ''none'').');
+end
+if any(strcmp(defaults, 'PfaTarget')), o.PfaTarget = 1e-6; end
+end
 
 % ======================================================================
 function m = chip_moments(chip, moments, given)
