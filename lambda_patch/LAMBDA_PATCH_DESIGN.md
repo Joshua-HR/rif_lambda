@@ -179,7 +179,7 @@ momPi[k] += z * z;           // z^2 (복소)
 | `rif_packet.m` | 신규 | 패킷 판정 (FiRa medium, 9장) |
 | `check_packet_assumptions.m` | 신규 | LLS 덤프로 패킷 전제 확인 (9.5절) |
 | `rif_series_style.m` | 신규 | 그림 계열의 색·선 모양. 색은 세기마다 하나(10개까지 구분색, 그 이상은 순서 있는 색), 선 모양은 RIF 길이마다 하나라 모든 조건이 구분됨. 원본 `h0_pfa_analyze`의 주 그림은 길이마다 색 하나라 같은 길이의 세기들이 같은 색이었고, MATLAB `lines()`는 8번째 계열부터 색이 반복됨 |
-| `test/run_synthetic_test.m` | 신규 | 합성 덤프로 자동 확인 (5열: 10단계 77개 항목, 2열: 6단계 49개 항목) |
+| `test/run_synthetic_test.m` | 신규 | 합성 덤프로 자동 확인 (5열: 10단계 94개 항목, 2열: 6단계 49개 항목) |
 | `test/export_web_results.m` | 신규 | 5열·2열 세트의 분석 결과를 웹 페이지용 JSON으로 저장 (웹 페이지 10장 "1단계 결과" 그림) |
 
 원본(`../rif_cir_analyze.m`, `../h0_pfa_analyze.m`)은 수정하지 않았습니다.
@@ -332,7 +332,7 @@ AWGN은 세기당 10,002개, 멀티패스는 4,002개입니다(`model/h1_pos_for
 ```matlab
 addpath('<...>/lambda_patch/test');
 gen_synthetic_dumps('D:/rif_test');          % 5열 8,100개, 수 분 (또는 미리 만든 synthetic_dumps/ 사용)
-res = run_synthetic_test('D:/rif_test');     % 10단계, 77개 항목 [OK]/[CHECK] (10단계 = 패킷 판정)
+res = run_synthetic_test('D:/rif_test');     % 10단계, 94개 항목 [OK]/[CHECK] (10단계 = 패킷 판정)
 
 gen_synthetic_dumps('D:/rif_test2', 'Cols', 2);   % 같은 시드의 2열 세트 (현재 LLS 형식), h0 / h0_mp20 / h1만
 res2 = run_synthetic_test('D:/rif_test2');        % 형식 자동 인식: 2열 6단계, 49개 항목 (MD 규칙, kappa, CIR 추정 Λ̂, 패킷 판정)
@@ -342,7 +342,7 @@ res2 = run_synthetic_test('D:/rif_test2');        % 형식 자동 인식: 2열 6
 
 두 세트의 결과는 `export_web_results(root5, root2, 'rif_results.json', 'Res5', res, 'Res2', res2)`로 JSON에 담아, 웹 페이지 10장 "1단계 결과: 5열 덤프 대 2열 덤프" 그림에서 불러와 나란히 볼 수 있습니다(H0 오검출률, H1 Pd와 신뢰구간, 탭 꼬리, 교차 확인). 페이지의 기본 데이터는 `model/web_results.py`가 `synthetic_dumps/`와 그 2열 판 `synthetic_dumps_2col/`(`model/make_2col.py`)에서 계산한 Python 미러 값입니다. MATLAB에서도 이 두 폴더로 JSON을 만들면 페이지가 Python 미러와의 일치 여부를 함께 표시합니다.
 
-미리 만든 `synthetic_dumps/`에 대해 같은 계산을 Python으로 따라 한 결과(`model/verify_dumps.py`), 43개 항목이 모두 기대 범위 안에 들었습니다.
+미리 만든 `synthetic_dumps/`에 대해 같은 계산을 Python으로 따라 한 결과(`model/verify_dumps.py`), 43개 항목(MATLAB 1~9단계 60개 항목 중 일부)이 모두 기대 범위 안에 들었습니다.
 
 | 단계 | 내용 | 이 데이터셋의 값 |
 |---|---|---|

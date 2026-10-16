@@ -23,7 +23,7 @@ function res = run_synthetic_test(root, show)
 %   res = run_synthetic_test(root, false)       % no figures
 %
 %   The dump format is detected from h0/c32_m82_j1/bin:
-%     5 columns (gen_synthetic_dumps(root)):            steps 1-10, 77 checks
+%     5 columns (gen_synthetic_dumps(root)):            steps 1-10, 94 checks
 %     2 columns (gen_synthetic_dumps(root, 'Cols', 2)): the current LLS format; 6 steps, 49 checks on the
 %       MD rule, kappa and the CIR-only Lambda-hat ('Moments', 'cir'). Made with the same root and seeds,
 %       the 2-column set has the same CIR as the 5-column set, so the MD-rule, kappa and Lambda-hat numbers

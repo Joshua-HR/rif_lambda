@@ -210,9 +210,9 @@ which rif_cir_analyze        % &lt;repo&gt;\lambda_patch\rif_cir_analyze.m 이�
     <div class="item-head"><span class="iid">A-1</span><h3>5열 합성 세트 자동 시험</h3><span class="tags"><span class="tag req">필수</span></span></div>
     <p class="why">10단계(패킷 판정)의 소프트 결합 실행이 이제 <code>'Profile', 'fira-medium'</code>을 거칩니다. 문턱 69.61 항목이 OK이면 프로파일 경로도 맞게 동작하는 것입니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>gen_synthetic_dumps('D:/rif_test5');            % 5열 8,100개, 수 분
-res5 = run_synthetic_test('D:/rif_test5');      % 10단계, 77개 항목</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd><code>77 / 77 checks OK</code></dd><dt>기준</dt><dd><code>[CHECK]</code> 없음. 있으면 그 줄을 결과 칸에 그대로 적어 주세요.</dd></dl>
-    <div class="rec"><label for="st-A-1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-1"></select><span class="meta" id="mt-A-1"></span></div><textarea id="nt-A-1" placeholder="예: 77/77, 또는 [CHECK] 줄"></textarea></div></div>
+res5 = run_synthetic_test('D:/rif_test5');      % 10단계, 94개 항목</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd><code>94 / 94 checks OK</code></dd><dt>기준</dt><dd><code>[CHECK]</code> 없음. 있으면 그 줄을 결과 칸에 그대로 적어 주세요.</dd></dl>
+    <div class="rec"><label for="st-A-1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-1"></select><span class="meta" id="mt-A-1"></span></div><textarea id="nt-A-1" placeholder="예: 94/94, 또는 [CHECK] 줄"></textarea></div></div>
   </article>
 
   <article class="item" id="A-2" data-id="A-2" data-stage="A">
@@ -265,7 +265,7 @@ isequal(R15.table, R12.table)                            % H1 Pd 표       → t
     <p class="why">해설 페이지 10장 "1단계 결과: 5열 덤프 대 2열 덤프" 그림의 "MATLAB 결과 불러오기 (JSON)" 버튼으로 파일을 고릅니다. 파일은 브라우저 안에서만 읽습니다. 저장소에 들어 있는 미리 만든 세트로 한 번 더 내보내면 Python 미러와의 비교 타일이 나옵니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>export_web_results('D:/rif_test5', 'D:/rif_test2', 'D:/rif_results.json', 'Res5', res5, 'Res2', res2);
 export_web_results('&lt;repo&gt;/synthetic_dumps', '&lt;repo&gt;/synthetic_dumps_2col', 'D:/rif_results_repo.json');</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd>교차 확인 타일 4개 모두 "같음", <code>run_synthetic_test</code> 타일 77/77 · 49/49, Python 미러 비교는 경계값 몇 건 외에 "같음"</dd><dt>페이지</dt><dd><a href="index.html#s10">RIF Λ 판정기 10장</a></dd></dl>
+    <dl class="expect"><dt>기대</dt><dd>교차 확인 타일 4개 모두 "같음", <code>run_synthetic_test</code> 타일 94/94 · 49/49, Python 미러 비교는 경계값 몇 건 외에 "같음"</dd><dt>페이지</dt><dd><a href="index.html#s10">RIF Λ 판정기 10장</a></dd></dl>
     <div class="rec"><label for="st-A-W">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-W"></select><span class="meta" id="mt-A-W"></span></div><textarea id="nt-A-W" placeholder="예: 타일 4개 같음, Python 미러 1건 다름(경계값)"></textarea></div></div>
   </article>
 

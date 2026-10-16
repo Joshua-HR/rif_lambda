@@ -670,36 +670,38 @@ end
 % (1) low-D branch contribution versus T_low
 ax = subplot(2, 2, 1); hold on;
 Tl = 6:0.1:14;
-h = zeros(nC, 1);
+h = zeros(nC, 1); nmb = nm;
 for c = 1:nC
     lo = C(c).D < o.DTh;
     y = sum(bsxfun(@ge, C(c).Z(lo).', Tl), 1) / C(c).n;
     y(y == 0) = NaN;
     h(c) = plot(Tl, y, ls{c}, 'Color', col(c, :), 'LineWidth', 1.5);
+    if all(isnan(y)), nmb{c} = [nm{c} ' (no fragment in this branch)']; end
 end
 style_ax(ax, surf_, muted, gridc);
 set(ax, 'YScale', 'log'); ylim([0.3 / nmax, 1]); xlim([Tl(1) Tl(end)]);
 ref_lines(ax, o.TLow, 'T_{low}', o.Target, ink2, muted);
 xlabel('T_{low} [dB]'); ylabel('P(D < gate and Z \geq T_{low})');
 title('false alarms from the thermal-floor branch (D < gate)', 'Color', ink, 'Fontweight', 'normal');
-legend(h, nm, 'Location', 'northeast', 'FontSize', 7, 'Box', 'off');
+legend(h, nmb, 'Location', 'northeast', 'FontSize', 7, 'Box', 'off');
 
 % (2) high-D branch contribution versus T_high
 ax = subplot(2, 2, 2); hold on;
 Th = 8:0.2:30;
-h = zeros(nC, 1);
+h = zeros(nC, 1); nmb = nm;
 for c = 1:nC
     hi = C(c).D >= o.DTh;
     y = sum(bsxfun(@ge, C(c).Z(hi).', Th), 1) / C(c).n;
     y(y == 0) = NaN;
     h(c) = plot(Th, y, ls{c}, 'Color', col(c, :), 'LineWidth', 1.5);
+    if all(isnan(y)), nmb{c} = [nm{c} ' (no fragment in this branch)']; end
 end
 style_ax(ax, surf_, muted, gridc);
 set(ax, 'YScale', 'log'); ylim([0.3 / nmax, 1]); xlim([Th(1) Th(end)]);
 ref_lines(ax, o.THigh, 'T_{high}', o.Target, ink2, muted);
 xlabel('T_{high} [dB]'); ylabel('P(D \geq gate and Z \geq T_{high})');
 title('false alarms from the self-noise branch (D \geq gate)', 'Color', ink, 'FontWeight', 'normal');
-legend(h, nm, 'Location', 'southeast', 'FontSize', 7, 'Box', 'off');
+legend(h, nmb, 'Location', 'southeast', 'FontSize', 7, 'Box', 'off');
 
 % (3) Z versus D of all H0 fragments with the decision boundary
 ax = subplot(2, 2, 3); hold on;
@@ -737,6 +739,7 @@ for c = 1:nC
     end
     plot(c, E.upper(c), 'v', 'Color', col(c, :), 'MarkerFaceColor', col(c, :), 'MarkerSize', 7, 'HandleVisibility', 'off');
 end
+% shape keys (gray): the colors of the markers are the conditions of the x axis, as in panels (1) and (2)
 hA = plot(NaN, NaN, 'o', 'Color', ink2, 'MarkerFaceColor', surf_, 'MarkerSize', 7, 'LineWidth', 1.5);
 hB = plot(NaN, NaN, 'v', 'Color', ink2, 'MarkerFaceColor', ink2, 'MarkerSize', 7);
 hC = line([0.5 nC + 0.5], o.Target * [1 1], 'Color', ink, 'LineStyle', '--');
@@ -757,8 +760,8 @@ end
 xlabel('RIF symbols / H0 power [dBm]'); ylabel('Pfa per fragment');
 title(sprintf('Pfa and %.0f%% upper bound at T_{low} %.1f / T_{high} %.1f dB', o.Conf * 100, o.TLow, o.THigh), ...
       'Color', ink, 'FontWeight', 'normal');
-legend([hA hB hC], {'point estimate k/n', sprintf('%.0f%% upper bound', o.Conf * 100), ...
-       sprintf('target %.0e', o.Target)}, 'Location', 'northwest', 'FontSize', 8, 'Box', 'off');
+legend([hA hB hC], {'marker o: point estimate k/n', sprintf('marker v: %.0f%% upper bound', o.Conf * 100), ...
+       sprintf('fragment criterion %.0e', o.Target)}, 'Location', 'northwest', 'FontSize', 8, 'Box', 'off');
 end
 
 
@@ -777,5 +780,5 @@ line(tval * [1 1], yl, 'Color', ink2, 'LineWidth', 1.2, 'HandleVisibility', 'off
 text(tval, yl(2), [' ' tname], 'VerticalAlignment', 'top', 'FontSize', 8, 'Color', ink2);
 xl = xlim(ax);
 line(xl, target * [1 1], 'Color', muted, 'LineStyle', '--', 'HandleVisibility', 'off');
-text(xl(2), target, 'target ', 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom', 'FontSize', 8, 'Color', muted);
+text(xl(2), target, 'fragment criterion ', 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom', 'FontSize', 8, 'Color', muted);
 end

@@ -91,7 +91,7 @@ RIFStsLen=0..3 (32/64/128/256심볼), SemiSyncAcclen = 심볼 수
 
 ```matlab
 gen_synthetic_dumps('D:/rif_test5');            % h0, h0_mp20, h1, h0_2col, scale_test, mixed_test, h1_drift (8,100개)
-res5 = run_synthetic_test('D:/rif_test5');      % 5열 자동 인식 → 10단계, 77개 항목 (10단계 = 패킷 판정, 새 칩·고정 칩)
+res5 = run_synthetic_test('D:/rif_test5');      % 5열 자동 인식 → 10단계, 94개 항목 (10단계 = 패킷 판정, 새 칩·고정 칩)
 ```
 
 ### A-2. 2열 합성 세트 (현재 LLS 형식, 같은 시드)
@@ -139,7 +139,7 @@ export_web_results('D:/rif_test5', 'D:/rif_test2', 'D:/rif_results.json', 'Res5'
 
 - 그림 위의 "MATLAB 결과 불러오기 (JSON)" 버튼으로 파일을 고릅니다. 파일은 브라우저 안에서만 읽습니다.
 - 교차 확인 타일 4개(MD 오검출 수, κ, Λ̂ 오검출 수, H1 검출 수)가 모두 "같음"이어야 합니다.
-- `run_synthetic_test` 타일에는 77/77 · 49/49가 보여야 합니다.
+- `run_synthetic_test` 타일에는 94/94 · 49/49가 보여야 합니다.
 - 미리 만든 `synthetic_dumps/`와 `synthetic_dumps_2col/`로 내보내면 "Python 미러와 비교" 타일이 함께 나옵니다. 경계값 몇 건 외에는 "같음"이어야 합니다.
 - GitHub Pages 판은 `docs/results/matlab_results.json`이 있으면 그것을 기본으로 보여 줍니다.
 
@@ -170,7 +170,7 @@ end
 
 | 항목 | A-1 (5열) | A-2 (2열) |
 |---|---|---|
-| 요약 | `77 / 77 checks OK` | `49 / 49 checks OK` |
+| 요약 | `94 / 94 checks OK` | `49 / 49 checks OK` |
 | MD Pfa (−120/−88/−82/−40 dBm) | 약 0.1% / 1.0% / 5.2% / 0.2% | 같음 |
 | κ 중앙값 | 0.38 / 0.57 / 0.82 / 0.98 | 같음 |
 | Λ (raw) Pfa | 0~0.1% | 해당 없음 |
@@ -359,7 +359,7 @@ R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 
 
 | 결과 | 출처 |
 |---|---|
-| 단계 A 요약 (77/77, 49/49), A-3 교차 확인 결과 | `run_synthetic_test` 출력, `isequal` 결과, `export_web_results` JSON과 웹 10장 그림 |
+| 단계 A 요약 (94/94, 49/49), A-3 교차 확인 결과 | `run_synthetic_test` 출력, `isequal` 결과, `export_web_results` JSON과 웹 10장 그림 |
 | H0 MD 표 (Pfa, 상한, kappa, Dmed) | `h0_pfa_analyze` "current thresholds" 표, `h0_pfa.png` |
 | H0 Λ 표 (raw / cir) | "Lambda detector" 표, `h0_lambda.png` |
 | H1 표 (Pd [95% CI], 위치 정확도, L90/L99, L90loc) | `h1_pd_analyze` 출력과 그림 |
@@ -372,7 +372,7 @@ R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 
 
 ## 8. 진행 체크리스트
 
-1. [ ] A-1 5열 합성: 77/77
+1. [ ] A-1 5열 합성: 94/94
 2. [ ] A-2 2열 합성: 49/49
 3. [ ] A-3 교차 확인: 모두 `true`
 4. [ ] (선택) A-4 단계 B 리허설

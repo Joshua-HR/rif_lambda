@@ -400,7 +400,7 @@ line(o.DTh * [1 1], yl, 'Color', 'k', 'LineStyle', ':');
 xlim(xl); ylim(yl); grid on; box on;
 xlabel('D [dB]'); ylabel('Z [dB]');
 title(sprintf('decision plane   valid %d / %d', sum(good), n));
-legend([hv hx], {'valid', 'invalid'}, 'Location', 'best');
+legend([hv hx], {sprintf('valid (%d)', sum(good)), sprintf('invalid (%d)', sum(~good))}, 'Location', 'best');
 
 % (4) peak position versus fragment
 subplot(2, 2, 4); hold on;

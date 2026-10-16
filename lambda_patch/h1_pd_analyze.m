@@ -212,64 +212,77 @@ end
 % ---------------------------------------------------------------- plots
 if logical(o.Plot)
     figure('Color', 'w', 'Name', 'H1 Pd and detection position', 'Position', [80 80 1150 460]);
-    cm = rif_series_style(numel(ul));                 % one color per RIF length
-    gk = [0.35 0.35 0.35];                            % neutral color of the style keys
+    nL = numel(ul);
     if strcmpi(o.Moments, 'cir'), lamName = '\Lambda-hat (CIR)'; else lamName = '\Lambda'; end
-    subplot(1, 2, 1); hold on; grid on; box on;
-    h = zeros(numel(ul) + 2, 1); nm = cell(numel(ul) + 2, 1);
-    for q = 1:numel(ul)
-        [pw, Pd, Lo, Hi] = series(C, ul(q));
-        errorbar(pw, Pd(:, 1), Pd(:, 1) - Lo(:, 1), Hi(:, 1) - Pd(:, 1), '--o', 'Color', cm(q, :), 'MarkerSize', 4);
-        h(q) = errorbar(pw, Pd(:, 2), Pd(:, 2) - Lo(:, 2), Hi(:, 2) - Pd(:, 2), '-s', 'Color', cm(q, :), ...
-                        'MarkerSize', 4, 'MarkerFaceColor', cm(q, :));
-        nm{q} = sprintf('%d sym', ul(q));
+    % every legend entry is one drawn line. One length: color = detector (orange MD rule, blue Lambda, as on
+    % the web page). Several lengths: color = length (rif_series_style), line style = detector.
+    if nL == 1
+        colMD = [235 104 52] / 255; colL = [42 120 214] / 255;
+    else
+        colMD = rif_series_style(nL); colL = colMD;
     end
-    h(end - 1) = plot(NaN, NaN, '--o', 'Color', gk, 'MarkerSize', 4);                         nm{end - 1} = 'MD rule';
-    h(end) = plot(NaN, NaN, '-s', 'Color', gk, 'MarkerSize', 4, 'MarkerFaceColor', gk);      nm{end} = lamName;
+    nm = cell(2 * nL, 1);
+    for q = 1:nL
+        if nL == 1, pre = ''; else pre = sprintf('%d sym, ', ul(q)); end
+        nm{2 * q - 1} = [pre 'MD rule']; nm{2 * q} = [pre lamName];
+    end
+
+    subplot(1, 2, 1); hold on; grid on; box on;
+    h = zeros(2 * nL, 1);
+    for q = 1:nL
+        [pw, Pd, Lo, Hi] = series(C, ul(q));
+        h(2 * q - 1) = errorbar(pw, Pd(:, 1), Pd(:, 1) - Lo(:, 1), Hi(:, 1) - Pd(:, 1), '--o', 'Color', colMD(q, :), ...
+                                'MarkerSize', 4);
+        h(2 * q) = errorbar(pw, Pd(:, 2), Pd(:, 2) - Lo(:, 2), Hi(:, 2) - Pd(:, 2), '-s', 'Color', colL(q, :), ...
+                            'MarkerSize', 4, 'MarkerFaceColor', colL(q, :));
+    end
     line(xlim, [0.9 0.9], 'Color', [0.5 0.5 0.5], 'LineStyle', ':', 'HandleVisibility', 'off');
     line(xlim, [0.99 0.99], 'Color', [0.5 0.5 0.5], 'LineStyle', ':', 'HandleVisibility', 'off');
     ylim([0 1.02]);
     xlabel('SignalPower [dBm]'); ylabel('Pd per fragment');
-    title(sprintf('Pd with %.0f%% CI   (dashed: MD rule, solid: %s)', 100 * o.Conf, lamName));
+    title(sprintf('Pd per fragment with %.0f%% CI (dotted: 0.9 and 0.99)', 100 * o.Conf));
     legend(h, nm, 'Location', 'southeast');
 
     subplot(1, 2, 2); hold on; grid on; box on;
-    for q = 1:numel(ul)
+    h = zeros(2 * nL, 1);
+    for q = 1:nL
         [pw, ~, ~, ~, ~, Acc] = series(C, ul(q));
-        plot(pw, Acc(:, 1), '--o', 'Color', cm(q, :), 'MarkerSize', 4);
-        h(q) = plot(pw, Acc(:, 2), '-s', 'Color', cm(q, :), 'MarkerSize', 4, 'MarkerFaceColor', cm(q, :));
+        h(2 * q - 1) = plot(pw, Acc(:, 1), '--o', 'Color', colMD(q, :), 'MarkerSize', 4);
+        h(2 * q) = plot(pw, Acc(:, 2), '-s', 'Color', colL(q, :), 'MarkerSize', 4, 'MarkerFaceColor', colL(q, :));
     end
-    h(end - 1) = plot(NaN, NaN, '--o', 'Color', gk, 'MarkerSize', 4);
-    h(end) = plot(NaN, NaN, '-s', 'Color', gk, 'MarkerSize', 4, 'MarkerFaceColor', gk);
-    legend(h, nm, 'Location', 'southeast');
     ylim([0 1.02]);
     xlabel('SignalPower [dBm]'); ylabel('share of detections at the right tap');
     title(sprintf('detection position: peak tap within %d \\pm %d', o.PeakTap, o.Tol));
+    legend(h, nm, 'Location', 'southeast');
+
     if doPkt
         figure('Color', 'w', 'Name', 'H1 packet Pd', 'Position', [100 100 700 460]);
         hold on; grid on; box on;
-        h = zeros(numel(ul) + 1, 1); nm = cell(numel(ul) + 1, 1);
-        for q = 1:numel(ul)
+        % packet decision solid with CI; the fragment Lambda of the same dumps dotted (gray when one length)
+        if nL == 1, colF = [0.55 0.55 0.55]; else colF = colL; end
+        h = zeros(2 * nL, 1); nm = cell(2 * nL, 1);
+        for q = 1:nL
             cs = find([R.pkt.cond.len] == ul(q));
             [pw, ord] = sort([R.pkt.cond(cs).dBm]);
             cc = R.pkt.cond(cs(ord));
             pd = [cc.Pd]; lo = [cc.PdLo]; hi = [cc.PdHi];
-            h(q) = errorbar(pw, pd, pd - lo, hi - pd, '-s', 'Color', cm(q, :), 'MarkerSize', 4, 'MarkerFaceColor', cm(q, :));
+            h(2 * q - 1) = errorbar(pw, pd, pd - lo, hi - pd, '-s', 'Color', colL(q, :), 'MarkerSize', 4, ...
+                                    'MarkerFaceColor', colL(q, :));
             [pw2, Pd2] = series(C, ul(q));
-            plot(pw2, Pd2(:, 2), ':', 'Color', cm(q, :));
-            nm{q} = sprintf('%d sym', ul(q));
+            h(2 * q) = plot(pw2, Pd2(:, 2), ':', 'Color', colF(q, :), 'LineWidth', 1.2);
+            if nL == 1, pre = ''; else pre = sprintf('%d sym, ', ul(q)); end
+            nm{2 * q - 1} = sprintf('%spacket (%s, %d fragments)', pre, R.pkt.info.rule, R.pkt.info.K);
+            nm{2 * q} = [pre 'fragment ' lamName];
         end
-        h(end) = plot(NaN, NaN, ':', 'Color', gk);  nm{end} = ['fragment ' lamName];
         line(xlim, [0.9 0.9], 'Color', [0.5 0.5 0.5], 'LineStyle', ':', 'HandleVisibility', 'off');
         ylim([0 1.02]);
-        xlabel('SignalPower [dBm]'); ylabel('Pd per packet');
-        title(sprintf('packet Pd (%s, %d fragments, target %.0e); dotted: fragment %s', R.pkt.info.rule, ...
-                      R.pkt.info.K, R.pkt.info.PfaTarget, lamName));
+        xlabel('SignalPower [dBm]'); ylabel('Pd');
+        title(sprintf('packet Pd (%s, %d fragments, target %.0e) with %.0f%% CI', R.pkt.info.rule, ...
+                      R.pkt.info.K, R.pkt.info.PfaTarget, 100 * o.Conf));
         legend(h, nm, 'Location', 'southeast');
     end
 end
 end
-
 
 % ======================================================================
 function o = apply_profile(o, defaults, fname)
