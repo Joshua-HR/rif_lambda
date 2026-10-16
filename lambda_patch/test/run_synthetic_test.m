@@ -22,7 +22,9 @@ function res = run_synthetic_test(root, show)
 %   res = run_synthetic_test('D:/rif_test')     % dumps made by gen_synthetic_dumps('D:/rif_test')
 %   res = run_synthetic_test(root, false)       % no figures
 %
-%   The dump format is detected from h0/c32_m82_j1/bin:
+%   The dump format is detected from h0/c32_m82_j1/bin and printed first ("dump format: 2 columns");
+%   every job folder of h0, h0_mp20, h1, h1_drift must have the same format (error run_synthetic_test:mixedset
+%   otherwise), and the summary line names the set ("49 / 49 checks OK (2-column set, <root>)"):
 %     5 columns (gen_synthetic_dumps(root)):            steps 1-10, 94 checks
 %     2 columns (gen_synthetic_dumps(root, 'Cols', 2)): the current LLS format; 6 steps, 49 checks on the
 %       MD rule, kappa and the CIR-only Lambda-hat ('Moments', 'cir'). Made with the same root and seeds,
@@ -61,10 +63,16 @@ res = struct('name', {}, 'value', {}, 'lo', {}, 'hi', {}, 'ok', {});
 plt = 'none';
 if show, plt = 'both'; end
 ncol = dump_cols(fullfile(root, 'h0', 'c32_m82_j1', 'bin'));
-fprintf('dump format: %d columns\n', ncol);
+if ncol ~= 2 && ncol ~= 5
+    error('run_synthetic_test:format', 'h0/c32_m82_j1 holds %g values per line (expected 2 or 5).', ncol);
+end
+set_format(root, ncol);
+setTag = sprintf('%d-column set, %s', ncol, root);
+if ncol == 2, nExp = 49; else nExp = 94; end
+fprintf('dump format: %d columns (%d checks expected)\n', ncol, nExp);
 if ncol == 2
     res = suite_2col(root, show, plt, res);
-    summary(res);
+    summary(res, setTag);
     return;
 end
 
@@ -192,7 +200,7 @@ res = suite_packet(root, 'new', show, res, 'pkt');
 res = suite_packet(root, 'fixed', show, res, 'pkt');
 
 % ------------------------------------------------------------------ summary
-summary(res);
+summary(res, setTag);
 end
 
 
@@ -336,10 +344,41 @@ end
 
 
 % ======================================================================
-function summary(res)
+function set_format(root, ncol)
+% every job folder the run reads must hold dumps of the format found in h0/c32_m82_j1; a root that still
+% holds an older set of the other format would otherwise be tested as that older set
+bad = {};
+subs = {'h0', 'h0_mp20', 'h1', 'h1_drift'};
+for s = 1:numel(subs)
+    d = dir(fullfile(root, subs{s}, 'c*_m*_j*'));
+    for i = 1:numel(d)
+        if ~d(i).isdir, continue; end
+        b = fullfile(root, subs{s}, d(i).name, 'bin');
+        if exist(b, 'dir') ~= 7, b = fullfile(root, subs{s}, d(i).name); end
+        if isempty(dir(fullfile(b, '*_RifCir_AccNum_*.txt'))), continue; end
+        nc = dump_cols(b);
+        if nc ~= ncol, bad{end + 1} = sprintf('%s/%s (%g columns)', subs{s}, d(i).name, nc); end %#ok<AGROW>
+    end
+end
+if ~isempty(bad)
+    error('run_synthetic_test:mixedset', ['h0/c32_m82_j1 holds %d-column dumps, but these folders do not: %s. ' ...
+          'The root mixes two sets; regenerate the set into an empty root.'], ncol, strjoin(bad, ', '));
+end
+if ncol == 2
+    stale = {'h0_2col', 'scale_test', 'mixed_test'};
+    left = stale(cellfun(@(x) exist(fullfile(root, x), 'dir') == 7, stale));
+    if ~isempty(left)
+        warning('run_synthetic_test:stale', ['%s under %s belong to a 5-column set (gen_synthetic_dumps with ' ...
+                '''Cols'', 2 does not make them); this 2-column run ignores them.'], strjoin(left, ', '), root);
+    end
+end
+end
+
+% ======================================================================
+function summary(res, setTag)
 banner('summary');
 nOk = sum([res.ok]);
-fprintf('  %d / %d checks OK\n', nOk, numel(res));
+fprintf('  %d / %d checks OK   (%s)\n', nOk, numel(res), setTag);
 for i = find(~[res.ok])
     fprintf('  CHECK: %s = %.4g (expected %g .. %g)\n', res(i).name, res(i).value, res(i).lo, res(i).hi);
 end

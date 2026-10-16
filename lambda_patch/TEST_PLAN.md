@@ -101,6 +101,8 @@ gen_synthetic_dumps('D:/rif_test2', 'Cols', 2); % h0, h0_mp20, h1, h1_drift (5�
 res2 = run_synthetic_test('D:/rif_test2');      % 2열 자동 인식 → 6단계, 49개 항목
 ```
 
+출력 첫 줄이 `dump format: 2 columns (49 checks expected)`이고 요약이 `49 / 49 checks OK (2-column set, D:/rif_test2)`여야 합니다. 94개 항목이 돌면 그 폴더에 예전 5열 세트가 남아 있는 것입니다. 생성 스크립트는 이미 덤프가 있는 폴더에는 아무것도 쓰지 않고 멈추며(대상 폴더와 열 수를 알려 줌), 시험 스크립트는 폴더마다 형식이 섞여 있으면 `run_synthetic_test:mixedset` 오류를 냅니다. 예전 세트를 지우고(`rmdir('D:/rif_test2', 's')`) 다시 만드세요.
+
 | 2열 단계 | 확인 내용 |
 |---|---|
 | 1 | 폴더 하나: Q·Π 없음(`hasMom` false), raw Λ 미계산, MD 오검출, κ, `'Moments','cir'`로 Λ̂ 계산과 위상당 추정 탭 수(24~25) |
@@ -129,7 +131,7 @@ R12 = h1_pd_analyze('D:/rif_test2/h1', 'Moments', 'cir', 'Plot', false);
 isequal(R15.table, R12.table)                            % H1 Pd 표 (MD, Λ̂)   → true
 ```
 
-하나라도 `false`면 덤프 읽기나 형식 처리에 문제가 있는 것입니다.
+하나라도 `false`면 덤프 읽기나 형식 처리에 문제가 있는 것입니다. A-2가 2열 세트로 돌았는지 먼저 확인하세요. 두 폴더가 모두 5열이면 같은 덤프를 비교하는 셈이라 언제나 `true`입니다.
 
 결과를 그림으로 나란히 보려면 JSON으로 내보내 웹 페이지 10장 "1단계 결과: 5열 덤프 대 2열 덤프" 그림에서 불러옵니다.
 

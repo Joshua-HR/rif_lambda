@@ -136,6 +136,10 @@ th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--grid);verti
 th{font-weight:600;color:var(--ink-2);font-size:12.5px}
 td.num,th.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 details > summary{cursor:pointer;color:var(--s1);font-size:14px}
+.guide{border-top:1px dashed var(--grid);padding-top:8px}
+.guide-body{display:flex;flex-direction:column;gap:10px;font-size:14px;max-width:76ch}
+.guide-body h4{margin:4px 0 0;font-size:14.5px;font-weight:600}
+.guide-body ul,.guide-body ol{margin:0}
 details[open] > summary{margin-bottom:8px}
 .rec{display:grid;grid-template-columns:150px 1fr;gap:8px 12px;align-items:start;border-top:1px dashed var(--grid);padding-top:10px}
 .rec label{font:600 12px/2.2 var(--f-mono);color:var(--muted);letter-spacing:.04em}
@@ -211,7 +215,84 @@ which rif_cir_analyze        % &lt;repo&gt;\lambda_patch\rif_cir_analyze.m 이�
     <p class="why">10단계(패킷 판정)의 소프트 결합 실행이 이제 <code>'Profile', 'fira-medium'</code>을 거칩니다. 문턱 69.61 항목이 OK이면 프로파일 경로도 맞게 동작하는 것입니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>gen_synthetic_dumps('D:/rif_test5');            % 5열 8,100개, 수 분
 res5 = run_synthetic_test('D:/rif_test5');      % 10단계, 94개 항목</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd><code>94 / 94 checks OK</code></dd><dt>기준</dt><dd><code>[CHECK]</code> 없음. 있으면 그 줄을 결과 칸에 그대로 적어 주세요.</dd></dl>
+    <dl class="expect"><dt>기대</dt><dd>첫 줄 <code>dump format: 5 columns (94 checks expected)</code>, 요약 <code>94 / 94 checks OK (5-column set, D:/rif_test5)</code></dd><dt>기준</dt><dd><code>[CHECK]</code> 없음. 있으면 그 줄을 결과 칸에 그대로 적어 주세요.</dd></dl>
+    <details class="guide">
+      <summary>그림 해석 안내 (그림 11개)</summary>
+      <div class="guide-body">
+        <p>창 제목(Name)으로 찾으세요. 실행 전에 열려 있던 그림이 있으면 번호가 밀립니다. 6·9번은 3번과, 7번은 4번과 같은 내용이라 건너뛰어도 됩니다.</p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th class="num">그림</th><th>창 제목</th><th>단계</th><th>무엇을 보나</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>RIF CIR detail #1</td><td>1</td><td>틀린 키 −82 dBm 프래그먼트 하나를 MD 방식이 판정하는 과정</td></tr>
+            <tr><td class="num">2</td><td>RIF CIR summary</td><td>1</td><td>같은 폴더 전체의 MD 판정</td></tr>
+            <tr><td class="num">3</td><td>H0 Pfa analysis</td><td>2</td><td><b>MD 방식이 중간 세기에서 깨지는 모습</b></td></tr>
+            <tr><td class="num">4</td><td>H0 Lambda check</td><td>2</td><td><b>원시 샘플 Λ의 꼬리가 이론선 하나를 따르는지</b></td></tr>
+            <tr><td class="num">5</td><td>H1 Pd and detection position</td><td>4</td><td>감도와 위치 정확도: MD 대 Λ</td></tr>
+            <tr><td class="num">8</td><td>H0 packet check</td><td>10, 새 칩</td><td><b>패킷 소프트 합(Λ)의 꼬리와 독립성</b></td></tr>
+            <tr><td class="num">10</td><td>H0 Lambda check</td><td>10, 고정 칩</td><td>CIR 추정 Λ̂의 꼬리</td></tr>
+            <tr><td class="num">11</td><td>H0 packet check</td><td>10, 고정 칩</td><td><b>고정 칩 패킷 판정(Λ̂)의 근거</b></td></tr>
+          </tbody>
+        </table></div>
+        <p><b>공통 규칙.</b> H0(맞는 키 없음) 그림에서 valid이거나 문턱 위에 있는 점은 모두 오검출입니다. 색은 세기(−40 dBm 파랑, −82 주황, −88 초록, −120 빨강), 선 모양은 RIF 길이(32심볼 실선, 64 파선, 128 점선, 256 일점쇄선)입니다. 범례 항목 하나가 그래프의 선 하나이고, 선이 없는 항목에는 이유가 붙습니다. "fragment criterion 1e-03" 점선은 프래그먼트 진단 기준이며, 요구사항인 패킷 10⁻⁶은 그림 8·11로 봅니다.</p>
+
+        <h4>그림 1: 프래그먼트 하나</h4>
+        <ul>
+          <li>왼쪽 위: CIR 전력. 초록 음영 = 신호 창 W_s(119~175), 파란 음영 = MD 잡음 창 W_n(16~96), 빨간 ▼ = 신호 창 최대 탭, 파선·점선 = 위상별 바닥의 최대·최소.</li>
+          <li>오른쪽 위: 피크 주변 ±32탭, 색 = 빗 위상 mod(k, 8). 8가지 색이 모두 달라야 합니다. 왼쪽 아래: 위상별 바닥 F[e], ▼/▲의 비가 빗 깊이 D.</li>
+          <li><b>정상:</b> D가 10 dB 게이트 아래라 낮은 문턱 9.6 dB가 적용됩니다. 바닥이 자기잡음인데 열잡음용 문턱이 쓰이는 것이 MD 방식의 실패 원리입니다. κ 약 0.8, Λ 최댓값은 22.71보다 한참 작음(INVALID), qRatio 약 1. MD 판정이 VALID여도 이 세기에서는 약 5%라 이상이 아닙니다.</li>
+          <li><b>이상 신호:</b> qRatio가 1에서 크게 벗어남.</li>
+        </ul>
+
+        <h4>그림 2: 폴더 전체의 MD 판정</h4>
+        <ul>
+          <li>초록 = valid, 빨강 = invalid, 범례에 건수. H0라 초록 점은 모두 오검출입니다.</li>
+          <li><b>정상:</b> D가 대부분 게이트 아래, valid 비율 2~9%(기대 약 4%), 피크 위치가 신호 창 안에 고르게 흩어짐.</li>
+          <li><b>이상 신호:</b> 피크가 한 탭에 몰림(덤프나 창 설정 문제).</li>
+        </ul>
+
+        <h4>그림 3 (6, 9): H0 Pfa analysis, MD 방식</h4>
+        <ul>
+          <li>왼쪽 위: 열잡음 분기(D &lt; 게이트) 오검출 대 T_low. T_low = 9.6에서 기준 점선보다 위면 그 세기가 진단 기준을 넘습니다. <b>정상:</b> −82(주황), −88(초록)이 한참 위, −120(빨강)은 1e-3 근처. −40 dBm은 이 분기에 프래그먼트가 없어 "(no fragment in this branch)".</li>
+          <li>오른쪽 위: 자기잡음 분기(D ≥ 게이트) 대 T_high. T_high = 14.4에서 −40 dBm(파랑)이 2e-3 안팎.</li>
+          <li>왼쪽 아래: Z 대 D와 판정 경계. −120은 D 약 3.5 dB, −88 약 5 dB, −82 약 8 dB(게이트 바로 왼쪽), −40은 20 dB 이상. <b>주황 덩어리가 낮은 문턱 구역에서 선을 많이 넘는 것</b>이 MD 방식이 깨지는 이유입니다.</li>
+          <li>오른쪽 아래: 조건별 Pfa. ○ = 점추정, ▽ = 95% 상한, 색 = 아래 축의 조건, k = 오검출 수. 기대: −120 약 0.1%, −88 약 1%, −82 약 5%, −40 약 0.2%.</li>
+        </ul>
+
+        <h4>그림 4 (7): H0 Lambda check, 원시 샘플 Λ</h4>
+        <ul>
+          <li>왼쪽: 탭 하나의 P(Λ ≥ t). 검은 파선 = 이론 e^(−t/2), 점선 세로선 = 문턱 22.71.</li>
+          <li><b>정상:</b> 네 곡선이 이론선 위에 겹치거나 아래. −40 dBm이 처지는 것은 ρ 클램프(0.98) 때문이라 정상. 오른쪽 끝에서 끊기는 것은 표본이 그 깊이까지 없어서입니다.</li>
+          <li><b>이상 신호:</b> 이론선보다 위로 뜨는 곡선, 특히 t = 10~14에서 1.3배 초과.</li>
+          <li>의미: 세기와 무관하게 이론선 하나를 따르는 것이 Λ의 핵심이고, 패킷 문턱 공식의 전제입니다. 오른쪽: Λ ≥ 22.71인 Pfa(○는 k &gt; 0일 때만), 1e-3 근처나 아래면 정상.</li>
+        </ul>
+
+        <h4>그림 5: H1 Pd and detection position</h4>
+        <ul>
+          <li>주황 파선 ○ = MD rule, 파랑 실선 ■ = Λ, 세로 막대 = 95% 신뢰구간. 범례 2개 = 선 2개.</li>
+          <li>왼쪽: 0.9 점선과 만나는 세기가 L90. <b>정상:</b> 파랑이 주황보다 약 1 dB 왼쪽(L90 MD −111.2, Λ −112.3 dBm). 중간 세기에서 신뢰구간이 겹치지 않으면 차이가 통계적으로 분명합니다.</li>
+          <li>오른쪽: 검출된 프래그먼트 중 피크가 127 ± 2탭인 비율. Pd ≥ 0.1인 세기에서 95% 이상이면 정상(가장 약한 세기는 흔들릴 수 있음).</li>
+        </ul>
+
+        <h4>그림 8 (새 칩 Λ), 11 (고정 칩 Λ̂): H0 packet check</h4>
+        <ul>
+          <li>왼쪽: 8개 프래그먼트 Λ를 탭별로 더한 소프트 합 S의 꼬리, 검은 파선 = 이론 P(χ²₁₆ ≥ t). 제목의 T = 69.6은 그래프 밖입니다(10⁻⁶은 셀 수 없어, 셀 수 있는 깊이까지 이론과 맞는지 보고 문턱까지는 공식으로 잇습니다).</li>
+          <li><b>정상:</b> 곡선이 이론선을 따름. 자동 시험은 P = 1e-2(t 약 32)의 비율이 0.6~1.6인지 봅니다(합성 기대 0.86~1.33). <b>이상 신호:</b> 깊어질수록 이론선보다 점점 위로 벌어짐.</li>
+          <li>오른쪽: 같은 패킷 프래그먼트 쌍의 상관(■)과 ±2/√n 범위. 모든 ■이 범위 안의 0 근처면 독립(합성 |ρ| ≤ 0.06)이고, 합이 χ²₁₆을 따른다는 전제가 섭니다.</li>
+        </ul>
+
+        <h4>그림 10: H0 Lambda check, 고정 칩 Λ̂</h4>
+        <ul><li>그림 4와 같이 읽습니다. Q·Π를 신호 창 밖 탭에서 추정했고, χ²₂ 등가값이라 같은 이론선 e^(−t/2)를 따라야 합니다. 단계 B의 LLS 2열 덤프에서 가장 먼저 볼 전제입니다.</li></ul>
+
+        <h4>보는 순서</h4>
+        <ol>
+          <li>그림 3: MD 방식이 중간 세기에서 깨지는가 (문제 재현)</li>
+          <li>그림 4, 10: Λ와 Λ̂의 꼬리가 세기와 무관하게 이론선 하나를 따르는가 (해결의 전제)</li>
+          <li>그림 5: Λ의 감도가 MD보다 나쁘지 않은가</li>
+          <li>그림 8, 11: 8개를 묶은 합이 χ²₁₆을 따르고 프래그먼트끼리 독립인가 (패킷 10⁻⁶의 근거)</li>
+        </ol>
+        <p class="hint">94/94가 OK면 이 확인들은 숫자로 이미 통과한 것이고, 그림은 그 숫자가 어떤 모습에서 나왔는지 보는 용도입니다. 이상 신호가 보이면 그림 번호와 함께 결과 칸에 적어 주세요.</p>
+      </div>
+    </details>
     <div class="rec"><label for="st-A-1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-1"></select><span class="meta" id="mt-A-1"></span></div><textarea id="nt-A-1" placeholder="예: 94/94, 또는 [CHECK] 줄"></textarea></div></div>
   </article>
 
@@ -220,8 +301,11 @@ res5 = run_synthetic_test('D:/rif_test5');      % 10단계, 94개 항목</code><
     <p class="why">단계 B와 형식이 같은 세트입니다. 원시 샘플 Λ, PerClass, 스케일 검사, 형식 혼합 검사는 빠집니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>gen_synthetic_dumps('D:/rif_test2', 'Cols', 2); % 같은 시드, h0 / h0_mp20 / h1 / h1_drift
 res2 = run_synthetic_test('D:/rif_test2');      % 6단계, 49개 항목</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd><code>49 / 49 checks OK</code></dd></dl>
-    <div class="rec"><label for="st-A-2">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-2"></select><span class="meta" id="mt-A-2"></span></div><textarea id="nt-A-2" placeholder="예: 49/49"></textarea></div></div>
+    <dl class="expect"><dt>기대</dt><dd>첫 줄 <code>dump format: 2 columns (49 checks expected)</code>, 요약 <code>49 / 49 checks OK (2-column set, D:/rif_test2)</code></dd><dt>94개가 나오면</dt><dd>그 폴더에 예전에 만든 <b>5열 세트</b>가 남아 있는 것입니다. 이미 덤프가 있는 폴더에는 생성 스크립트가 아무것도 쓰지 않으므로 2열 세트가 만들어지지 않았습니다. 예전 세트를 지우고 다시 만드세요(아래). 지금 버전은 이 경우 생성 단계에서 대상 폴더와 열 수를 알려 주며 멈춥니다.</dd></dl>
+    <div class="cmd-box"><pre class="cmd"><code>rmdir('D:/rif_test2', 's');                       % 예전 세트 삭제 (폴더 내용 확인 후)
+gen_synthetic_dumps('D:/rif_test2', 'Cols', 2);
+res2 = run_synthetic_test('D:/rif_test2');        % dump format: 2 columns, 49 / 49</code></pre></div>
+    <div class="rec"><label for="st-A-2">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-2"></select><span class="meta" id="mt-A-2"></span></div><textarea id="nt-A-2" placeholder="예: dump format 2 columns, 49/49"></textarea></div></div>
   </article>
 
   <article class="item" id="A-P" data-id="A-P" data-stage="A">
@@ -245,7 +329,7 @@ H.opt.Combine                 % 'soft'</code></pre></div>
 
   <article class="item" id="A-3" data-id="A-3" data-stage="A">
     <div class="item-head"><span class="iid">A-3</span><h3>2열·5열 교차 확인</h3><span class="tags"><span class="tag req">필수</span></span></div>
-    <p class="why">CIR만 쓰는 결과(MD 규칙, κ, CIR 추정 Λ̂)는 근사가 아니라 정확히 같아야 합니다. 하나라도 다르면 덤프 읽기나 형식 처리에 문제가 있습니다.</p>
+    <p class="why">CIR만 쓰는 결과(MD 규칙, κ, CIR 추정 Λ̂)는 근사가 아니라 정확히 같아야 합니다. 하나라도 다르면 덤프 읽기나 형식 처리에 문제가 있습니다. A-2가 <b>2열 세트</b>로 49/49였는지 먼저 확인하세요. 두 폴더가 모두 5열이면 같은 덤프를 비교하는 셈이라 언제나 <code>true</code>가 나옵니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>R5  = h0_pfa_analyze('D:/rif_test5/h0', 'Suggest', false, 'Plot', false);
 R2  = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Plot', false);
 isequal(R5.E.k, R2.E.k)                                  % MD 오검출 수   → true

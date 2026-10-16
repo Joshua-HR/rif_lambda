@@ -27,7 +27,9 @@ function gen_synthetic_dumps(root, varargin)
 %   Name-Value options
 %       'Preset'      'test'   'test' = folder tree under root (see below), 'none' = one folder
 %       'Scale'       1        fragment-count factor for 'test'
-%       'Overwrite'   false    true: delete existing dumps (and h0_stats_cache.mat) in a target folder
+%       'Overwrite'   false    true: delete existing dumps (and h0_stats_cache.mat) in a target folder.
+%                              false: if any target folder already holds dumps, nothing is written and the
+%                              error lists those folders with their column count (e.g. an old 5-column set)
 %     for 'Preset','none':
 %       'N'           32       RIF length in symbols (32/64/128/256), also AccNum in the file name
 %       'Power'       -82      received power [dBm, model mapping]; -Inf = no signal (file prefix -200)
@@ -125,6 +127,34 @@ switch lower(o.Preset)
         list(end + 1, :) = {fullfile(o.root, 'h1_drift', 'c32_m90_j1', 'bin'), c};
     otherwise
         error('gen_synthetic_dumps:preset', 'Unknown preset "%s" (use ''test'' or ''none'').', o.Preset);
+end
+
+% check every target folder before writing anything: a root that already holds a set (for example an
+% earlier 5-column set where a 2-column set is wanted) is reported in full and left untouched
+if ~base.Overwrite
+    busy = {};
+    for i = 1:size(list, 1)
+        old = dir(fullfile(list{i, 1}, '*_RifCir_AccNum_*.txt'));
+        if ~isempty(old)
+            busy{end + 1} = sprintf('%s (%d files, %g columns)', list{i, 1}, numel(old), ...
+                                    file_cols(fullfile(list{i, 1}, old(1).name))); %#ok<AGROW>
+        end
+    end
+    if ~isempty(busy)
+        more = '';
+        if numel(busy) > 5, more = sprintf('\n  ... and %d more', numel(busy) - 5); end
+        error('gen_synthetic_dumps:exists', ['%d of %d target folders already hold dumps; nothing was written:\n  %s%s\n' ...
+              'Use an empty root (or delete the old set), or pass ''Overwrite'', true to replace these folders.'], ...
+              numel(busy), size(list, 1), strjoin(busy(1:min(5, end)), sprintf('\n  ')), more);
+    end
+end
+if strcmpi(o.Preset, 'test') && o.Cols == 2
+    stale = {'h0_2col', 'scale_test', 'mixed_test'};
+    left = stale(cellfun(@(x) exist(fullfile(o.root, x), 'dir') == 7, stale));
+    if ~isempty(left)
+        warning('gen_synthetic_dumps:stale', ['%s under %s are left from a 5-column set and are not rewritten; ' ...
+                'run_synthetic_test ignores them for a 2-column set.'], strjoin(left, ', '), o.root);
+    end
 end
 
 total = 0; t0 = tic;
@@ -246,6 +276,15 @@ end
 nOut = c.Count;
 end
 
+
+% ======================================================================
+function nc = file_cols(fn)
+fid = fopen(fn, 'r');
+if fid < 0, nc = NaN; return; end
+A = fscanf(fid, '%f');
+fclose(fid);
+nc = numel(A) / 256;
+end
 
 % ======================================================================
 function g = channel(gph, trms, kdb)
