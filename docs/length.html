@@ -24,7 +24,7 @@
   --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
   --crit:#d03b3b; --good:#0ca30c; --warn:#b7791f;
   --wash:#e6eef9; --code-bg:#e9eae6;
-  --cA:#8c8a82; --cB:#2a78d6; --cC:#8a5cc2; --cD:#eb6834; --cE:#1baf7a;
+  --cA:#8c8a82; --cB:#2a78d6; --cC:#8a5cc2; --cD:#eb6834; --cE:#1baf7a; --cM:#c2588f;
   --f-sans:"IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   --f-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
 }
@@ -36,7 +36,7 @@
     --s1:#3987e5; --s2:#d95926; --s3:#199e70;
     --crit:#e05252; --good:#2fb52f; --warn:#d69a3a;
     --wash:#1b2636; --code-bg:#242422;
-    --cA:#8f8d85; --cB:#3987e5; --cC:#9b72d0; --cD:#d95926; --cE:#199e70;
+    --cA:#8f8d85; --cB:#3987e5; --cC:#9b72d0; --cD:#d95926; --cE:#199e70; --cM:#d06aa0;
     color-scheme:dark;
   }
 }
@@ -47,7 +47,7 @@
   --s1:#3987e5; --s2:#d95926; --s3:#199e70;
   --crit:#e05252; --good:#2fb52f; --warn:#d69a3a;
   --wash:#1b2636; --code-bg:#242422;
-  --cA:#8f8d85; --cB:#3987e5; --cC:#9b72d0; --cD:#d95926; --cE:#199e70;
+  --cA:#8f8d85; --cB:#3987e5; --cC:#9b72d0; --cD:#d95926; --cE:#199e70; --cM:#d06aa0;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -160,6 +160,7 @@ th.sel,td.sel{background:var(--wash)}
 .cell[data-cat="C"]{background:var(--cC)}
 .cell[data-cat="D"]{background:var(--cD)}
 .cell[data-cat="E"]{background:var(--cE)}
+.cell[data-cat="M"]{background:var(--cM)}
 .cell.dim{opacity:.18}
 .cell[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:1px}
 @media (prefers-reduced-motion: reduce){.cell{transition:none}}
@@ -198,7 +199,7 @@ th.sel,td.sel{background:var(--wash)}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">설명 페이지 · 2026-10-19 · lambda_patch/test</span>
+  <span class="eyebrow">설명 페이지 · 2026-10-19 · 0단계 결과 추가 2026-10-20 · lambda_patch/test</span>
   <h1>RIF 길이별 합성 시험</h1>
   <p class="lede prose"><code>gen_synthetic_dumps</code>는 RIF 길이를 바꿀 수 있는데, <code>run_synthetic_test</code>는 왜 32심볼 세트만 받을까요? 시험을 <strong>문제지</strong>(덤프)와 <strong>정답지</strong>(판정 범위)로 나눠 보면 이유와 고칠 양이 함께 보입니다.</p>
   <dl class="thesis">
@@ -215,6 +216,7 @@ th.sel,td.sel{background:var(--wash)}
       <li><a href="#s4"><span class="n">4</span>94개 판정 지도</a></li>
       <li><a href="#s5"><span class="n">5</span>고칠 곳과 규모</a></li>
       <li><a href="#s6"><span class="n">6</span>수정 순서</a></li>
+      <li><a href="#s7"><span class="n">7</span>0단계 결과</a></li>
     </ol>
   </nav>
 </header>
@@ -347,7 +349,7 @@ res = chk(res, 'h1: L90 Lambda [dBm]',  R1.L90(1, 2), <span class="hl">-113.5, -
 <!-- ============================================================ 4 -->
 <section class="sec" id="s4">
   <div class="sec-head"><span class="sec-no">4</span><h2>94개 판정 지도: 무엇이 길이에 따라 바뀌나</h2></div>
-  <p class="prose"><code>run_synthetic_test</code>의 판정을 하나씩 다섯 갈래로 나눴습니다. 칸 하나가 판정 하나이고, 줄이 시험 단계입니다. 칸을 누르면 이름과 32심볼 범위가 나오고, 오른쪽 분류를 누르면 그 분류만 강조됩니다.</p>
+  <p class="prose"><code>run_synthetic_test</code>의 판정을 하나씩 여섯 갈래로 나눴습니다(0단계에서 H0 통계를 Λ 쪽과 MD 규칙 쪽으로 나눔). 칸 하나가 판정 하나이고, 줄이 시험 단계입니다. 칸을 누르면 이름과 32심볼 범위가 나오고, 오른쪽 분류를 누르면 그 분류만 강조됩니다.</p>
   <div class="controls">
     <div class="ctl"><span class="ctl-label" id="setlab">덤프 형식</span>
       <div class="seg" role="group" aria-labelledby="setlab" id="set-seg">
@@ -376,10 +378,10 @@ res = chk(res, 'h1: L90 Lambda [dBm]',  R1.L90(1, 2), <span class="hl">-113.5, -
     <table>
       <thead><tr><th>대상</th><th>지금</th><th>바꾼 뒤</th><th class="num">규모</th></tr></thead>
       <tbody>
-        <tr><td><code>gen_synthetic_dumps.m</code></td><td class="why"><code>'test'</code>가 <code>N</code>을 무시(<code>mk()</code>에서 32), 폴더 이름 <code>c32</code> 15곳, H1 세기 −106 ~ −116 고정, 이동 폴더 −114</td><td class="why"><code>N</code>을 따르고, 길이별 H1 세기 범위와 이동 폴더 세기를 표로 둠. 루트에 생성 조건 파일(N, 형식, Ppm, Scale)을 남김</td><td class="num">20–30줄</td></tr>
-        <tr><td><code>run_synthetic_test.m</code></td><td class="why">경로 <code>c32</code> 15곳, 범위 숫자 고정</td><td class="why">폴더·파일 이름에서 N을 판별. 정답이 바뀌는 18개(2열 12개)는 길이별 범위 표에서 읽음. 나머지는 그대로</td><td class="num">50–80줄</td></tr>
-        <tr><td><code>model/gen_dumps.py</code></td><td class="why"><code>N = 32</code> 고정</td><td class="why">N을 인자로</td><td class="num">몇 줄</td></tr>
-        <tr><td>정답 계산</td><td class="why">32심볼 정답만 있음</td><td class="why">Python 모델로 64·128·256 세트를 만들어, 바뀌는 판정의 범위를 새로 정하고 "그대로"로 분류한 판정도 값으로 확인</td><td class="num">계산 약 1.5시간</td></tr>
+        <tr><td><code>gen_synthetic_dumps.m</code></td><td class="why"><code>'test'</code>가 <code>N</code>과 <code>Drift</code>를 무시(<code>mk()</code>에서 32, 0), 폴더 이름 <code>c32</code> 15곳, H1 세기 −106 ~ −116 고정, 이동 폴더 −114, 이동량 0.3탭 고정</td><td class="why"><code>N</code>을 따르고, H1·이동 폴더 세기를 세기 이동 S만큼 옮김(7장). <code>'Sco'</code>·<code>'FragInterval'</code>과 CFO 연동 기본값. 루트에 생성 조건 파일을 남김</td><td class="num">40–60줄</td></tr>
+        <tr><td><code>run_synthetic_test.m</code></td><td class="why">경로 <code>c32</code> 15곳, 범위 숫자 고정</td><td class="why">생성 조건 파일과 폴더 이름에서 N·Ppm·이동량·Scale을 읽음. 범위를 규칙으로 계산(길이별 모델 정답, CFO 공식 이동, Scale 넓힘, <code>[INFO]</code>)</td><td class="num">150–200줄</td></tr>
+        <tr><td><code>model/</code> (Python)</td><td class="why"><code>gen_dumps.py</code>가 <code>N = 32</code> 고정, 미러 출력은 1–8단계 일부</td><td class="why"><code>gen_dumps.py</code>에 N·Ppm·이동량. 새 <code>expect_synthetic.py</code>가 <code>run_synthetic_test</code>와 같은 이름으로 94/49개 값을 모두 계산</td><td class="num">새 파일 1개 + 몇 줄</td></tr>
+        <tr><td>정답 계산</td><td class="why">32심볼 정답만 있음</td><td class="why">Python 모델로 64·128·256 세트를 만들어 바뀌는 판정의 범위를 정하고, 나머지도 값으로 확인. 이동량 두 값 확인 포함</td><td class="num">계산 약 1.5–2시간</td></tr>
         <tr><td>문서</td><td class="why">TEST_PLAN, 체크리스트, 설계 문서</td><td class="why">마지막에, 요청하실 때 반영</td><td class="num">–</td></tr>
       </tbody>
     </table>
@@ -411,7 +413,7 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
   <div class="sec-head"><span class="sec-no">6</span><h2>수정 순서</h2></div>
   <p class="prose">정답을 먼저 정하고, MATLAB 코드는 그다음에 고칩니다. 정답을 시험할 코드 자신의 결과로 정하면 "같은 값이 다시 나온다"만 확인하게 됩니다.</p>
   <ol class="steps">
-    <li><div><strong>설계 확정.</strong> 판정 분류(4장 지도)를 확정하고, 길이별 H1 세기 범위·이동 폴더 세기·개수를 정합니다. Python 미러가 다루지 않는 판정(1–9단계 60개 중 17개)에 바뀌는 판정이 있는지 봅니다. <span class="who">Claude · 코드 수정 없음</span></div></li>
+    <li><div><strong>설계 확정.</strong> 판정 분류(4장 지도)를 확정하고, 길이별 H1 세기 범위·이동 폴더 세기·개수를 정합니다. Python 미러가 다루지 않는 판정(1–9단계 60개 중 17개)에 바뀌는 판정이 있는지 봅니다. <span class="who">Claude · 코드 수정 없음 · <a href="#s7">완료, 7장</a></span></div></li>
     <li><div><strong>Python 생성기에 N.</strong> 32로 만든 세트가 기존 <code>synthetic_dumps/</code>와 같은지 비교합니다. <span class="who">Claude</span></div></li>
     <li><div><strong>길이별 정답 계산.</strong> 64·128·256 세트를 Python으로 만들고 범위 표를 채웁니다. 2열 판정은 같은 CIR이라 5열 계산으로 함께 정해집니다. <span class="who">Claude · 백그라운드 약 1.5시간</span></div></li>
     <li><div><strong>MATLAB 생성기.</strong> <code>'test'</code>가 N을 따르게 하고 생성 조건 파일을 남깁니다. 32 출력은 바이트 단위로 지금과 같아야 합니다. <span class="who">Claude</span></div></li>
@@ -422,8 +424,200 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
   </ol>
 </section>
 
+<!-- ============================================================ 7 -->
+<section class="sec" id="s7">
+  <div class="sec-head"><span class="sec-no">7</span><h2>0단계 결과: 길이별 설계표</h2></div>
+  <div class="prose stack">
+    <p>2026-10-20 결정과 짧은 모델 계산으로 정한 설계입니다. 코드는 아직 고치지 않았습니다. 판정 범위의 숫자는 2단계(Python 덤프로 정답 계산)에서 확정하고, 여기서는 세트 구성, 세기를 옮기는 규칙, 판정 방식을 정합니다.</p>
+  </div>
+
+  <h3>결정 (2026-10-20)</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>항목</th><th>결정</th></tr></thead>
+      <tbody>
+        <tr><td>지원 길이</td><td class="why">32 · 64 · 128 · 256심볼. 길이마다 루트 하나, 5열과 2열 모두 검증</td></tr>
+        <tr><td>세트 크기, H0 세기</td><td class="why">모든 길이에서 32심볼과 같은 개수, H0 세기(−120 / −88 / −82 / −40 dBm, 멀티패스 −40 dBm)도 그대로</td></tr>
+        <tr><td>잔여 CFO</td><td class="why"><code>'Ppm'</code>으로 설정. 0.25 ppm은 길이별 모델 정답, 다른 값은 CFO 공식으로 범위를 옮김. 손해 6 dB 이내만 판정, kappa는 Ppm ≠ 0.25에서 <code>[INFO]</code></td></tr>
+        <tr><td>이동량(SCO)</td><td class="why"><code>'Drift'</code> [탭/프래그먼트] 또는 <code>'Sco'</code> [ppm] + <code>'FragInterval'</code>(1 ms). 기본은 잔여 CFO와 연동(0.25 ppm → 0.2496탭). 이동 폴더에만 적용</td></tr>
+        <tr><td>축소 세트</td><td class="why"><code>'Scale'</code>에 맞춰 범위를 넓힘(아래 규칙)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>근거: 길이별 모델 L90 [dBm]</h3>
+  <p class="prose">통계 모델(<code>model/medium_level.py</code>, 패킷 = RIF 8개, Ppm 0.25, AWGN, 세기당 패킷 1,800개)로 판정 규칙마다 L90을 계산했습니다. 32심볼 값은 설계 문서의 값과 0.1 dB 안에서 같습니다. 모든 규칙이 길이에 따라 거의 같은 양만큼 옮겨 가고, 그 양은 3장의 CFO 공식과 0.2 dB 안에서 맞습니다.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>판정 규칙</th><th class="num">32</th><th class="num">64</th><th class="num">128</th><th class="num">256</th></tr></thead>
+      <tbody>
+        <tr><td>MD 규칙, 프래그먼트</td><td class="num">−111.3</td><td class="num">−114.2</td><td class="num">−116.5</td><td class="num">−116.2</td></tr>
+        <tr><td>Λ, 프래그먼트 1e-3</td><td class="num">−112.1</td><td class="num">−114.8</td><td class="num">−117.1</td><td class="num">−116.9</td></tr>
+        <tr><td>Λ̂, 프래그먼트 1e-3</td><td class="num">−109.6</td><td class="num">−112.5</td><td class="num">−114.8</td><td class="num">−114.5</td></tr>
+        <tr><td>Λ, 1개 설정 10⁻⁶</td><td class="num">−110.2</td><td class="num">−113.1</td><td class="num">−115.4</td><td class="num">−115.1</td></tr>
+        <tr><td>Λ̂, 1개 설정 10⁻⁶</td><td class="num">−106.2</td><td class="num">−109.1</td><td class="num">−111.4</td><td class="num">−111.1</td></tr>
+        <tr><td>Λ, 패킷 AND</td><td class="num">−112.5</td><td class="num">−115.5</td><td class="num">−117.7</td><td class="num">−117.4</td></tr>
+        <tr><td>Λ̂, 패킷 AND</td><td class="num">−111.3</td><td class="num">−114.2</td><td class="num">−116.4</td><td class="num">−116.1</td></tr>
+        <tr><td>Λ, 패킷 soft</td><td class="num">−117.5</td><td class="num">−120.5</td><td class="num">−122.8</td><td class="num">−122.5</td></tr>
+        <tr><td>Λ̂, 패킷 soft</td><td class="num">−116.7</td><td class="num">−119.5</td><td class="num">−121.9</td><td class="num">−121.5</td></tr>
+        <tr><td>MD 규칙, 패킷 AND-8</td><td class="num">−110.0</td><td class="num">−112.9</td><td class="num">−115.2</td><td class="num">−114.8</td></tr>
+        <tr><td><strong>규칙별 이동 (32 대비)</strong></td><td class="num">0</td><td class="num">−2.7 ~ −3.0</td><td class="num">−5.1 ~ −5.3</td><td class="num">−4.8 ~ −5.0</td></tr>
+        <tr><td><strong>CFO 공식 이동</strong></td><td class="num">0</td><td class="num">−2.90</td><td class="num">−5.19</td><td class="num">−4.89</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>세기 이동 규칙</h3>
+  <div class="note">
+    <b>한 규칙으로 정함</b>
+    <span>세트의 H1 세기, 이동 폴더 세기, 세기가 박힌 판정의 세기를 모두 <strong>32심볼 값 + S</strong>로 정합니다. S = round(−[g(N, Ppm) − g(32, 0.25)]) [dB]이고, g는 3장의 CFO 공식 이득입니다. 폴더 이름이 정수 dBm이라 반올림합니다.</span>
+    <span>L90 판정의 범위는 반올림하지 않은 이동량으로 옮깁니다. 0.25 ppm에서는 2단계의 길이별 모델 정답을, 다른 Ppm에서는 공식 이동량을 씁니다. 규칙별 이동량과 공식의 차이(0.2 dB 이내)는 범위의 여유가 흡수합니다.</span>
+  </div>
+
+  <h3>길이별 세트 구성 (Ppm 0.25)</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>항목</th><th class="num">32</th><th class="num">64</th><th class="num">128</th><th class="num">256</th></tr></thead>
+      <tbody>
+        <tr><td>세기 이동 S</td><td class="num">0</td><td class="num">−3 dB</td><td class="num">−5 dB</td><td class="num">−5 dB</td></tr>
+        <tr><td>H1 세기 (11점 × 200개)</td><td class="num">−106 … −116</td><td class="num">−109 … −119</td><td class="num">−111 … −121</td><td class="num">−111 … −121</td></tr>
+        <tr><td>이동 폴더 약한 세기 (400개)</td><td class="num">−114</td><td class="num">−117</td><td class="num">−119</td><td class="num">−119</td></tr>
+        <tr><td>이동 폴더 강한 세기 (80개)</td><td class="num">−90</td><td class="num">−90</td><td class="num">−90</td><td class="num">−90</td></tr>
+        <tr><td>이동량 (연동 기본)</td><td class="num">0.2496탭</td><td class="num">0.2496탭</td><td class="num">0.2496탭</td><td class="num">0.2496탭</td></tr>
+        <tr><td>H0, 멀티패스, 5열 전용 폴더</td><td class="num" colspan="4" style="text-align:center">모든 길이에서 같음 (폴더 이름만 <code>c&lt;N&gt;_</code>)</td></tr>
+        <tr><td>탭당 누적 샘플 M</td><td class="num">3,968</td><td class="num">8,064</td><td class="num">16,256</td><td class="num">32,640</td></tr>
+        <tr><td>생성 시간 (32 대비)</td><td class="num">× 1</td><td class="num">× 2.0</td><td class="num">× 4.1</td><td class="num">× 8.2</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose" style="font-size:14px;color:var(--ink-2)">32심볼은 이 규칙으로도 지금 세트와 같은 세기(−106 … −116, −114)가 나옵니다. 덤프 수와 용량(5열 세트 약 8,100개, 약 100 MB)은 길이와 무관합니다. 약한 이동 폴더는 Λ̂ 패킷 soft L90보다 2.5–2.9 dB 높은 세기로, 32심볼(2.7 dB)과 같은 역할을 합니다.</p>
+
+  <h3>세기가 박힌 판정의 대응 세기</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>판정</th><th>따르는 규칙</th><th class="num">32</th><th class="num">64</th><th class="num">128</th><th class="num">256</th><th>32에서의 위치</th></tr></thead>
+      <tbody>
+        <tr><td class="nm">h1 soft: packet Pd at -116 dBm (new, fixed)</td><td class="why">패킷 soft</td><td class="num">−116</td><td class="num">−119</td><td class="num">−121</td><td class="num">−121</td><td class="why">L90보다 0.7 dB(Λ̂) / 1.5 dB(Λ) 위</td></tr>
+        <tr><td class="nm">h1 one fragment (1e-6): Pd at -106 dBm</td><td class="why">Λ̂ 1개 설정</td><td class="num">−106</td><td class="num">−109</td><td class="num">−111</td><td class="num">−111</td><td class="why">L90 근처</td></tr>
+        <tr><td class="nm">h1 one fragment (1e-6): Pd at -110 dBm</td><td class="why">Λ̂ 1개 설정</td><td class="num">−110</td><td class="num">−113</td><td class="num">−115</td><td class="num">−115</td><td class="why">L10보다 0.5 dB 위</td></tr>
+        <tr><td class="nm">h1 -110 dBm: Lambda CI (5열) / cir CI (2열)</td><td class="why">Λ / Λ̂ 프래그먼트</td><td class="num">−110</td><td class="num">−113</td><td class="num">−115</td><td class="num">−115</td><td class="why">Λ: L90보다 2.1 dB 위, Λ̂: 0.4 dB 아래</td></tr>
+        <tr><td class="nm">drift: packet Pd with drift search</td><td class="why">Λ̂ 패킷 soft</td><td class="num">−114</td><td class="num">−117</td><td class="num">−119</td><td class="num">−119</td><td class="why">L90보다 2.7 dB 위</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose" style="font-size:14px;color:var(--ink-2)">옮긴 세기는 길이마다 L90·L10에 대한 상대 위치가 32심볼과 0.4 dB 안에서 같습니다. 그래서 이 판정들의 Pd 범위는 32심볼 값을 바탕으로 2단계에서 확인합니다.</p>
+
+  <h3>잔여 CFO: 판정 범위와 공식 확인</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>항목</th><th class="num">32</th><th class="num">64</th><th class="num">128</th><th class="num">256</th></tr></thead>
+      <tbody>
+        <tr><td>손해 6 dB 상한 (피크 진폭 계수 0.5)</td><td class="num">2.38 ppm</td><td class="num">1.17 ppm</td><td class="num">0.58 ppm</td><td class="num">0.29 ppm</td></tr>
+        <tr><td>0.25 ppm의 손해 (CFO 0 대비)</td><td class="num">0.06 dB</td><td class="num">0.24 dB</td><td class="num">0.99 dB</td><td class="num">4.32 dB</td></tr>
+        <tr><td>확인 1: 0 ppm, 공식 이동</td><td class="num">−0.06 dB</td><td class="num">−0.24 dB</td><td class="num">−0.99 dB</td><td class="num">−4.32 dB</td></tr>
+        <tr><td>&nbsp;&nbsp;모델 L90과의 차이 (최대)</td><td class="num">0.11 dB</td><td class="num">0.22 dB</td><td class="num">0.12 dB</td><td class="num">0.18 dB</td></tr>
+        <tr><td>확인 2: 상한의 95%</td><td class="num">2.257 ppm</td><td class="num">1.111 ppm</td><td class="num">0.551 ppm</td><td class="num">0.274 ppm</td></tr>
+        <tr><td>&nbsp;&nbsp;공식 이동</td><td class="num">+5.28 dB</td><td class="num">+5.11 dB</td><td class="num">+4.35 dB</td><td class="num">+1.00 dB</td></tr>
+        <tr><td>&nbsp;&nbsp;모델 L90과의 차이 (최대)</td><td class="num">0.24 dB</td><td class="num">0.20 dB</td><td class="num">0.11 dB</td><td class="num">0.12 dB</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose" style="font-size:14px;color:var(--ink-2)">이동은 같은 길이의 0.25 ppm 대비이고, +는 L90이 나빠지는 쪽입니다. 판정 규칙 10개(위 L90 표) × 8개 조건 모두에서 공식과 모델 L90의 차이가 0.24 dB 이하였습니다. 그래서 이 통계 모델 안에서는 공식으로 범위를 옮기는 방식이 성립합니다. 256심볼은 CFO에 가장 민감합니다. 0.25 ppm에서 이미 4.3 dB를 잃고 있고, 판정할 수 있는 상한이 0.29 ppm입니다.</p>
+
+  <h3>이동량</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>이동 판정 (5열 9개, 2열 6개)</th><th>범위를 정하는 방법</th></tr></thead>
+      <tbody>
+        <tr><td class="nm">assumptions: drift slope median</td><td class="why">이동량 D 중심. 32심볼(0.3탭)의 범위 0.25–0.4를 D에 맞춰 옮기고, 2단계에서 반올림(정수 탭) 효과를 확인</td></tr>
+        <tr><td class="nm">drift: median selected drift</td><td class="why">탐색 후보 중 D에 가장 가까운 값 ± 한 칸(1/7)</td></tr>
+        <tr><td class="nm">assumptions: suggested drift hypotheses</td><td class="why"><code>check_packet_assumptions</code>의 규칙 2·⌈|기울기| 99% × 7⌉ + 1을 D에서 계산하고 ± 2</td></tr>
+        <tr><td class="nm">시험이 쓰는 탐색 후보</td><td class="why">지금의 <code>(-3:3)/7</code> 대신 (−n:n)/7, n = ⌈|D| × 7⌉ + 1. 기본 0.2496탭이면 n = 3으로 지금과 같음</td></tr>
+        <tr><td class="nm">drift: packet Pd with drift search, Pd gain</td><td class="why">이동량 0.2496(기본), 0.6, 1.2탭에서 모델로 확인하고, 0 ~ 1.2탭 안에서만 판정. 밖은 <code>[INFO]</code></td></tr>
+        <tr><td class="nm">assumptions: AGC level std</td><td class="why">이동량과 무관(AGC 단계 3 dB에서 정해짐), 그대로</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose" style="font-size:14px;color:var(--ink-2)">CFO와 연동하면 이동량이 Ppm을 따라 커집니다. 길이별 Ppm 상한에서 이동량은 32: 2.37, 64: 1.17, 128: 0.58, 256: 0.29탭입니다. 그래서 32심볼에서 Ppm이 1.2를 넘으면 이동 Pd 판정만 <code>[INFO]</code>가 됩니다.</p>
+
+  <h3>판정 방식: 분류 × 조건</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>분류 (5열 / 2열)</th><th>기본 (Ppm 0.25, Scale 1)</th><th>Ppm ≠ 0.25, 6 dB 이내</th><th>Ppm이 6 dB 밖</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip"><i style="background:var(--cA)"></i>동작 확인 21 / 10</span></td><td class="why">그대로</td><td class="why">그대로</td><td class="why">그대로</td></tr>
+        <tr><td><span class="chip"><i style="background:var(--cB)"></i>H0 Λ 통계 35 / 12</span></td><td class="why">길이별 모델로 확인, 그대로일 것</td><td class="why">그대로 (CFO 무관 설계)</td><td class="why">그대로</td></tr>
+        <tr><td><span class="chip"><i style="background:var(--cM)"></i>H0 MD 규칙 통계 7 / 7</span></td><td class="why">길이별 모델 정답 (2단계에서 의존 여부 확인)</td><td class="why">의존하면 <code>[INFO]</code>, 아니면 그대로</td><td class="why">의존하면 <code>[INFO]</code></td></tr>
+        <tr><td><span class="chip"><i style="background:var(--cC)"></i>kappa 6 / 5</span></td><td class="why">길이별 모델 정답</td><td class="why"><code>[INFO]</code></td><td class="why"><code>[INFO]</code></td></tr>
+        <tr><td><span class="chip"><i style="background:var(--cD)"></i>H1 dBm 값 12 / 7</span></td><td class="why">길이별 모델 정답, 세기 S만큼 이동</td><td class="why">공식으로 이동</td><td class="why"><code>[INFO]</code></td></tr>
+        <tr><td><span class="chip"><i style="background:var(--cE)"></i>H1 차이·정확도 13 / 8</span></td><td class="why">길이별 모델로 확인, 그대로일 것</td><td class="why">그대로</td><td class="why"><code>[INFO]</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose" style="font-size:14px;color:var(--ink-2)">0단계에서 H0 통계를 둘로 나눴습니다. MD 규칙은 비원형성을 보정하지 않아, 오검출률과 D 중앙값 7개가 kappa처럼 길이와 CFO를 따라 움직일 수 있습니다. Λ 쪽 35개는 측정한 Q·Π로 백색화하므로 CFO에 무관하게 설계돼 있습니다. 이동 판정은 위 이동량 규칙을, Scale은 아래 규칙을 따로 적용합니다.</p>
+
+  <h3>축소 세트 (<code>'Scale'</code> &lt; 1) 범위 규칙</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>판정 종류</th><th>예</th><th>Scale &lt; 1에서</th></tr></thead>
+      <tbody>
+        <tr><td>정해진 값</td><td class="why">문턱 22.71·69.61, 잡음 탭 24–25, 작업 폴더 2개, 경고·오류</td><td class="why">그대로</td></tr>
+        <tr><td>개수에서 정해지는 값</td><td class="why">8개 프레임 비율</td><td class="why">실제 개수로 계산한 ⌊n/8⌋ / ⌈n/8⌉을 하한으로 (Scale 0.2면 12/13)</td></tr>
+        <tr><td>비율</td><td class="why">Pfa, Pd, 프래그먼트 비율, 패킷 수락 수</td><td class="why">모델 기대값 p와 실제 개수 n의 이항 분포 0.1% / 99.9% 구간과 전체 세트 범위 중 넓은 쪽</td></tr>
+        <tr><td>연속값</td><td class="why">L90, 중앙값, 꼬리 비율, 차이, 기울기, CI 폭</td><td class="why">중심(모델 기대값)에서 반폭 × 1/√Scale</td></tr>
+        <tr><td>하한</td><td class="why">Scale &lt; 0.1</td><td class="why">통계 판정은 모두 <code>[INFO]</code>, 정해진 값만 판정</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose" style="font-size:14px;color:var(--ink-2)">Scale 1에서는 어떤 판정의 범위도 바뀌지 않습니다. 범위 표에는 판정마다 중심과 반폭을 같이 적어 둡니다.</p>
+
+  <h3>생성 조건 파일</h3>
+  <div class="split">
+    <div class="main stack">
+      <pre class="code"><span class="c">% &lt;root&gt;/synthetic_set.txt  (gen_synthetic_dumps가 'test' 세트에 남김)</span>
+format       = 1
+created      = 2026-10-20 14:02
+N            = 64          <span class="c">% RIF 길이 [심볼]</span>
+Cols         = 2
+Ppm          = 0.25        <span class="c">% 잔여 CFO</span>
+DriftSource  = linked      <span class="c">% linked (Sco = Ppm) | Sco | Drift</span>
+Sco          = 0.25        <span class="c">% [ppm]</span>
+FragInterval = 0.001       <span class="c">% [s]</span>
+Drift        = 0.2496      <span class="c">% [탭/프래그먼트], h1_drift/에만</span>
+AgcStep      = 3           <span class="c">% [dB], h1_drift/에만</span>
+PowerShift   = -3          <span class="c">% 세기 이동 S [dB]</span>
+Scale        = 1
+SeedBase     = 1000</pre>
+    </div>
+    <div class="main stack">
+      <p class="prose" style="font-size:14px">사람이 읽을 수 있는 "이름 = 값" 줄입니다. <code>run_synthetic_test</code>는 이 파일을 읽고 폴더 이름(<code>c&lt;N&gt;_</code>), 파일 이름(<code>AccNum_&lt;N&gt;</code>), 덤프 형식과 맞는지 확인합니다. 어긋나면 오류로 멈춥니다.</p>
+      <p class="prose" style="font-size:14px"><strong>파일이 없는 기존 세트</strong>는 예전 기본값으로 만든 32심볼 세트로 봅니다(Ppm 0.25, 이동 0.3탭, S = 0). Scale은 h0 폴더의 프래그먼트 수(500개 기준)에서 계산합니다. 파일 없이 32가 아닌 길이가 나오면 세트를 다시 만들라는 오류를 냅니다.</p>
+    </div>
+  </div>
+
+  <h3>정답의 출처</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>판정</th><th>정답</th></tr></thead>
+      <tbody>
+        <tr><td>동작 확인 (21 / 10)</td><td class="why">코드에서 정해짐 (모델 불필요)</td></tr>
+        <tr><td>나머지 통계 판정 (73 / 39)</td><td class="why">Python 미러 라이브러리로 모두 계산 가능: <code>verify_dumps.py</code>의 <code>rif</code>·<code>h0</code>·<code>h1</code>(raw, cir, PerClass)과 <code>packet.py</code>의 <code>rif_packet</code>·<code>drift_slopes</code>·<code>agc_dev</code>·<code>pair_rho</code>. 다만 지금의 출력 부분은 1–8단계 일부만 보여 줍니다</td></tr>
+        <tr><td>새로 만들 것</td><td class="why"><code>model/expect_synthetic.py &lt;root&gt;</code>: <code>run_synthetic_test</code>와 같은 이름으로 94/49개 값을 모두 계산. 미러가 43개만 다루던 공백이 없어짐 (2단계)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>2단계에서 확인할 것</h3>
+  <ul class="prose">
+    <li>H0 MD 규칙 통계 7개가 길이(같은 0.25 ppm)와 CFO에 따라 움직이는지</li>
+    <li>H0 Λ 통계와 H1 차이·정확도가 길이에 무관하다는 예상</li>
+    <li>이동량 0.6·1.2탭에서 이동 탐색 Pd와 Pd 이득</li>
+    <li>이 통계 모델(위 표)과 덤프 기반 Python 계산이 같은 L90을 주는지</li>
+  </ul>
+</section>
+
 <footer class="foot">
-  <p>수치 출처: 모델 L90은 <code>LAMBDA_PATCH_DESIGN.md</code> 6.4절(길이별 L90)과 9.3절 마지막 표(RIF 1개 설정), 판정 이름과 범위는 <code>lambda_patch/test/run_synthetic_test.m</code>(커밋 0dea19b). "추정"으로 표시한 값은 아직 모델로 계산하지 않았습니다.</p>
+  <p>수치 출처: 모델 L90은 <code>LAMBDA_PATCH_DESIGN.md</code> 6.4절(길이별 L90)과 9.3절 마지막 표(RIF 1개 설정), 판정 이름과 범위는 <code>lambda_patch/test/run_synthetic_test.m</code>(커밋 0dea19b). "추정"으로 표시한 값은 아직 모델로 계산하지 않았습니다. 7장의 길이별·Ppm별 L90은 0단계 계산(2026-10-20, <code>model/medium_level.py</code>의 통계 모델, 패킷 = RIF 8개, 세기당 패킷 1,800개, Ppm 확인은 1,200개)입니다.</p>
   <p>관련 페이지: <a href="index.html">RIF Λ 판정기</a>(전체 해설), <a href="basis.html">RIF 판정 기준 전환</a>, <a href="consistency.html">RIF 일관성 검사 비교</a>, <a href="checklist.html">RIF 검증 체크리스트</a>.</p>
 </footer>
 </div>
@@ -591,12 +785,13 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
   /* ---------------------------------------------------------- 94 / 49 check map */
   var CATS = {
     A: {nm: '동작 확인', act: '정답 그대로', d: '값이 정해져 있거나(문턱 22.71, 잡음 탭 24–25, 작업 폴더 2개) 오류·경고가 나는지 보는 판정입니다. 길이를 바꿔도 정답이 같습니다.'},
-    B: {nm: 'H0 잡음 통계', act: '그대로일 것, 모델로 확인', d: '잡음만 있을 때의 오검출률, 꼬리 비율, 상관입니다. 신호 성분과 잡음이 같은 비율로 쌓이므로 길이와 무관할 것으로 보지만, 새 길이에서 모델로 한 번 확인합니다.'},
+    B: {nm: 'H0 Λ 통계', act: '그대로일 것, 모델로 확인', d: '잡음만 있을 때 Λ·Λ̂의 오검출률, 꼬리 비율, 상관, 패킷 예산입니다. Λ는 측정한 Q·Π로 백색화하므로 길이와 CFO에 무관하게 설계돼 있습니다. 새 길이에서 모델로 한 번 확인합니다.'},
+    M: {nm: 'H0 MD 규칙 통계', act: '길이·CFO 의존 여부 확인', d: 'MD 규칙의 오검출률과 D 중앙값입니다. MD 규칙은 비원형성을 보정하지 않아, 틀린 키 신호의 비원형성(kappa와 같은 원인)을 따라 길이와 CFO에 따라 달라질 수 있습니다. 2단계 모델로 확인해, 달라지면 kappa처럼 길이별 정답을 쓰고 Ppm이 0.25가 아니면 [INFO]로 둡니다.'},
     C: {nm: 'kappa (비원형성)', act: '길이별 정답 새로', d: 'CIR의 비원형성입니다. CFO 위상 회전이 누적 길이에 비례해 커져 고전력 H0에서 길이가 길수록 내려갈 수 있습니다(3장 표). 길이별 범위를 모델로 정합니다.'},
     D: {nm: 'H1 dBm 위치 값', act: '길이별 정답 새로', d: 'L90처럼 dBm으로 적힌 값이나 정해진 세기에서의 Pd입니다. 길이가 길면 곡선이 낮은 세기 쪽으로 옮겨 가므로, 길이별 범위와 함께 H1 세기 범위·이동 폴더 세기도 새로 정합니다.'},
     E: {nm: 'H1 차이·정확도', act: '그대로일 것, 모델로 확인', d: '두 방식의 L90 차이, 검출 위치 정확도, 이동 추정처럼 곡선이 함께 옮겨 가면 상쇄되는 값입니다. 대체로 그대로일 것으로 보고 모델로 확인합니다.'}
   };
-  var ORDER = ['A', 'B', 'C', 'D', 'E'];
+  var ORDER = ['A', 'B', 'M', 'C', 'D', 'E'];
 
   function build(cols) {
     var L = [], st = '';
@@ -639,7 +834,7 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
       step('1 폴더 하나 (−82 dBm)');
       add('-82 dBm: dumps carry Q/Pi (hasMom)', 1, 1, 'A');
       add('-82 dBm: scale check median(qRatio)', 0.8, 1.25, 'A');
-      add('-82 dBm: MD rule false-alarm rate', 0.02, 0.09, 'B');
+      add('-82 dBm: MD rule false-alarm rate', 0.02, 0.09, 'M');
       add('-82 dBm: Lambda false-alarm rate', 0, 0.006, 'B');
       add('-82 dBm: kappa median', 0.6, 0.95, 'C');
       add('-82 dBm: Lambda threshold T_Lam', 22.70, 22.72, 'A');
@@ -648,15 +843,15 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
       P.forEach(function (p) {
         var t = 'h0 -' + p + ' dBm';
         add(t + ': pooled from 2 job folders', 2, 2, 'A');
-        add(t + ': MD rule Pfa', md[p][0], md[p][1], 'B');
+        add(t + ': MD rule Pfa', md[p][0], md[p][1], 'M');
         add(t + ': Lambda Pfa', 0, 0.005, 'B');
         add(t + ': per-tap tail ratio t=10', p === 40 ? 0.3 : 0.8, 1.25, 'B');
         add(t + ': per-tap tail ratio t=14', p === 40 ? 0.2 : 0.55, 1.5, 'B');
         add(t + ': kappa median', kp[p][0], kp[p][1], 'C');
       });
       step('3 멀티패스 H0');
-      add('mp20: median D [dB] (comb filled, below the 10 dB gate)', 2, 10, 'B');
-      add('mp20: MD rule Pfa', 0.015, 0.08, 'B');
+      add('mp20: median D [dB] (comb filled, below the 10 dB gate)', 2, 10, 'M');
+      add('mp20: MD rule Pfa', 0.015, 0.08, 'M');
       add('mp20: Lambda Pfa', 0, 0.005, 'B');
       add('mp20: per-tap tail ratio t=10', 0.3, 1.25, 'B');
       step('4 H1 감도');
@@ -698,7 +893,7 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
       step('1 폴더 하나 (−82 dBm)');
       add('2col -82 dBm: no Q/Pi columns (hasMom false)', 0, 0, 'A');
       add('2col -82 dBm: raw Lambda not computed (Lmax NaN)', 1, 1, 'A');
-      add('2col -82 dBm: MD rule false-alarm rate', 0.02, 0.09, 'B');
+      add('2col -82 dBm: MD rule false-alarm rate', 0.02, 0.09, 'M');
       add('2col -82 dBm: kappa median', 0.6, 0.95, 'C');
       add('2col -82 dBm: Lambda-hat computed from the CIR', 1, 1, 'A');
       add('2col -82 dBm: fewest noise taps per phase', 24, 25, 'A');
@@ -707,7 +902,7 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
       add('2col h0: raw Lambda skipped (EL empty)', 1, 1, 'A');
       P.forEach(function (p) {
         var t = '2col h0 -' + p + ' dBm';
-        add(t + ': MD rule Pfa', md[p][0], md[p][1], 'B');
+        add(t + ': MD rule Pfa', md[p][0], md[p][1], 'M');
         add(t + ': kappa median', kp[p][0], kp[p][1], 'C');
       });
       step('3 H0 Λ̂ (CIR)');
@@ -716,8 +911,8 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
       add('2col h0 cir: smallest tail ratio t=10', 0.5, 1.3, 'B');
       add('2col h0 cir: largest tail ratio t=10', 0.7, 1.3, 'B');
       step('4 멀티패스 H0');
-      add('2col mp20: median D [dB] (below the 10 dB gate)', 2, 10, 'B');
-      add('2col mp20: MD rule Pfa', 0.015, 0.08, 'B');
+      add('2col mp20: median D [dB] (below the 10 dB gate)', 2, 10, 'M');
+      add('2col mp20: MD rule Pfa', 0.015, 0.08, 'M');
       add('2col mp20 cir: Lambda-hat Pfa', 0, 0.005, 'B');
       step('5 H1');
       add('2col h1: L90 MD rule [dBm]', -113, -109.5, 'D');
@@ -739,13 +934,13 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
     return String(+x.toFixed(3));
   }
   function renderMap() {
-    var L = SETS[set], cnt = {A: 0, B: 0, C: 0, D: 0, E: 0};
+    var L = SETS[set], cnt = {A: 0, B: 0, M: 0, C: 0, D: 0, E: 0};
     L.forEach(function (c) { cnt[c.cat]++; });
     $('bar').innerHTML = ORDER.map(function (k) {
       return '<span style="flex:' + cnt[k] + ';background:var(--c' + k + ')"></span>';
     }).join('');
-    var change = cnt.C + cnt.D, same = cnt.A, check = cnt.B + cnt.E;
-    $('sumline').innerHTML = L.length + '개 중 <strong>새 정답이 필요한 판정 ' + change + '개</strong>, 모델로 확인만 할 판정 ' + check + '개, 그대로 쓰는 판정 ' + same + '개.';
+    var change = cnt.C + cnt.D, same = cnt.A, check = cnt.B + cnt.M + cnt.E;
+    $('sumline').innerHTML = L.length + '개 중 <strong>새 정답이 필요한 판정 ' + change + '개</strong>, 모델로 확인할 판정 ' + check + '개(그중 MD 규칙 통계 ' + cnt.M + '개는 달라지면 새 정답), 그대로 쓰는 판정 ' + same + '개.';
     var rows = [], last = null, html = '';
     L.forEach(function (c, i) {
       if (c.st !== last) { rows.push({st: c.st, idx: []}); last = c.st; }
