@@ -75,7 +75,9 @@ r2 = h0_rows(fullfile(root, 'h0_mp20'), 'mp20', hasL);
 if isempty(res)
     chk = 'null';
 else
-    chk = sprintf('{"ok":%d,"total":%d}', sum([res.ok]), numel(res));
+    nInfo = 0;
+    if isfield(res, 'info'), nInfo = sum([res.info]); end   % [INFO] checks are not judged
+    chk = sprintf('{"ok":%d,"total":%d}', sum([res.ok]), numel(res) - nInfo);
 end
 rr = regexprep(root, '[\\/]+$', '');
 [~, nm, ext] = fileparts(rr);                         % folder name only, no local path in the file
@@ -129,7 +131,7 @@ for c = 1:numel(Ha.cond)
     if hasL, dl = det_(a, 2); else dl = 'null'; end
     rows{c} = sprintf('{"len":%d,"dBm":%d,"n":%d,"MD":%s,"L":%s,"C":%s}', a.len, a.dBm, a.n, det_(a, 1), dl, det_(b, 2));
 end
-% L90 of the first length (the 'test' preset has 32 symbols only)
+% L90 of the first length (a test set holds one RIF length)
 if hasL, l = jnum(Ha.L90(1, 2)); else l = 'null'; end
 L90 = sprintf('{"len":%d,"MD":%s,"L":%s,"C":%s}', Ha.len(1), jnum(Ha.L90(1, 1)), l, jnum(Hc.L90(1, 2)));
 end

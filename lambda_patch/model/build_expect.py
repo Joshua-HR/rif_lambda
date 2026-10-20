@@ -309,7 +309,7 @@ def drift_pd(Dc):
 def mnum(x):
     if isinstance(x, bool): x = int(x)
     if x != x: return 'NaN'
-    return ('%.6g' % x) if abs(x) < 1e5 else repr(x)
+    return '%.10g' % x
 
 
 def write_m(rows, L, Dc, out):
