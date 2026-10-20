@@ -42,6 +42,9 @@ t0 = tic;
 fprintf('regress_length32: %s\n  old 5-column set: %s\n  old 2-column set: %s\n  work: %s\n', ...
         datestr(now, 'yyyy-mm-dd HH:MM'), show_(old5), show_(old2), work);
 R = struct('rows', {cell(0, 4)}, 'res', struct());
+% an older set must be a test set (h0/ under its root); otherwise A and B cannot run on it
+[old5, R] = check_old(old5, '5-column', R);
+[old2, R] = check_old(old2, '2-column', R);
 
 % ---------------------------------------------------------------- A: older sets
 if ~isempty(old5), [R, r_] = run_part(R, 'A', 'old 5-column set', old5, 94, o.Show); R.res.old5 = r_; end
@@ -85,6 +88,18 @@ else
     fprintf('  %d of %d parts FAIL: send this summary (and %s)\n', nf, size(R.rows, 1), logf);
 end
 fprintf('  log: %s\n', logf);
+end
+
+
+% ======================================================================
+function [old, R] = check_old(old, what, R)
+% '' (skipped) or a root with h0/; any other path is reported and dropped
+if isempty(old) || exist(fullfile(old, 'h0'), 'dir') == 7, return; end
+msg = sprintf('no h0 folder under "%s": not a test set, check the path (A and B skipped)', old);
+fprintf('\n################ old %s set: %s\n', what, msg);
+R.rows(end + 1, :) = {'A', ['old ' what ' set'], 'FAIL', msg};
+R.rows(end + 1, :) = {'B', ['new ' what ' set (Drift 0.3) = old'], 'FAIL', 'old set not found (see A)'};
+old = '';
 end
 
 
