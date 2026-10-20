@@ -19,6 +19,12 @@ def main(root5, root2):
             with open(out, 'w') as f:
                 f.write(''.join('%s %s\n' % (a, b) for a, b in rows))
             n += 1
+    man = os.path.join(root5, 'synthetic_set.txt')             # conditions of the set, now with Cols = 2
+    if os.path.exists(man):
+        with open(man) as f:
+            lines = [('%-12s = 2\n' % 'Cols') if ln.split('=')[0].strip() == 'Cols' else ln for ln in f]
+        with open(os.path.join(root2, 'synthetic_set.txt'), 'w') as f:
+            f.write(''.join(lines))
     print('%d dumps written under %s' % (n, root2))
 
 

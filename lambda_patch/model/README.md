@@ -15,7 +15,7 @@ numpy 없이 표준 라이브러리와 `multiprocessing`(6 프로세스)만 씁�
 | `h1_pos_mp_for_page.py` | H1 검출 위치 정확도, 멀티패스 τ10 / τ20 (세기당 4,002) | 설계 문서 6.5, 웹 R4 오른쪽 | 약 3분 |
 | `cir_only_lambda.py` | 고정 칩 대안: CIR에서 Q·Π를 추정한 Λ̂ (H0 9조건 × 30,000, H1 세기당 6,000) `python3 cir_only_lambda.py [out.json]` | 설계 문서 8.3, 웹 8장 | 약 10분 |
 | `wavesim.py` | 파형 수준 검증(실제 ±1 STS, 원시 샘플 Q·Π): `python3 wavesim.py 24000` | 설계 문서 6.3 표 | 약 15분 |
-| `gen_dumps.py` | 합성 5열 덤프 생성: `python3 gen_dumps.py <root>` (`<root> h1_drift`: 그 폴더만 추가) | `synthetic_dumps/` | 약 6분 |
+| `gen_dumps.py` | 합성 5열 덤프 생성: `python3 gen_dumps.py <root> [--N 64] [--ppm 0.25] [--drift D \| --sco S] [--frag-interval 1e-3]` (`<root> h1_drift`: 그 폴더만 추가). 이동량 기본은 잔여 CFO와 연동(0.2496탭), H1·이동 폴더 세기는 길이·CFO에 맞춰 옮김, 루트에 생성 조건 파일 `synthetic_set.txt` | `synthetic_dumps/` (`--drift 0.3`) | 약 6분(32심볼), 길이에 비례 |
 | `verify_dumps.py` | MATLAB 패치 계산의 파이썬 판: `python3 verify_dumps.py <root>` | `run_synthetic_test` 기대값 | 수 초 |
 | `make_2col.py` | 5열 세트에서 같은 CIR의 2열 세트 만들기: `python3 make_2col.py ../../synthetic_dumps ../../synthetic_dumps_2col` | `synthetic_dumps_2col/` | 수 초 |
 | `web_results.py` | 5열·2열 세트 분석 결과 JSON (`export_web_results.m`과 같은 형식): `python3 web_results.py ../../synthetic_dumps ../../synthetic_dumps_2col out.json` | 웹 10장 "1단계 결과" 기본 데이터 | 약 10초 |
