@@ -1,0 +1,876 @@
+{
+ "source": "python-mirror",
+ "tool": "lambda_patch/model/expect_synthetic.py",
+ "created": "2026-10-20 15:57",
+ "root5": "n128",
+ "root2": "n128_2col",
+ "set": {
+  "N": 128,
+  "PowerShift": -5,
+  "Drift": 0.2496,
+  "Ppm": 0.25,
+  "legacy": false
+ },
+ "checks5": [
+  {
+   "id": "-82 dBm: dumps carry Q/Pi (hasMom)",
+   "name": "-82 dBm: dumps carry Q/Pi (hasMom)",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "-82 dBm: scale check median(qRatio)",
+   "name": "-82 dBm: scale check median(qRatio)",
+   "cat": "A",
+   "value": 1.0009766829296982
+  },
+  {
+   "id": "-82 dBm: MD rule false-alarm rate",
+   "name": "-82 dBm: MD rule false-alarm rate",
+   "cat": "M",
+   "value": 0.014
+  },
+  {
+   "id": "-82 dBm: Lambda false-alarm rate",
+   "name": "-82 dBm: Lambda false-alarm rate",
+   "cat": "B",
+   "value": 0.0
+  },
+  {
+   "id": "-82 dBm: kappa median",
+   "name": "-82 dBm: kappa median",
+   "cat": "C",
+   "value": 0.5965146219926192
+  },
+  {
+   "id": "-82 dBm: Lambda threshold T_Lam",
+   "name": "-82 dBm: Lambda threshold T_Lam",
+   "cat": "A",
+   "value": 22.712543309849703
+  },
+  {
+   "id": "h0: Lambda table produced (all 5-column)",
+   "name": "h0: Lambda table produced (all 5-column)",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "h0 -120 dBm: pooled from 2 job folders",
+   "name": "h0 -120 dBm: pooled from 2 job folders",
+   "cat": "A",
+   "value": 2.0
+  },
+  {
+   "id": "h0 -120 dBm: MD rule Pfa",
+   "name": "h0 -120 dBm: MD rule Pfa",
+   "cat": "M",
+   "value": 0.004
+  },
+  {
+   "id": "h0 -120 dBm: Lambda Pfa",
+   "name": "h0 -120 dBm: Lambda Pfa",
+   "cat": "B",
+   "value": 0.002
+  },
+  {
+   "id": "h0 -120 dBm: per-tap tail ratio t=10",
+   "name": "h0 -120 dBm: per-tap tail ratio t=10",
+   "cat": "B",
+   "value": 0.9894210606838441
+  },
+  {
+   "id": "h0 -120 dBm: per-tap tail ratio t=14",
+   "name": "h0 -120 dBm: per-tap tail ratio t=14",
+   "cat": "B",
+   "value": 0.9427197326841136
+  },
+  {
+   "id": "h0 -120 dBm: kappa median",
+   "name": "h0 -120 dBm: kappa median",
+   "cat": "C",
+   "value": 0.37282493035909126
+  },
+  {
+   "id": "h0 -88 dBm: pooled from 2 job folders",
+   "name": "h0 -88 dBm: pooled from 2 job folders",
+   "cat": "A",
+   "value": 2.0
+  },
+  {
+   "id": "h0 -88 dBm: MD rule Pfa",
+   "name": "h0 -88 dBm: MD rule Pfa",
+   "cat": "M",
+   "value": 0.006
+  },
+  {
+   "id": "h0 -88 dBm: Lambda Pfa",
+   "name": "h0 -88 dBm: Lambda Pfa",
+   "cat": "B",
+   "value": 0.001
+  },
+  {
+   "id": "h0 -88 dBm: per-tap tail ratio t=10",
+   "name": "h0 -88 dBm: per-tap tail ratio t=10",
+   "cat": "B",
+   "value": 0.9764023625169513
+  },
+  {
+   "id": "h0 -88 dBm: per-tap tail ratio t=14",
+   "name": "h0 -88 dBm: per-tap tail ratio t=14",
+   "cat": "B",
+   "value": 0.7888063069397685
+  },
+  {
+   "id": "h0 -88 dBm: kappa median",
+   "name": "h0 -88 dBm: kappa median",
+   "cat": "C",
+   "value": 0.43606330879603006
+  },
+  {
+   "id": "h0 -82 dBm: pooled from 2 job folders",
+   "name": "h0 -82 dBm: pooled from 2 job folders",
+   "cat": "A",
+   "value": 2.0
+  },
+  {
+   "id": "h0 -82 dBm: MD rule Pfa",
+   "name": "h0 -82 dBm: MD rule Pfa",
+   "cat": "M",
+   "value": 0.019
+  },
+  {
+   "id": "h0 -82 dBm: Lambda Pfa",
+   "name": "h0 -82 dBm: Lambda Pfa",
+   "cat": "B",
+   "value": 0.0
+  },
+  {
+   "id": "h0 -82 dBm: per-tap tail ratio t=10",
+   "name": "h0 -82 dBm: per-tap tail ratio t=10",
+   "cat": "B",
+   "value": 1.0206659362843866
+  },
+  {
+   "id": "h0 -82 dBm: per-tap tail ratio t=14",
+   "name": "h0 -82 dBm: per-tap tail ratio t=14",
+   "cat": "B",
+   "value": 0.8657630198119409
+  },
+  {
+   "id": "h0 -82 dBm: kappa median",
+   "name": "h0 -82 dBm: kappa median",
+   "cat": "C",
+   "value": 0.5783234472262999
+  },
+  {
+   "id": "h0 -40 dBm: pooled from 2 job folders",
+   "name": "h0 -40 dBm: pooled from 2 job folders",
+   "cat": "A",
+   "value": 2.0
+  },
+  {
+   "id": "h0 -40 dBm: MD rule Pfa",
+   "name": "h0 -40 dBm: MD rule Pfa",
+   "cat": "M",
+   "value": 0.0
+  },
+  {
+   "id": "h0 -40 dBm: Lambda Pfa",
+   "name": "h0 -40 dBm: Lambda Pfa",
+   "cat": "B",
+   "value": 0.001
+  },
+  {
+   "id": "h0 -40 dBm: per-tap tail ratio t=10",
+   "name": "h0 -40 dBm: per-tap tail ratio t=10",
+   "cat": "B",
+   "value": 0.8488191204814031
+  },
+  {
+   "id": "h0 -40 dBm: per-tap tail ratio t=14",
+   "name": "h0 -40 dBm: per-tap tail ratio t=14",
+   "cat": "B",
+   "value": 0.5964145247593371
+  },
+  {
+   "id": "h0 -40 dBm: kappa median",
+   "name": "h0 -40 dBm: kappa median",
+   "cat": "C",
+   "value": 0.665235862567062
+  },
+  {
+   "id": "mp20: median D [dB] (comb filled, below the 10 dB gate)",
+   "name": "mp20: median D [dB] (comb filled, below the 10 dB gate)",
+   "cat": "M",
+   "value": 6.365185262561047
+  },
+  {
+   "id": "mp20: MD rule Pfa",
+   "name": "mp20: MD rule Pfa",
+   "cat": "M",
+   "value": 0.028
+  },
+  {
+   "id": "mp20: Lambda Pfa",
+   "name": "mp20: Lambda Pfa",
+   "cat": "B",
+   "value": 0.0
+  },
+  {
+   "id": "mp20: per-tap tail ratio t=10",
+   "name": "mp20: per-tap tail ratio t=10",
+   "cat": "B",
+   "value": 1.0362883740846578
+  },
+  {
+   "id": "h1: L90 MD rule [dBm]",
+   "name": "h1: L90 MD rule [dBm]",
+   "cat": "D",
+   "value": -116.75
+  },
+  {
+   "id": "h1: L90 Lambda [dBm]",
+   "name": "h1: L90 Lambda [dBm]",
+   "cat": "D",
+   "value": -117.28571428571429
+  },
+  {
+   "id": "h1: Lambda gain at L90 [dB]",
+   "name": "h1: Lambda gain at L90 [dB]",
+   "cat": "E",
+   "value": 0.5357142857142918
+  },
+  {
+   "id": "h1 -110 dBm: Lambda Pd inside its 95% CI",
+   "name": "h1 -115 dBm: Lambda Pd inside its 95% CI",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "h1 -110 dBm: Lambda CI width",
+   "name": "h1 -115 dBm: Lambda CI width",
+   "cat": "D",
+   "value": 0.027415317429350772
+  },
+  {
+   "id": "h1: worst Lambda position accuracy where Pd >= 0.1",
+   "name": "h1: worst Lambda position accuracy where Pd >= 0.1",
+   "cat": "E",
+   "value": 1.0
+  },
+  {
+   "id": "h1: L90 (position ok) - L90, Lambda [dB]",
+   "name": "h1: L90 (position ok) - L90, Lambda [dB]",
+   "cat": "E",
+   "value": 0.0
+  },
+  {
+   "id": "PerClass: worst Lambda Pfa over conditions",
+   "name": "PerClass: worst Lambda Pfa over conditions",
+   "cat": "B",
+   "value": 0.002
+  },
+  {
+   "id": "PerClass: smallest tail ratio t=10",
+   "name": "PerClass: smallest tail ratio t=10",
+   "cat": "B",
+   "value": 0.8540265997481602
+  },
+  {
+   "id": "PerClass: largest tail ratio t=10",
+   "name": "PerClass: largest tail ratio t=10",
+   "cat": "B",
+   "value": 1.023269675917765
+  },
+  {
+   "id": "2col: hasMom is false",
+   "name": "2col: hasMom is false",
+   "cat": "A",
+   "value": 0.0
+  },
+  {
+   "id": "2col: Lmax is NaN for every fragment",
+   "name": "2col: Lmax is NaN for every fragment",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "2col: kappa still computed (median)",
+   "name": "2col: kappa still computed (median)",
+   "cat": "C",
+   "value": 0.5982334957341331
+  },
+  {
+   "id": "2col: h0_pfa_analyze skips Lambda (EL empty)",
+   "name": "2col: h0_pfa_analyze skips Lambda (EL empty)",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "scale: warning rif_cir_analyze:scale raised",
+   "name": "scale: warning rif_cir_analyze:scale raised",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "scale: median(qRatio) close to 1/64",
+   "name": "scale: median(qRatio) close to 1/64",
+   "cat": "A",
+   "value": 0.015547601779273888
+  },
+  {
+   "id": "mixed: error rif_cir_analyze:mixed raised",
+   "name": "mixed: error rif_cir_analyze:mixed raised",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "cir -82 dBm: Lambda computed from the CIR",
+   "name": "cir -82 dBm: Lambda computed from the CIR",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "cir -82 dBm: fewest noise taps per phase",
+   "name": "cir -82 dBm: fewest noise taps per phase",
+   "cat": "A",
+   "value": 24.0
+  },
+  {
+   "id": "cir -82 dBm: Lambda false-alarm rate",
+   "name": "cir -82 dBm: Lambda false-alarm rate",
+   "cat": "B",
+   "value": 0.0
+  },
+  {
+   "id": "cir h0: worst Lambda Pfa over conditions",
+   "name": "cir h0: worst Lambda Pfa over conditions",
+   "cat": "B",
+   "value": 0.001
+  },
+  {
+   "id": "cir h0: smallest tail ratio t=10",
+   "name": "cir h0: smallest tail ratio t=10",
+   "cat": "B",
+   "value": 0.8878752149820811
+  },
+  {
+   "id": "cir h0: largest tail ratio t=10",
+   "name": "cir h0: largest tail ratio t=10",
+   "cat": "B",
+   "value": 1.1013818649191212
+  },
+  {
+   "id": "cir 2col: Lambda evaluated on 2-column dumps",
+   "name": "cir 2col: Lambda evaluated on 2-column dumps",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "cir h1: L90 loss vs dumped Q/Pi [dB]",
+   "name": "cir h1: L90 loss vs dumped Q/Pi [dB]",
+   "cat": "E",
+   "value": 2.535714285714292
+  },
+  {
+   "id": "pkt new h0 soft: packet threshold T",
+   "name": "pkt new h0 soft: packet threshold T",
+   "cat": "A",
+   "value": 69.60610260564394
+  },
+  {
+   "id": "pkt new h0 soft: packets accepted (all conditions)",
+   "name": "pkt new h0 soft: packets accepted (all conditions)",
+   "cat": "B",
+   "value": 0.0
+  },
+  {
+   "id": "pkt new h0 soft: smallest tail ratio at P = 1e-2",
+   "name": "pkt new h0 soft: smallest tail ratio at P = 1e-2",
+   "cat": "B",
+   "value": 0.6225376885604309
+  },
+  {
+   "id": "pkt new h0 soft: largest tail ratio at P = 1e-2",
+   "name": "pkt new h0 soft: largest tail ratio at P = 1e-2",
+   "cat": "B",
+   "value": 1.0469952034879975
+  },
+  {
+   "id": "pkt new h0: largest |correlation| of fragment pairs",
+   "name": "pkt new h0: largest |correlation| of fragment pairs",
+   "cat": "B",
+   "value": 0.06410027384869084
+  },
+  {
+   "id": "pkt new h0 and: largest per-fragment rate (budget 0.178)",
+   "name": "pkt new h0 and: largest per-fragment rate (budget 0.178)",
+   "cat": "B",
+   "value": 0.09879032258064516
+  },
+  {
+   "id": "pkt new h0 and: every condition within the budget",
+   "name": "pkt new h0 and: every condition within the budget",
+   "cat": "B",
+   "value": 1.0
+  },
+  {
+   "id": "pkt new h1 soft: packet Pd at -116 dBm",
+   "name": "pkt new h1 soft: packet Pd at -121 dBm",
+   "cat": "D",
+   "value": 1.0
+  },
+  {
+   "id": "pkt new h1 soft: worst packet position accuracy",
+   "name": "pkt new h1 soft: worst packet position accuracy",
+   "cat": "E",
+   "value": 1.0
+  },
+  {
+   "id": "pkt new h1 and: packet L90 [dBm]",
+   "name": "pkt new h1 and: packet L90 [dBm]",
+   "cat": "D",
+   "value": -117.5
+  },
+  {
+   "id": "pkt new h1 one fragment (1e-6): L90 [dBm]",
+   "name": "pkt new h1 one fragment (1e-6): L90 [dBm]",
+   "cat": "D",
+   "value": -115.35483870967742
+  },
+  {
+   "id": "pkt new drift: -114 dBm packet Pd with drift search",
+   "name": "pkt new drift: -119 dBm packet Pd with drift search",
+   "cat": "D",
+   "value": 0.98
+  },
+  {
+   "id": "pkt new drift: Pd gain of the drift search",
+   "name": "pkt new drift: Pd gain of the drift search",
+   "cat": "E",
+   "value": 0.12
+  },
+  {
+   "id": "pkt new drift: median selected drift [taps/fragment]",
+   "name": "pkt new drift: median selected drift [taps/fragment]",
+   "cat": "E",
+   "value": 0.14285714285714285
+  },
+  {
+   "id": "pkt fixed h0 soft: packet threshold T",
+   "name": "pkt fixed h0 soft: packet threshold T",
+   "cat": "A",
+   "value": 69.60610260564394
+  },
+  {
+   "id": "pkt fixed h0 soft: packets accepted (all conditions)",
+   "name": "pkt fixed h0 soft: packets accepted (all conditions)",
+   "cat": "B",
+   "value": 0.0
+  },
+  {
+   "id": "pkt fixed h0 soft: smallest tail ratio at P = 1e-2",
+   "name": "pkt fixed h0 soft: smallest tail ratio at P = 1e-2",
+   "cat": "B",
+   "value": 0.8347664460242143
+  },
+  {
+   "id": "pkt fixed h0 soft: largest tail ratio at P = 1e-2",
+   "name": "pkt fixed h0 soft: largest tail ratio at P = 1e-2",
+   "cat": "B",
+   "value": 0.9338065328406464
+  },
+  {
+   "id": "pkt fixed h0: largest |correlation| of fragment pairs",
+   "name": "pkt fixed h0: largest |correlation| of fragment pairs",
+   "cat": "B",
+   "value": 0.03545335572492893
+  },
+  {
+   "id": "pkt fixed h0 and: largest per-fragment rate (budget 0.178)",
+   "name": "pkt fixed h0 and: largest per-fragment rate (budget 0.178)",
+   "cat": "B",
+   "value": 0.10080645161290322
+  },
+  {
+   "id": "pkt fixed h0 and: every condition within the budget",
+   "name": "pkt fixed h0 and: every condition within the budget",
+   "cat": "B",
+   "value": 1.0
+  },
+  {
+   "id": "pkt fixed h1 soft: packet Pd at -116 dBm",
+   "name": "pkt fixed h1 soft: packet Pd at -121 dBm",
+   "cat": "D",
+   "value": 0.96
+  },
+  {
+   "id": "pkt fixed h1 soft: worst packet position accuracy",
+   "name": "pkt fixed h1 soft: worst packet position accuracy",
+   "cat": "E",
+   "value": 1.0
+  },
+  {
+   "id": "pkt fixed h1 and: packet L90 [dBm]",
+   "name": "pkt fixed h1 and: packet L90 [dBm]",
+   "cat": "D",
+   "value": -116.5
+  },
+  {
+   "id": "pkt fixed h1 one fragment (1e-6): Pd at -106 dBm",
+   "name": "pkt fixed h1 one fragment (1e-6): Pd at -111 dBm",
+   "cat": "D",
+   "value": 0.965
+  },
+  {
+   "id": "pkt fixed h1 one fragment (1e-6): Pd at -110 dBm",
+   "name": "pkt fixed h1 one fragment (1e-6): Pd at -115 dBm",
+   "cat": "D",
+   "value": 0.16
+  },
+  {
+   "id": "pkt fixed drift: -114 dBm packet Pd with drift search",
+   "name": "pkt fixed drift: -119 dBm packet Pd with drift search",
+   "cat": "D",
+   "value": 1.0
+  },
+  {
+   "id": "pkt fixed drift: Pd gain of the drift search",
+   "name": "pkt fixed drift: Pd gain of the drift search",
+   "cat": "E",
+   "value": 0.16000000000000003
+  },
+  {
+   "id": "pkt fixed drift: median selected drift [taps/fragment]",
+   "name": "pkt fixed drift: median selected drift [taps/fragment]",
+   "cat": "E",
+   "value": 0.14285714285714285
+  },
+  {
+   "id": "pkt assumptions: drift slope median [taps/fragment]",
+   "name": "pkt assumptions: drift slope median [taps/fragment]",
+   "cat": "E",
+   "value": 0.26150196991595154
+  },
+  {
+   "id": "pkt assumptions: suggested drift hypotheses",
+   "name": "pkt assumptions: suggested drift hypotheses",
+   "cat": "E",
+   "value": 5.0
+  },
+  {
+   "id": "pkt assumptions: AGC level std [dB]",
+   "name": "pkt assumptions: AGC level std [dB]",
+   "cat": "E",
+   "value": 2.4486768883699512
+  },
+  {
+   "id": "pkt assumptions: share of frames with 8 fragments",
+   "name": "pkt assumptions: share of frames with 8 fragments",
+   "cat": "A",
+   "value": 0.9841269841269841
+  },
+  {
+   "id": "pkt assumptions: fragment-pair correlation (H0)",
+   "name": "pkt assumptions: fragment-pair correlation (H0)",
+   "cat": "B",
+   "value": 0.019736821076829295
+  }
+ ],
+ "checks2": [
+  {
+   "id": "2col -82 dBm: no Q/Pi columns (hasMom false)",
+   "name": "2col -82 dBm: no Q/Pi columns (hasMom false)",
+   "cat": "A",
+   "value": 0.0
+  },
+  {
+   "id": "2col -82 dBm: raw Lambda not computed (Lmax NaN)",
+   "name": "2col -82 dBm: raw Lambda not computed (Lmax NaN)",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "2col -82 dBm: MD rule false-alarm rate",
+   "name": "2col -82 dBm: MD rule false-alarm rate",
+   "cat": "M",
+   "value": 0.014
+  },
+  {
+   "id": "2col -82 dBm: kappa median",
+   "name": "2col -82 dBm: kappa median",
+   "cat": "C",
+   "value": 0.5965146219926192
+  },
+  {
+   "id": "2col -82 dBm: Lambda-hat computed from the CIR",
+   "name": "2col -82 dBm: Lambda-hat computed from the CIR",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "2col -82 dBm: fewest noise taps per phase",
+   "name": "2col -82 dBm: fewest noise taps per phase",
+   "cat": "A",
+   "value": 24.0
+  },
+  {
+   "id": "2col -82 dBm: Lambda-hat false-alarm rate",
+   "name": "2col -82 dBm: Lambda-hat false-alarm rate",
+   "cat": "B",
+   "value": 0.0
+  },
+  {
+   "id": "2col h0: raw Lambda skipped (EL empty)",
+   "name": "2col h0: raw Lambda skipped (EL empty)",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "2col h0 -120 dBm: MD rule Pfa",
+   "name": "2col h0 -120 dBm: MD rule Pfa",
+   "cat": "M",
+   "value": 0.004
+  },
+  {
+   "id": "2col h0 -120 dBm: kappa median",
+   "name": "2col h0 -120 dBm: kappa median",
+   "cat": "C",
+   "value": 0.37282493035909126
+  },
+  {
+   "id": "2col h0 -88 dBm: MD rule Pfa",
+   "name": "2col h0 -88 dBm: MD rule Pfa",
+   "cat": "M",
+   "value": 0.006
+  },
+  {
+   "id": "2col h0 -88 dBm: kappa median",
+   "name": "2col h0 -88 dBm: kappa median",
+   "cat": "C",
+   "value": 0.43606330879603006
+  },
+  {
+   "id": "2col h0 -82 dBm: MD rule Pfa",
+   "name": "2col h0 -82 dBm: MD rule Pfa",
+   "cat": "M",
+   "value": 0.019
+  },
+  {
+   "id": "2col h0 -82 dBm: kappa median",
+   "name": "2col h0 -82 dBm: kappa median",
+   "cat": "C",
+   "value": 0.5783234472262999
+  },
+  {
+   "id": "2col h0 -40 dBm: MD rule Pfa",
+   "name": "2col h0 -40 dBm: MD rule Pfa",
+   "cat": "M",
+   "value": 0.0
+  },
+  {
+   "id": "2col h0 -40 dBm: kappa median",
+   "name": "2col h0 -40 dBm: kappa median",
+   "cat": "C",
+   "value": 0.665235862567062
+  },
+  {
+   "id": "2col h0 cir: Lambda-hat table produced",
+   "name": "2col h0 cir: Lambda-hat table produced",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "2col h0 cir: worst Lambda-hat Pfa over conditions",
+   "name": "2col h0 cir: worst Lambda-hat Pfa over conditions",
+   "cat": "B",
+   "value": 0.001
+  },
+  {
+   "id": "2col h0 cir: smallest tail ratio t=10",
+   "name": "2col h0 cir: smallest tail ratio t=10",
+   "cat": "B",
+   "value": 0.8878752149820811
+  },
+  {
+   "id": "2col h0 cir: largest tail ratio t=10",
+   "name": "2col h0 cir: largest tail ratio t=10",
+   "cat": "B",
+   "value": 1.1013818649191212
+  },
+  {
+   "id": "2col mp20: median D [dB] (below the 10 dB gate)",
+   "name": "2col mp20: median D [dB] (below the 10 dB gate)",
+   "cat": "M",
+   "value": 6.365185262561047
+  },
+  {
+   "id": "2col mp20: MD rule Pfa",
+   "name": "2col mp20: MD rule Pfa",
+   "cat": "M",
+   "value": 0.028
+  },
+  {
+   "id": "2col mp20 cir: Lambda-hat Pfa",
+   "name": "2col mp20 cir: Lambda-hat Pfa",
+   "cat": "B",
+   "value": 0.001
+  },
+  {
+   "id": "2col h1: L90 MD rule [dBm]",
+   "name": "2col h1: L90 MD rule [dBm]",
+   "cat": "D",
+   "value": -116.75
+  },
+  {
+   "id": "2col h1: raw Lambda not available (Pd = 0)",
+   "name": "2col h1: raw Lambda not available (Pd = 0)",
+   "cat": "A",
+   "value": 0.0
+  },
+  {
+   "id": "2col h1 cir: L90 Lambda-hat minus L90 MD [dB]",
+   "name": "2col h1 cir: L90 Lambda-hat minus L90 MD [dB]",
+   "cat": "E",
+   "value": 2.0
+  },
+  {
+   "id": "2col h1 cir: worst position accuracy where Pd >= 0.1",
+   "name": "2col h1 cir: worst position accuracy where Pd >= 0.1",
+   "cat": "E",
+   "value": 1.0
+  },
+  {
+   "id": "2col h1 cir -110 dBm: Pd inside its 95% CI",
+   "name": "2col h1 cir -115 dBm: Pd inside its 95% CI",
+   "cat": "A",
+   "value": 1.0
+  },
+  {
+   "id": "2col h1 cir -110 dBm: CI width",
+   "name": "2col h1 cir -115 dBm: CI width",
+   "cat": "D",
+   "value": 0.09642140824999901
+  },
+  {
+   "id": "2col pkt fixed h0 soft: packet threshold T",
+   "name": "2col pkt fixed h0 soft: packet threshold T",
+   "cat": "A",
+   "value": 69.60610260564394
+  },
+  {
+   "id": "2col pkt fixed h0 soft: packets accepted (all conditions)",
+   "name": "2col pkt fixed h0 soft: packets accepted (all conditions)",
+   "cat": "B",
+   "value": 0.0
+  },
+  {
+   "id": "2col pkt fixed h0 soft: smallest tail ratio at P = 1e-2",
+   "name": "2col pkt fixed h0 soft: smallest tail ratio at P = 1e-2",
+   "cat": "B",
+   "value": 0.8347664460242143
+  },
+  {
+   "id": "2col pkt fixed h0 soft: largest tail ratio at P = 1e-2",
+   "name": "2col pkt fixed h0 soft: largest tail ratio at P = 1e-2",
+   "cat": "B",
+   "value": 0.9338065328406464
+  },
+  {
+   "id": "2col pkt fixed h0: largest |correlation| of fragment pairs",
+   "name": "2col pkt fixed h0: largest |correlation| of fragment pairs",
+   "cat": "B",
+   "value": 0.03545335572492893
+  },
+  {
+   "id": "2col pkt fixed h0 and: largest per-fragment rate (budget 0.178)",
+   "name": "2col pkt fixed h0 and: largest per-fragment rate (budget 0.178)",
+   "cat": "B",
+   "value": 0.10080645161290322
+  },
+  {
+   "id": "2col pkt fixed h0 and: every condition within the budget",
+   "name": "2col pkt fixed h0 and: every condition within the budget",
+   "cat": "B",
+   "value": 1.0
+  },
+  {
+   "id": "2col pkt fixed h1 soft: packet Pd at -116 dBm",
+   "name": "2col pkt fixed h1 soft: packet Pd at -121 dBm",
+   "cat": "D",
+   "value": 0.96
+  },
+  {
+   "id": "2col pkt fixed h1 soft: worst packet position accuracy",
+   "name": "2col pkt fixed h1 soft: worst packet position accuracy",
+   "cat": "E",
+   "value": 1.0
+  },
+  {
+   "id": "2col pkt fixed h1 and: packet L90 [dBm]",
+   "name": "2col pkt fixed h1 and: packet L90 [dBm]",
+   "cat": "D",
+   "value": -116.5
+  },
+  {
+   "id": "2col pkt fixed h1 one fragment (1e-6): Pd at -106 dBm",
+   "name": "2col pkt fixed h1 one fragment (1e-6): Pd at -111 dBm",
+   "cat": "D",
+   "value": 0.965
+  },
+  {
+   "id": "2col pkt fixed h1 one fragment (1e-6): Pd at -110 dBm",
+   "name": "2col pkt fixed h1 one fragment (1e-6): Pd at -115 dBm",
+   "cat": "D",
+   "value": 0.16
+  },
+  {
+   "id": "2col pkt fixed drift: -114 dBm packet Pd with drift search",
+   "name": "2col pkt fixed drift: -119 dBm packet Pd with drift search",
+   "cat": "D",
+   "value": 1.0
+  },
+  {
+   "id": "2col pkt fixed drift: Pd gain of the drift search",
+   "name": "2col pkt fixed drift: Pd gain of the drift search",
+   "cat": "E",
+   "value": 0.16000000000000003
+  },
+  {
+   "id": "2col pkt fixed drift: median selected drift [taps/fragment]",
+   "name": "2col pkt fixed drift: median selected drift [taps/fragment]",
+   "cat": "E",
+   "value": 0.14285714285714285
+  },
+  {
+   "id": "2col pkt assumptions: drift slope median [taps/fragment]",
+   "name": "2col pkt assumptions: drift slope median [taps/fragment]",
+   "cat": "E",
+   "value": 0.26150196991595154
+  },
+  {
+   "id": "2col pkt assumptions: suggested drift hypotheses",
+   "name": "2col pkt assumptions: suggested drift hypotheses",
+   "cat": "E",
+   "value": 5.0
+  },
+  {
+   "id": "2col pkt assumptions: AGC level std [dB]",
+   "name": "2col pkt assumptions: AGC level std [dB]",
+   "cat": "E",
+   "value": 2.4486768883699512
+  },
+  {
+   "id": "2col pkt assumptions: share of frames with 8 fragments",
+   "name": "2col pkt assumptions: share of frames with 8 fragments",
+   "cat": "A",
+   "value": 0.9841269841269841
+  },
+  {
+   "id": "2col pkt assumptions: fragment-pair correlation (H0)",
+   "name": "2col pkt assumptions: fragment-pair correlation (H0)",
+   "cat": "B",
+   "value": 0.019736821076829295
+  }
+ ]
+}

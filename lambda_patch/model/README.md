@@ -25,5 +25,12 @@ numpy 없이 표준 라이브러리와 `multiprocessing`(6 프로세스)만 씁�
 | `single_len.py` | RIF 1개 설정, 길이별 L90 (1e-3, 10⁻⁶): `python3 single_len.py 3000 out.json` | 설계 문서 9.3 마지막 표 | 약 1분 |
 | `shared_channel_md.py` | 패킷의 8개 프래그먼트가 멀티패스 채널 하나를 공유할 때(τrms 20 ns, 확산 6 dB 우세, 틀린 키 −42.5 / −82.5 dBm): MD 규칙의 채널별 프래그먼트 오검출 p, 8개 모두 통과의 패킷 오수락 E[p⁸], Λ̂ 소프트·AND 수락 수 (채널 1,998개, 9,990패킷) | 설계 문서 2.1절, 기준 전환 페이지 7장 | 미측정 |
 | `shared_channel_tail.py` | 같은 조건에서 이동 0 소프트 합의 꼬리 비율 P(S ≥ t)/P(χ²₁₆ ≥ t), P = 1e-2 / 1e-3 / 1e-4 지점, 채널 공유와 프래그먼트별 채널 비교 (조건당 6,000패킷, 경로 34.2만 개) | 설계 문서 9.6·9.7절, 기준 전환 페이지 6장 | 미측정 |
+| `length_l90.py` | RIF 길이별(32·64·128·256) 프래그먼트·패킷 규칙 10개의 L90, 다른 잔여 CFO에서 CFO 이득 공식 확인: `KF=8 python3 length_l90.py base 1800 results/length_l90.json`, `KF=8 python3 length_l90.py ppm 1200 results/length_l90.json results/length_ppm.json` | `gen_dumps.py`의 세기 이동 S, 길이별 L90 범위, 길이별 합성 시험 페이지 7장 | 약 4분 + 약 6분 |
+| `length_h0md.py` | 합성 시험 H0 조건(−120 / −88 / −82 / −40 dBm, 멀티패스)의 MD 규칙 오검출률, 길이별: `KF=8 python3 length_h0md.py 2000 results/length_h0md.json` | 길이별 MD 규칙 통계 범위 | 약 10분 |
+| `expect_synthetic.py` | `run_synthetic_test.m`의 파이썬 판: 5열 94개·2열 49개 판정을 같은 이름으로 계산 (세트의 `synthetic_set.txt`에서 길이·세기 이동·이동량을 읽음): `python3 expect_synthetic.py <root5> <root2> results/expect_n64.json` | 길이별 기대값 (`results/expect_n*.json`) | 수십 초 |
+| `drift_check.py` | 이동량 0.2496 / 0.6 / 1.2탭에서 이동 폴더(약한 세기 800개, 강한 세기 80개)의 이동 탐색 Pd, 고른 기울기, 기울기, 제안 후보 수, 길이별: `python3 drift_check.py <work dir> results/drift_check.json` | 이동 판정 범위와 확인 구간 | 약 90분 |
+| `build_expect.py` | 길이별 판정 범위를 만들어 MATLAB 함수 `test/synthetic_expect.m`으로 씀 (32심볼은 기존 범위 그대로): `python3 build_expect.py results ../test/synthetic_expect.m`, 범위와 파이썬 값 대조는 `python3 build_expect.py results --report` | `run_synthetic_test`의 길이별 범위 | 수 초 |
+
+`results/`에는 위 스크립트의 결과(JSON)를 둡니다. 길이별 기준 세트는 `gen_dumps.py <root> --N <N>`과 `make_2col.py`로 만들고(5열 약 100 MB, 2열 약 60 MB씩, 32심볼 약 7분 ~ 256심볼 약 70분), 저장소에는 넣지 않습니다.
 
 dBm은 MD 문서의 환산(−100 dBm ↔ 펄스당 SNR −11.4 dB, 즉 A²[dB] = dBm + 82.5)을 쓴 모델 값입니다.
