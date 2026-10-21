@@ -9,8 +9,11 @@
 | RIF Λ 판정기 | 전체 해설(백색화 Λ, 고정 칩 Λ̂, 패킷 판정, 적용 순서) | https://joshua-hr.github.io/rif_lambda/ (`docs/index.html`) | https://claude.ai/artifact/7jPu9754umFDxXVSMGUVt6 |
 | RIF 판정 기준 전환 | 결정 1의 검토: 프래그먼트 1e-3 → 패킷 10⁻⁶의 개념, 수식, 효과, 검증 방법, MD 평가의 변화 | https://joshua-hr.github.io/rif_lambda/basis.html (`docs/basis.html`) | https://claude.ai/artifact/LiV1UGJRLB6KRxuvsG1h5D |
 | RIF 일관성 검사 비교 | 결정 6의 비교: 네 가지 폐기율 안의 정상 폐기, 바꿔치기 탐지, 감도 손해 | https://joshua-hr.github.io/rif_lambda/consistency.html (`docs/consistency.html`) | https://claude.ai/artifact/SMXjhEtscutkM1qq7VXr7F |
+| RIF 검증 체크리스트 | 단계 A~D의 시험 명령, 기대값, 합격 기준과 항목별 기록 | https://joshua-hr.github.io/rif_lambda/checklist.html (`docs/checklist.html`) | https://claude.ai/artifact/T4Nu3uHSfLV4GfUHJFKDfM |
+| RIF 길이별 합성 시험 | 결정 8의 설계: 합성 시험이 32심볼로 고정됐던 이유, 길이별로 바뀌는 판정, 0단계 설계표 | https://joshua-hr.github.io/rif_lambda/length.html (`docs/length.html`) | https://claude.ai/artifact/YJT3Ev3H5r383Lhz9kzjmB |
+| RIF 길이 지원 검증 기록 | 결정 8의 확인: 바꾼 것, 길이에 따라 움직이는 정답, MATLAB 5·6단계 FAIL의 원인과 해결 | https://joshua-hr.github.io/rif_lambda/length-verify.html (`docs/length-verify.html`) | https://claude.ai/artifact/2NyFcSj6KiD5YT7mcj5EWi |
 
-Pages판은 공개 저장소에서 게시되므로 링크만 있으면 누구나 볼 수 있습니다. claude.ai판은 비공개이며, 보여 주려면 각 페이지의 공유 메뉴에서 공유해야 합니다. 두 판의 내용은 같고, 페이지끼리의 링크만 다릅니다(Pages판은 상대 경로, claude.ai판은 artifact 주소). `docs/basis.html`과 `docs/consistency.html`은 저장소 밖 작업 폴더의 원본에서 `build_pages.py`로 만든 결과물이므로 직접 고치지 말고 원본을 고친 뒤 다시 만듭니다.
+Pages판은 공개 저장소에서 게시되므로 링크만 있으면 누구나 볼 수 있습니다. claude.ai판은 비공개이며, 보여 주려면 각 페이지의 공유 메뉴에서 공유해야 합니다. 두 판의 내용은 같고, 페이지끼리의 링크만 다릅니다(Pages판은 상대 경로, claude.ai판은 artifact 주소). `docs/index.html`을 뺀 나머지 페이지(`basis.html`, `consistency.html`, `checklist.html`, `length.html`, `length-verify.html`)는 저장소 밖 작업 폴더의 원본에서 `build_pages.py`로 만든 결과물이므로 직접 고치지 말고 원본을 고친 뒤 다시 만듭니다.
 
 ## 결정
 
@@ -23,6 +26,7 @@ Pages판은 공개 저장소에서 게시되므로 링크만 있으면 누구나
 | 5 | 2026-10-15 | 피크 이동 후보는 **B-0(LLS 강한 H1 덤프) 실측**으로 정한다. 그 전까지 임시로 RIF 간격 1 ms, 잔여 오프셋 ±0.5 ppm, 후보 9개(감도 손해 약 0.34 dB). 후보 간격은 1/(K−1) | 잠정 | `check_packet_assumptions`의 기울기 측정 | B-0 결과 |
 | 6 | 2026-10-15 | 일관성 검사(빈 프래그먼트 등)의 정상 측정 폐기율은 **안 3: 모든 세기에서 0.1%** | 잠정 | 일관성 검사 비교 페이지 (아래 요약) | 아래 "결정 6을 다시 볼 조건" |
 | 7 | 2026-10-15 | 일관성 검사에 걸린 측정은 **용도별로 처리**: 보안 판단(출입, 결제, 거리 기반 인증)은 측정 폐기 + STS 실패 보고, 일반 용도(측위, 추적, 보정)는 튀는 프래그먼트를 빼고 보정한 문턱으로 다시 판정. 어느 쪽이든 무결성 플래그를 남김. 세션 설정으로 선택 | 확정 (세부 일부 미정) | Samsung US11454714(인증 모드는 중단, 보정 모드는 이상값 제외), FiRa UCI의 STS 실패 상태 보고, Anliker 외 USENIX Security 2023(일관성 검사) | 아래 "결정 7을 다시 볼 조건" |
+| 8 | 2026-10-20~21 | 합성 시험이 **RIF 길이 32·64·128·256심볼을 모두 지원**: 길이마다 루트 하나, 5열·2열 모두, 프래그먼트 수와 H0 세기는 32심볼과 같게, H1·이동 폴더 세기는 CFO 공식으로 S만큼 이동. 잔여 CFO(`'Ppm'`)는 설정 가능(0.25 ppm은 길이별 모델 정답, 다른 값은 공식으로 이동하고 손해 6 dB 밖·κ·MD 규칙 통계는 `[INFO]`). 이동량은 `'Drift'` 또는 `'Sco'`로 설정 가능하고 기본은 잔여 CFO와 연동. 축소 세트는 범위를 넓혀 판정(AND 예산 판정만 `[INFO]`). MD 규칙 비교 판정도 모든 길이에서 판정. **32심볼 범위는 그대로** 두고, 64심볼 이상의 H0 꼬리·상관 판정만 bootstrap 퍼짐(평균 ± 4σ)으로 넓힘 | 확정, 반영 완료 (2026-10-21) | 길이별 합성 시험 페이지(0단계 설계표), 검증 기록 페이지. Python 기준 세트 네 길이 94/94·49/49, MATLAB 32심볼 회귀(5열 8,100개·2열 7,680개 바이트 일치)와 64·128·256심볼 모두 PASS | 32심볼 MATLAB 실행에서 H0 꼬리·상관 판정이 표본 퍼짐으로 CHECK가 나면 32심볼에도 같은 넓힘 적용을 다시 판단. B-0에서 실제 잔여 SCO와 CFO가 다르게 나오면 이동량 연동 기본값을 다시 정함 |
 
 ## 결정 6: 일관성 검사 폐기율 (안 3)
 
@@ -96,7 +100,7 @@ Pages판은 공개 저장소에서 게시되므로 링크만 있으면 누구나
 ## 남은 작업 (결정에 따른)
 
 1. ~~결정 1 반영~~ **완료 (2026-10-15):** 설계 문서(1.1절 요구사항, 2.1절 MD 패킷 평가, 프래그먼트 1e-3을 진단 기준으로), 검증 계획(합격 기준을 패킷 근거로, B-H0-4 같은 채널 멀티패스를 필수 첫 항목으로, MD 패킷 평가 코드, 점수 방식 비교는 결정 4로 보류), 해설 페이지(요약의 "기준" 항목과 "56배" 재서술, 그림의 "목표 1e-3"을 "기준 1e-3"으로, 칩 선택표에 패킷 L90), 기준 전환 페이지에 적용 표시. `h0_pfa_analyze`·`h1_pd_analyze`에 `'Profile'`(`'md'` 기본, `'fira-medium'` = soft + 10⁻⁶) 추가, `run_synthetic_test`의 소프트 결합 실행을 이 프로파일로 바꿈(항목 수 77/49 그대로). 같은 채널 시뮬레이션 스크립트를 `model/shared_channel_md.py`, `shared_channel_tail.py`로 저장소에 넣음. MATLAB에서는 아직 실행하지 않음.
-2. 결정 3 반영: 검증 계획의 조합표(RIF 길이 4종 × 개수 4종, 4z STS 길이·세그먼트)와 구성별 기대 감도표.
+2. 결정 3 반영: 검증 계획의 조합표(RIF 길이 4종 × 개수 4종, 4z STS 길이·세그먼트)와 구성별 기대 감도표. 합성 시험의 RIF 길이 4종 지원은 결정 8로 완료(2026-10-21).
 3. 결정 4 반영: 점수 방식 두 가지 결합 모델과 같은 오수락 비교.
 4. 결정 6·7 구현: 일관성 검사(빈 프래그먼트, 이른 가짜 피크, 피크 위치), 안 3 문턱(λ̂ 추정과 분위수 표), 용도별 처리와 뺄 때의 문턱 보정, 합성 시험의 바꿔치기·이른 피크 시나리오.
 5. 결정 5: B-0 결과가 나오면 이동 후보 확정.

@@ -61,6 +61,7 @@ RIFStsLen=0..3 (32/64/128/256심볼), SemiSyncAcclen = 심볼 수
 <root>/c<심볼수>_m<세기 절댓값, 정수>_j<job>/bin/<SignalPower>_RifCir_AccNum_<N>_Frame<f>_Samp<s>.txt
 ```
 
+- **합성 시험 세트:** `gen_synthetic_dumps`의 `'test'` 세트는 루트에 생성 조건 파일 `synthetic_set.txt`(RIF 길이 N, 형식, 잔여 CFO, 이동량, 세기 이동 S, Scale)를 남기고, 한 루트에는 세트 하나만 둡니다. `run_synthetic_test`는 이 파일을 폴더 이름(`c<N>_`), 파일 이름(`AccNum_<N>`), 열 수와 대조합니다(A-L).
 - **덤프 켜기 (LLS):** `semisync_only()`의 `if (0 && iSemiSyncNextState_ == RX_STS)`를 `1`로 바꿉니다.
 - **실행 위치:** job마다 실행 폴더를 따로 둡니다. `uwb/bin`은 피하세요(덤프가 git 추적 대상으로 잡힘).
 - **root 분리:** H0와 H1, 채널, CFO 조건은 root를 따로 둡니다.
@@ -93,6 +94,8 @@ RIFStsLen=0..3 (32/64/128/256심볼), SemiSyncAcclen = 심볼 수
 gen_synthetic_dumps('D:/rif_test5');            % h0, h0_mp20, h1, h0_2col, scale_test, mixed_test, h1_drift (8,100개)
 res5 = run_synthetic_test('D:/rif_test5');      % 5열 자동 인식 → 10단계, 94개 항목 (10단계 = 패킷 판정, 새 칩·고정 칩)
 ```
+
+기본은 32심볼이고, 이동 폴더의 이동량은 잔여 CFO와 연동됩니다(0.25 ppm → 0.2496탭/프래그먼트). 길이 지원 전과 같은 덤프는 `gen_synthetic_dumps(root, 'Drift', 0.3)`으로 만듭니다(바이트 단위로 같음, A-L).
 
 ### A-2. 2열 합성 세트 (현재 LLS 형식, 같은 시드)
 
@@ -168,6 +171,48 @@ end
 - 다른 조건은 `'N', 64|128|256`, `'Ppm', 0`, `'Trms', 20, 'KdB', -6`으로 만듭니다.
 - 이 결과는 단계 B의 "모델 기대값"과 같은 출처이므로, 나중에 LLS 결과와 나란히 놓고 비교하면 모델과 LLS의 차이가 바로 보입니다.
 
+### A-L. RIF 길이 지원 (64·128·256심볼)
+
+합성 시험은 RIF 길이 32·64·128·256심볼을 지원합니다(`DECISIONS.md` 결정 8). 판정 범위는 길이마다 Python 기준 세트로 정한 `test/synthetic_expect.m`(`model/build_expect.py`가 만듦)에서 오고, 32심볼 범위는 길이 지원 전과 같습니다.
+
+```matlab
+gen_synthetic_dumps('D:/rif_t64', 'N', 64);                % 64심볼 5열 (생성 시간 32심볼의 약 2배, 128은 약 4배, 256은 약 8배)
+gen_synthetic_dumps('D:/rif_t64c2', 'N', 64, 'Cols', 2);   % 64심볼 2열 (같은 시드, 같은 CIR)
+res = run_synthetic_test('D:/rif_t64');                    % 첫 줄 예: set: N 64, 5 columns, Ppm 0.25, drift 0.2496 ..., power shift -3 dB
+```
+
+| `gen_synthetic_dumps` 옵션 | 내용과 `run_synthetic_test`의 처리 |
+|---|---|
+| `'N'` | 32 / 64 / 128 / 256. 폴더 이름 `c<N>_`. H1과 약한 이동 폴더의 세기를 S = round(−[g(N, Ppm) − g(32, 0.25)]) dB만큼 옮김(0.25 ppm에서 0 / −3 / −5 / −5 dB). 세기가 박힌 판정은 옮긴 세기로 재고 그 세기를 이름에 찍음 |
+| `'Ppm'` | 잔여 CFO. 0.25가 아니면 L90 판정은 CFO 공식만큼 옮기고, κ와 MD 규칙 H0 통계는 `[INFO]`. 손해 6 dB(피크 진폭 계수 0.5)를 넘으면 CFO에 따라 달라지는 판정(κ, MD 규칙 H0, H1)은 모두 `[INFO]` |
+| `'Drift'`, 또는 `'Sco'` + `'FragInterval'` | 이동 폴더의 피크 이동. 기본은 잔여 SCO = 잔여 CFO(0.25 ppm × 1 ms → 0.2496탭). 기울기·고른 기울기·제안 후보 수의 범위는 이동량에서 계산. 이동 탐색 후보는 (−n:n)/7, n = max(3, round(\|D\| × 7) + 1). 이동 Pd 판정은 0.25~1.2탭 밖에서 `[INFO]` |
+| `'Scale'` | 빠른 실행용 축소 세트. 비율은 이항 0.1%/99.9% 구간, 꼬리 비율은 하한 0·상한 반폭 ÷ Scale, 쌍 상관은 5/√(쌍 수 × Scale) 이상, 그 밖의 통계는 반폭 ÷ √Scale로 넓힘. AND 예산 판정(95% 상한)은 `[INFO]`. Scale < 0.1이면 통계 판정 모두 `[INFO]` |
+
+요약 줄은 `x / y checks OK, z INFO (형식, N, root)`입니다. `[INFO]`는 값만 보여 주고 판정 수 y에서 빠집니다. 64·128·256심볼의 H0 꼬리 비율·쌍 상관 판정 19종은 기준 세트의 bootstrap 퍼짐으로 넓힌 범위(32심볼 범위 ∪ 평균 ± 4σ)를 씁니다.
+
+한 번에 돌리는 스크립트:
+
+```matlab
+R = regress_length32(old5, old2, 'D:/len/reg32');   % 32심볼 회귀: 기존 세트 판정, 'Drift', 0.3 세트와 파일 비교, 새 기본값 세트 (약 30분)
+R = regress_lengths('D:/len/reg', 'Lengths', 64);   % 64심볼: 빠른 세트·전체 세트 5열·2열, 2열 = 5열 re·im 대조 (20~30분)
+R = regress_lengths('D:/len/reg');                  % 64·128·256 (같은 폴더의 세트는 재사용, 2~3시간)
+```
+
+`old5`, `old2`는 길이 지원 전 생성기로 만든 32심볼 5열·2열 세트입니다. 이미 있는 세트를 쓰거나, 커밋 87ef016(길이 지원을 합치기 전 master)의 `gen_synthetic_dumps`로 빈 폴더에 만듭니다. `'Drift', 0.3` 세트가 이 세트와 바이트 단위로 같아야 합니다. 둘 중 하나를 `''`로 주면 그 형식은 건너뜁니다.
+
+**합격 기준:** 두 스크립트 모두 마지막 표가 전부 `PASS`. 빠른 세트에서는 AND 예산 판정의 `[INFO]` 2개(5열)·1개(2열)가 정상입니다. 전체 출력은 `work/regress_length32.log`, `work/regress_lengths.log`에 남습니다.
+
+| Python 기준 세트 값 | 32 | 64 | 128 | 256 |
+|---|---|---|---|---|
+| 세기 이동 S / H1 세기 [dBm] | 0 / −106…−116 | −3 / −109…−119 | −5 / −111…−121 | −5 / −111…−121 |
+| H1 L90 MD / Λ [dBm] | −111.2 / −112.3 | −114.2 / −115.1 | −116.8 / −117.3 | −116.4 / −116.8 |
+| 패킷 AND L90 Λ̂ [dBm] | −111.4 | −114.3 | −116.5 | −116.4 |
+| κ 중앙값 −40 dBm | 0.98 | 0.91 | 0.67 | 0.38 |
+| MD 규칙 Pfa −82 dBm | 5.2% | 3.5% | 1.9% | 1.1% |
+| 이동 탐색 후 패킷 Pd (약한 이동 폴더) | 0.98 | 1.00 | 1.00 | 0.98 |
+
+256심볼이 128심볼보다 감도가 나쁜 것은 잔여 CFO 0.25 ppm의 위상 회전 때문입니다(설계 문서 6.4절, 7.4절). MATLAB 실행(2026-10-21): 32심볼 회귀 PASS(5열 8,100개·2열 7,680개 바이트 일치), 64·128·256심볼 모두 5/5 PASS. 그 과정의 FAIL과 범위 수정은 검증 기록 페이지(`docs/length-verify.html`)에 정리했습니다.
+
 ### 단계 A 기대값과 합격 기준
 
 | 항목 | A-1 (5열) | A-2 (2열) |
@@ -181,7 +226,7 @@ end
 | 패킷 H0 (`'Profile','fira-medium'`, 8개) | 수락 0, χ²₁₆ 꼬리 비율 0.86~1.33, 쌍 상관 ≤ 0.06 | 같음 (고정 칩) |
 | 패킷 H1 | 소프트 Pd(−116 dBm) 1.0, AND L90 Λ −112.8 / Λ̂ −111.4 dBm | Λ̂만 |
 | 1개 설정 (10⁻⁶) | L90 Λ −110.2, Λ̂ Pd(−106 / −110 dBm) 0.94 / 0.14 | Λ̂만 |
-| 피크 이동 (`h1_drift`, 0.3탭/프래그먼트) | 추정 0.32, 후보 7개, 탐색 시 −114 dBm Pd 0.86 → 0.98 | 같음 |
+| 피크 이동 (`h1_drift`) | 예전 세트(0.3탭/프래그먼트): 추정 0.32, 후보 7개, 탐색 시 −114 dBm Pd 0.86 → 0.98. 새 기본값(0.2496탭): 추정 0.26, 후보 5개, Pd 0.90 → 0.98 | 같음 |
 
 이 숫자는 미리 만든 `synthetic_dumps/`의 값입니다. MATLAB에서 새로 만든 세트는 난수가 달라 조금 다르며, 기대 범위는 그 흔들림을 감안했습니다. A-3의 교차 확인은 모두 `true`여야 합니다.
 
@@ -362,6 +407,7 @@ R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 
 | 결과 | 출처 |
 |---|---|
 | 단계 A 요약 (94/94, 49/49), A-3 교차 확인 결과 | `run_synthetic_test` 출력, `isequal` 결과, `export_web_results` JSON과 웹 10장 그림 |
+| RIF 길이 지원 (A-L) | `regress_length32`·`regress_lengths`의 요약 표와 로그 |
 | H0 MD 표 (Pfa, 상한, kappa, Dmed) | `h0_pfa_analyze` "current thresholds" 표, `h0_pfa.png` |
 | H0 Λ 표 (raw / cir) | "Lambda detector" 표, `h0_lambda.png` |
 | H1 표 (Pd [95% CI], 위치 정확도, L90/L99, L90loc) | `h1_pd_analyze` 출력과 그림 |
@@ -377,12 +423,13 @@ R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 
 1. [ ] A-1 5열 합성: 94/94
 2. [ ] A-2 2열 합성: 49/49
 3. [ ] A-3 교차 확인: 모두 `true`
-4. [ ] (선택) A-4 단계 B 리허설
-5. [ ] B 필수 세트(B-0, B-H0-1, B-H0-2, **B-H0-4 같은 채널 멀티패스**, B-H1-1) → **패킷 판정 결론**(첫 항목: 같은 채널 꼬리), Λ̂ 전제, MD 실패 재현과 κ(진단)
-6. [ ] B 권장 세트(CFO 0, Tx off, 나머지 길이, RIF 1개 설정)
-7. [ ] C: C++ 5열 구현, bring-up 4항목
-8. [ ] D: 5열 전체, 핵심 H0 30,000개
-9. [ ] (선택) E
+4. [x] A-L RIF 길이 지원: `regress_length32` 모두 PASS, `regress_lengths` 64·128·256 모두 PASS (2026-10-21)
+5. [ ] (선택) A-4 단계 B 리허설
+6. [ ] B 필수 세트(B-0, B-H0-1, B-H0-2, **B-H0-4 같은 채널 멀티패스**, B-H1-1) → **패킷 판정 결론**(첫 항목: 같은 채널 꼬리), Λ̂ 전제, MD 실패 재현과 κ(진단)
+7. [ ] B 권장 세트(CFO 0, Tx off, 나머지 길이, RIF 1개 설정)
+8. [ ] C: C++ 5열 구현, bring-up 4항목
+9. [ ] D: 5열 전체, 핵심 H0 30,000개
+10. [ ] (선택) E
 
 ## 9. 보류 항목
 

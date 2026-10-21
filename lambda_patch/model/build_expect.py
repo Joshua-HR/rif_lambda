@@ -3,12 +3,14 @@
 #   python3 build_expect.py results ../test/synthetic_expect.m      (results/: the inputs below)
 #   python3 build_expect.py results --report                       ranges vs the Python values, per length
 # Inputs: expect_n<N>.json (expect_synthetic.py on the gen_dumps.py reference set of every length, default
-# drift), length_l90.json (length_l90.py base), length_h0md.json (length_h0md.py), drift_check.json (drift_check.py).
+# drift), length_l90.json (length_l90.py base), length_h0md.json (length_h0md.py), drift_check.json (drift_check.py),
+# expect_spread.json (expect_spread.py).
 # R5 / R2: the ranges of run_synthetic_test.m at 32 symbols before the length support (5-column and 2-column
 # runs), kept unchanged. Other lengths: behaviour checks (A), H0 Lambda statistics (B) and H1 differences (E)
 # keep them; the L90 checks (D) move by the model L90 shift of their rule; the MD-rule false-alarm rates (M)
 # follow the model rate of their condition; kappa (C) and the median D (M) move by the difference of the
-# Python values to 32 symbols when it exceeds the noise; checks at a fixed power use the
+# Python values to 32 symbols when it exceeds the noise; the H0 tail-ratio and pair-correlation checks are widened to
+# the bootstrap spread of the reference sets (mean +- 4 sd over 64-256 symbols); checks at a fixed power use the
 # moved power of the set (gen_dumps.py PowerShift) and keep their range. Drift checks are computed by
 # run_synthetic_test from the drift of the set (columns 'drift').
 import os, sys, json, math, time
@@ -169,7 +171,7 @@ L90RULE = {'h1: L90 MD rule [dBm]': 'md1', '2col h1: L90 MD rule [dBm]': 'md1', 
 
 
 def meta(i, cat):
-    """kind ('fixed' | 'rate' | 'cont'), number of trials at Scale 1 for rates, CFO rule, drift rule"""
+    """kind ('fixed' | 'budget' | 'rate' | 'count' | 'tail' | 'corr' | 'cont'), trials at Scale 1 (rates, pairs), CFO rule, drift rule"""
     drift = ''
     if 'drift slope median' in i: drift = 'slope'
     elif 'median selected drift' in i: drift = 'dmed'
@@ -184,7 +186,12 @@ def meta(i, cat):
     elif 'h1 soft: packet Pd at' in i: n = 25
     elif 'one fragment (1e-6): Pd at' in i: n = 200
     elif drift == 'pd': n = 50
+    elif '|correlation| of fragment pairs' in i: n = 496          # Lmax pairs per H0 condition (2 jobs x 62 packets x 4)
+    elif 'fragment-pair correlation (H0)' in i: n = 1984          # all H0 folders
     if 'share of frames' in i: kind = 'count'
+    elif 'every condition within the budget' in i: kind = 'budget'   # true/false of a 95 % upper bound
+    elif 'tail ratio' in i: kind = 'tail'
+    elif 'correlation' in i: kind = 'corr'
     elif drift in ('nhyp',) or (cat == 'A' and 'qRatio' not in i) or 'every condition within' in i or 'packets accepted' in i:
         kind = 'fixed'
     elif n: kind = 'rate'
@@ -247,10 +254,25 @@ def load(res):
     L = json.load(open(os.path.join(res, 'length_l90.json')))
     Dc = json.load(open(os.path.join(res, 'drift_check.json')))
     H = {(r['N'], r['cond']): r['md'] for r in json.load(open(os.path.join(res, 'length_h0md.json')))}
-    return E, L, Dc, H
+    Sp = {int(k): v for k, v in json.load(open(os.path.join(res, 'expect_spread.json'))).items()}
+    return E, L, Dc, H, Sp
 
 
-def build(E, L, Dc, H):
+def spread_id(i):
+    # the 5-column check of expect_spread.py with the same statistic (2-column checks share the CIR)
+    for a, b in (('2col h0 cir: ', 'cir h0: '), ('2col pkt fixed ', 'pkt fixed ')):
+        if i.startswith(a): return b + i[len(a):]
+    return i
+
+
+def spread_range(lo32, hi32, Sp, j):
+    # 64 / 128 / 256 symbols: the 32-symbol range widened to (mean of the three lengths) +- 4 x (mean bootstrap sd)
+    c = sum(Sp[N][j]['v'] for N in LENS[1:]) / 3; sd = sum(Sp[N][j]['sd'] for N in LENS[1:]) / 3
+    lo = min(lo32, max(0.0, math.floor((c - 4 * sd) * 1000) / 1000)); hi = max(hi32, math.ceil((c + 4 * sd) * 1000) / 1000)
+    return lo, hi, 'bootstrap %.3f +- 4 x %.3f' % (c, sd)
+
+
+def build(E, L, Dc, H, Sp):
     rows = []
     for key, R32 in (('checks5', R5), ('checks2', R2)):
         val = {N: {c['id']: c for c in E[N][key]} for N in LENS}
@@ -263,6 +285,8 @@ def build(E, L, Dc, H):
                 if cfo == 'shift':
                     d = L[str(N)][rule]['L90'] - L['32'][rule]['L90']
                     lo, hi, why = round(lo32 + d, 2), round(hi32 + d, 2), 'model L90 shift %+.2f dB (%s)' % (d, rule)
+                elif N != 32 and spread_id(i) in Sp[N]:
+                    lo, hi, why = spread_range(lo32, hi32, Sp, spread_id(i))
                 elif i in MDCOND and N != 32:
                     lo, hi = md_range(lo32, hi32, H[(32, MDCOND[i])], H[(N, MDCOND[i])], n)
                     why = 'model MD rate %.4f -> %.4f' % (H[(32, MDCOND[i])], H[(N, MDCOND[i])])
@@ -309,7 +333,7 @@ def drift_pd(Dc):
 def mnum(x):
     if isinstance(x, bool): x = int(x)
     if x != x: return 'NaN'
-    return ('%.6g' % x) if abs(x) < 1e5 else repr(x)
+    return '%.10g' % x
 
 
 def write_m(rows, L, Dc, out):
@@ -325,7 +349,7 @@ def write_m(rows, L, Dc, out):
     txt = """function T = synthetic_expect(N)
 %%SYNTHETIC_EXPECT  Expected ranges of run_synthetic_test per RIF length (32 / 64 / 128 / 256 symbols).
 %%   Generated by lambda_patch/model/build_expect.py on %s from the Python reference sets of
-%%   lambda_patch/model/gen_dumps.py (expect_synthetic.py), length_l90.py, length_h0md.py and drift_check.py.
+%%   lambda_patch/model/gen_dumps.py (expect_synthetic.py, expect_spread.py), length_l90.py, length_h0md.py and drift_check.py.
 %%   Do not edit by hand: change build_expect.py and regenerate.
 %%
 %%   T = synthetic_expect(N)      one entry per check (%d 5-column checks, then %d 2-column checks)
@@ -333,8 +357,9 @@ def write_m(rows, L, Dc, out):
 %%   T.set       5 or 2: the run the check belongs to
 %%   T.cat       'A' behaviour, 'B' H0 Lambda statistics, 'M' H0 MD-rule statistics, 'C' kappa,
 %%               'D' H1 dBm values, 'E' H1 differences
-%%   T.kind      'fixed' | 'rate' | 'count' | 'cont': how a reduced set ('Scale' < 1) widens the range
-%%   T.n         trials of a rate at Scale 1 (0 otherwise)
+%%   T.kind      'fixed' | 'budget' | 'rate' | 'count' | 'tail' | 'corr' | 'cont': how a reduced set ('Scale' < 1)
+%%               widens the range ('budget': [INFO] on a reduced set)
+%%   T.n         trials of a rate, or pairs of a correlation, at Scale 1 (0 otherwise)
 %%   T.cfo       'shift': L90, moves with the residual CFO; 'info': no verified range when Ppm ~= 0.25; 'none'
 %%   T.drift     'slope' | 'dmed' | 'nhyp' | 'pd' | 'gain' | '': range computed from the drift of the set
 %%   T.rule      model rule of a 'shift' check (row of T.l90)
@@ -366,7 +391,7 @@ end
 
 
 if __name__ == '__main__':
-    res = sys.argv[1]; E, L, Dc, H = load(res); rows = build(E, L, Dc, H)
+    res = sys.argv[1]; E, L, Dc, H, Sp = load(res); rows = build(E, L, Dc, H, Sp)
     if sys.argv[2] == '--report':
         report(rows, Dc); print('drift Pd:', drift_pd(Dc))
     else:

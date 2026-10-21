@@ -1,0 +1,314 @@
+{
+ "32": {
+  "h0 -120 dBm: per-tap tail ratio t=10": {
+   "v": 1.0102509777508724,
+   "sd": 0.06351073158552291
+  },
+  "h0 -120 dBm: per-tap tail ratio t=14": {
+   "v": 0.9811980891201998,
+   "sd": 0.1582492937520707
+  },
+  "h0 -88 dBm: per-tap tail ratio t=10": {
+   "v": 0.9868173210504655,
+   "sd": 0.0591941058884666
+  },
+  "h0 -88 dBm: per-tap tail ratio t=14": {
+   "v": 0.8272846633758547,
+   "sd": 0.13246771484405334
+  },
+  "h0 -82 dBm: per-tap tail ratio t=10": {
+   "v": 1.0467033326181718,
+   "sd": 0.06140548470418152
+  },
+  "h0 -82 dBm: per-tap tail ratio t=14": {
+   "v": 0.9234805544660705,
+   "sd": 0.14979676820155338
+  },
+  "h0 -40 dBm: per-tap tail ratio t=10": {
+   "v": 1.0388921137180362,
+   "sd": 0.134226327714937
+  },
+  "h0 -40 dBm: per-tap tail ratio t=14": {
+   "v": 1.2505465841728034,
+   "sd": 0.38579747461711916
+  },
+  "mp20: per-tap tail ratio t=10": {
+   "v": 0.9477612265497874,
+   "sd": 0.0969520869392287
+  },
+  "PerClass: smallest tail ratio t=10": {
+   "v": 0.9842135814170869,
+   "sd": 0.059743653022401595
+  },
+  "PerClass: largest tail ratio t=10": {
+   "v": 1.0545145515183074,
+   "sd": 0.08292017383044265
+  },
+  "cir h0: smallest tail ratio t=10": {
+   "v": 0.775914410746804,
+   "sd": 0.09302897542970029
+  },
+  "cir h0: largest tail ratio t=10": {
+   "v": 1.0154584570176295,
+   "sd": 0.051803502491695866
+  },
+  "pkt new h0 soft: smallest tail ratio at P = 1e-2": {
+   "v": 0.8772121975169709,
+   "sd": 0.12370642292218365
+  },
+  "pkt new h0 soft: largest tail ratio at P = 1e-2": {
+   "v": 1.103589538811673,
+   "sd": 0.1663538692659343
+  },
+  "pkt new h0: largest |correlation| of fragment pairs": {
+   "v": 0.05468971799362279,
+   "sd": 0.03307509857243367
+  },
+  "pkt fixed h0 soft: smallest tail ratio at P = 1e-2": {
+   "v": 0.863063613686052,
+   "sd": 0.14743720492079535
+  },
+  "pkt fixed h0 soft: largest tail ratio at P = 1e-2": {
+   "v": 1.3299668801063753,
+   "sd": 0.16007851112862467
+  },
+  "pkt fixed h0: largest |correlation| of fragment pairs": {
+   "v": 0.018198089477326027,
+   "sd": 0.026416810006356237
+  }
+ },
+ "64": {
+  "h0 -120 dBm: per-tap tail ratio t=10": {
+   "v": 1.1170043027193923,
+   "sd": 0.06022384418623183
+  },
+  "h0 -120 dBm: per-tap tail ratio t=14": {
+   "v": 1.4044600099171487,
+   "sd": 0.19160993798512518
+  },
+  "h0 -88 dBm: per-tap tail ratio t=10": {
+   "v": 1.0805519478520929,
+   "sd": 0.062404381841188156
+  },
+  "h0 -88 dBm: per-tap tail ratio t=14": {
+   "v": 1.2313074059547604,
+   "sd": 0.1636210009930262
+  },
+  "h0 -82 dBm: per-tap tail ratio t=10": {
+   "v": 0.916516350949245,
+   "sd": 0.06103793399673287
+  },
+  "h0 -82 dBm: per-tap tail ratio t=14": {
+   "v": 0.9427197326841136,
+   "sd": 0.1670854293482686
+  },
+  "h0 -40 dBm: per-tap tail ratio t=10": {
+   "v": 1.023269675917765,
+   "sd": 0.12855332048771184
+  },
+  "h0 -40 dBm: per-tap tail ratio t=14": {
+   "v": 1.154350693082588,
+   "sd": 0.39075010410467237
+  },
+  "mp20: per-tap tail ratio t=10": {
+   "v": 0.9842135814170869,
+   "sd": 0.09804971733886071
+  },
+  "PerClass: smallest tail ratio t=10": {
+   "v": 0.916516350949245,
+   "sd": 0.057379314482291145
+  },
+  "PerClass: largest tail ratio t=10": {
+   "v": 1.1170043027193923,
+   "sd": 0.06157260152861186
+  },
+  "cir h0: smallest tail ratio t=10": {
+   "v": 0.8696490375484314,
+   "sd": 0.0560760995899551
+  },
+  "cir h0: largest tail ratio t=10": {
+   "v": 1.0545145515183074,
+   "sd": 0.06684079695907175
+  },
+  "pkt new h0 soft: smallest tail ratio at P = 1e-2": {
+   "v": 0.863063613686052,
+   "sd": 0.1217996041688892
+  },
+  "pkt new h0 soft: largest tail ratio at P = 1e-2": {
+   "v": 1.0894409549807542,
+   "sd": 0.16811349186648863
+  },
+  "pkt new h0: largest |correlation| of fragment pairs": {
+   "v": 0.06694031559019474,
+   "sd": 0.03565893774801697
+  },
+  "pkt fixed h0 soft: smallest tail ratio at P = 1e-2": {
+   "v": 0.7640235268696198,
+   "sd": 0.09223560080036301
+  },
+  "pkt fixed h0 soft: largest tail ratio at P = 1e-2": {
+   "v": 1.5704928052319962,
+   "sd": 0.3598052188793612
+  },
+  "pkt fixed h0: largest |correlation| of fragment pairs": {
+   "v": 0.09097902645440097,
+   "sd": 0.03338653816949928
+  }
+ },
+ "128": {
+  "h0 -120 dBm: per-tap tail ratio t=10": {
+   "v": 0.9894210606838441,
+   "sd": 0.054922274913714736
+  },
+  "h0 -120 dBm: per-tap tail ratio t=14": {
+   "v": 0.9427197326841136,
+   "sd": 0.13801130323395205
+  },
+  "h0 -88 dBm: per-tap tail ratio t=10": {
+   "v": 0.9764023625169513,
+   "sd": 0.05878491186264147
+  },
+  "h0 -88 dBm: per-tap tail ratio t=14": {
+   "v": 0.7888063069397685,
+   "sd": 0.1282044039420649
+  },
+  "h0 -82 dBm: per-tap tail ratio t=10": {
+   "v": 1.0206659362843866,
+   "sd": 0.06057366393484633
+  },
+  "h0 -82 dBm: per-tap tail ratio t=14": {
+   "v": 0.8657630198119409,
+   "sd": 0.16115724809977555
+  },
+  "h0 -40 dBm: per-tap tail ratio t=10": {
+   "v": 0.8488191204814031,
+   "sd": 0.11880825113173135
+  },
+  "h0 -40 dBm: per-tap tail ratio t=14": {
+   "v": 0.5964145247593371,
+   "sd": 0.27725840883737024
+  },
+  "mp20: per-tap tail ratio t=10": {
+   "v": 1.0362883740846578,
+   "sd": 0.09882242915877094
+  },
+  "PerClass: smallest tail ratio t=10": {
+   "v": 0.8540265997481602,
+   "sd": 0.09861139423569829
+  },
+  "PerClass: largest tail ratio t=10": {
+   "v": 1.023269675917765,
+   "sd": 0.053174805684181536
+  },
+  "cir h0: smallest tail ratio t=10": {
+   "v": 0.8878752149820811,
+   "sd": 0.05035598942990264
+  },
+  "cir h0: largest tail ratio t=10": {
+   "v": 1.1013818649191212,
+   "sd": 0.11346318702915885
+  },
+  "pkt new h0 soft: smallest tail ratio at P = 1e-2": {
+   "v": 0.6225376885604309,
+   "sd": 0.18494466213635433
+  },
+  "pkt new h0 soft: largest tail ratio at P = 1e-2": {
+   "v": 1.0469952034879975,
+   "sd": 0.1072730473420847
+  },
+  "pkt new h0: largest |correlation| of fragment pairs": {
+   "v": 0.06410027384869313,
+   "sd": 0.029088485598051824
+  },
+  "pkt fixed h0 soft: smallest tail ratio at P = 1e-2": {
+   "v": 0.8347664460242143,
+   "sd": 0.14169535732832964
+  },
+  "pkt fixed h0 soft: largest tail ratio at P = 1e-2": {
+   "v": 0.9338065328406464,
+   "sd": 0.18745230844512495
+  },
+  "pkt fixed h0: largest |correlation| of fragment pairs": {
+   "v": 0.03545335572492729,
+   "sd": 0.030547064432035094
+  }
+ },
+ "256": {
+  "h0 -120 dBm: per-tap tail ratio t=10": {
+   "v": 0.9399500076496519,
+   "sd": 0.056773394200166714
+  },
+  "h0 -120 dBm: per-tap tail ratio t=14": {
+   "v": 0.8657630198119409,
+   "sd": 0.14481443599057384
+  },
+  "h0 -88 dBm: per-tap tail ratio t=10": {
+   "v": 0.9790061021503298,
+   "sd": 0.05581427250301062
+  },
+  "h0 -88 dBm: per-tap tail ratio t=14": {
+   "v": 0.8465238415938978,
+   "sd": 0.14557786107782428
+  },
+  "h0 -82 dBm: per-tap tail ratio t=10": {
+   "v": 1.0727407289519573,
+   "sd": 0.06482346744452369
+  },
+  "h0 -82 dBm: per-tap tail ratio t=14": {
+   "v": 1.019676445556286,
+   "sd": 0.14981658970293768
+  },
+  "h0 -40 dBm: per-tap tail ratio t=10": {
+   "v": 1.1326267405196635,
+   "sd": 0.15850447742275234
+  },
+  "h0 -40 dBm: per-tap tail ratio t=14": {
+   "v": 0.8080454851578116,
+   "sd": 0.3234693446310838
+  },
+  "mp20: per-tap tail ratio t=10": {
+   "v": 0.8904789546154597,
+   "sd": 0.07834729954275249
+  },
+  "PerClass: smallest tail ratio t=10": {
+   "v": 0.9399500076496519,
+   "sd": 0.050570260481696494
+  },
+  "PerClass: largest tail ratio t=10": {
+   "v": 1.135230480153042,
+   "sd": 0.11603849808028281
+  },
+  "cir h0: smallest tail ratio t=10": {
+   "v": 0.9737986228835728,
+   "sd": 0.06571025889425215
+  },
+  "cir h0: largest tail ratio t=10": {
+   "v": 1.0362883740846578,
+   "sd": 0.08119162669987105
+  },
+  "pkt new h0 soft: smallest tail ratio at P = 1e-2": {
+   "v": 0.8489150298551331,
+   "sd": 0.18133126764687146
+  },
+  "pkt new h0 soft: largest tail ratio at P = 1e-2": {
+   "v": 1.2875211286136186,
+   "sd": 0.13921748761992714
+  },
+  "pkt new h0: largest |correlation| of fragment pairs": {
+   "v": 0.08475298273054187,
+   "sd": 0.03328838678219105
+  },
+  "pkt fixed h0 soft: smallest tail ratio at P = 1e-2": {
+   "v": 0.9479551166715653,
+   "sd": 0.1030466290164969
+  },
+  "pkt fixed h0 soft: largest tail ratio at P = 1e-2": {
+   "v": 1.230926793289943,
+   "sd": 0.2832885650166931
+  },
+  "pkt fixed h0: largest |correlation| of fragment pairs": {
+   "v": 0.04533105890242188,
+   "sd": 0.0320133710601965
+  }
+ }
+}
