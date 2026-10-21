@@ -155,6 +155,34 @@ details[open] > summary{margin-bottom:8px}
 .chip[data-s="check"]{background:color-mix(in srgb, var(--crit) 16%, transparent);color:var(--crit)}
 .send{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
 .foot{border-top:1px solid var(--hair);padding-top:20px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:8px}
+
+/* step order: the page's items in the order to run them; status follows the items */
+.order{display:flex;flex-direction:column;gap:10px}
+.order > p{color:var(--ink-2);font-size:14.5px;max-width:68ch}
+.now{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;background:var(--wash);border-radius:10px;padding:10px 14px;font-size:14.5px}
+.now b{font:600 12px var(--f-mono);letter-spacing:.05em;color:var(--s1)}
+.now a{font-weight:600}
+.phase{font:600 12px/1.5 var(--f-mono);letter-spacing:.06em;color:var(--muted);margin-top:8px}
+.steps{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.steps li{display:grid;grid-template-columns:28px 1fr auto;gap:2px 12px;align-items:start;background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:10px 14px;margin:0;min-width:0}
+.steps li + li{margin-top:0}
+.steps .sn{font:600 13px/1.65 var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.steps .sb{display:flex;flex-direction:column;gap:2px;min-width:0}
+.steps .sb > a{font-weight:600;color:var(--ink);text-decoration:none}
+.steps .sb > a:hover{color:var(--s1);text-decoration:underline}
+.steps .sd{font-size:13.5px;color:var(--ink-2)}
+.steps .ids{font:500 12px var(--f-mono);color:var(--muted)}
+.steps .snd{font-size:13px;color:var(--s2)}
+.steps .st{display:flex;gap:6px;align-items:center;justify-self:end}
+.steps li[data-next]{border-color:var(--s1);box-shadow:inset 3px 0 0 var(--s1)}
+.steps li[data-next] .sn{color:var(--s1)}
+.steps li[data-done] .sb > a{color:var(--ink-2)}
+.badge{font:600 12px/1.7 var(--f-sans);padding:0 8px;border-radius:999px;background:var(--s1);color:#fff;white-space:nowrap}
+.tag.done{border-color:var(--good);color:var(--good)}
+@media (max-width:560px){
+  .steps li{grid-template-columns:22px 1fr}
+  .steps .st{grid-column:2;justify-self:start;margin-top:4px}
+}
 @media (max-width:560px){
   .rec{grid-template-columns:1fr}
   .rec label{line-height:1.4}
@@ -171,13 +199,13 @@ details[open] > summary{margin-bottom:8px}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">lambda_patch · 커밋 aa96c9a 기준 · 2026-10-15 · A-L32·A-LN 추가 2026-10-20, master에 합침 2026-10-21</span>
+  <span class="eyebrow">lambda_patch · master d000694 기준 · 2026-10-21 갱신</span>
   <h1>RIF 검증 체크리스트</h1>
-  <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾼 지금의 저장소로 직접 돌려 볼 시험입니다. 이번 MATLAB 수정은 아직 한 번도 실행되지 않았으니 단계 A부터 진행해 주세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남습니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
+  <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾸고, 합성 시험이 RIF 길이 32·64·128·256을 지원하게 된 지금의 master로 직접 돌려 볼 시험입니다. 바로 아래 "할 일 순서"를 위에서부터 따라가세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남고, 순서표의 상태와 "다음" 표시도 따라 바뀝니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
   <div class="summary" id="summary">
-    <a class="stage-sum" href="#sA" data-stage="A"><div class="top"><span class="nm">A · 합성 덤프</span><span class="ct">0 / 9 통과</span></div><div class="bar"></div><span class="sub">LLS 불필요, 가장 먼저</span></a>
-    <a class="stage-sum" href="#sB" data-stage="B"><div class="top"><span class="nm">B · 현재 LLS</span><span class="ct">0 / 10 통과</span></div><div class="bar"></div><span class="sub">2열 덤프, C++ 수정 없음</span></a>
+    <a class="stage-sum" href="#sA" data-stage="A"><div class="top"><span class="nm">A · 합성 덤프</span><span class="ct">0 / 10 통과</span></div><div class="bar"></div><span class="sub">LLS 불필요, 가장 먼저</span></a>
+    <a class="stage-sum" href="#sB" data-stage="B"><div class="top"><span class="nm">B · 현재 LLS</span><span class="ct">0 / 11 통과</span></div><div class="bar"></div><span class="sub">2열 덤프, C++ 수정 없음</span></a>
     <a class="stage-sum" href="#sC" data-stage="C"><div class="top"><span class="nm">C · bring-up</span><span class="ct">0 / 1 통과</span></div><div class="bar"></div><span class="sub">C++ 5열 덤프 구현 후</span></a>
     <a class="stage-sum" href="#sD" data-stage="D"><div class="top"><span class="nm">D · 최종 검증</span><span class="ct">0 / 2 통과</span></div><div class="bar"></div><span class="sub">5열 덤프 전체</span></a>
   </div>
@@ -196,26 +224,77 @@ details[open] > summary{margin-bottom:8px}
   <textarea class="copy-out" id="copy-out" readonly hidden aria-label="결과 요약 텍스트"></textarea>
 </header>
 
+<!-- ============================================================ order -->
+<section class="order" id="order" aria-labelledby="order-h">
+  <h2 id="order-h">할 일 순서</h2>
+  <p>아래 항목을 실행할 순서대로 묶었습니다. 줄을 누르면 그 항목으로 가고, 상태는 항목에 고른 것을 따라옵니다. 끝나지 않은 첫 필수 줄에 "다음"이 붙습니다. 주황 글씨 "보내기"가 있는 줄은 끝나면 결과를 Claude에게 보내 주세요. 그 결과로 다음 결정을 내립니다.</p>
+  <div class="now" id="now"><b>다음</b><span id="now-text">기록을 읽는 중입니다.</span></div>
+
+  <div class="phase">준비</div>
+  <ol class="steps">
+    <li data-ids="M-0 P-0"><span class="sn">1</span><div class="sb"><a href="#M-0">master 받기와 MATLAB 경로</a><span class="sd">저장소를 master 최신으로 맞추고, 패치 폴더가 원본보다 먼저 잡히게 합니다. 5분</span><span class="ids">M-0 · P-0</span></div><span class="st"></span></li>
+  </ol>
+
+  <div class="phase">A · 합성 덤프 (MATLAB만, LLS 불필요)</div>
+  <ol class="steps">
+    <li data-ids="A-1 A-2"><span class="sn">2</span><div class="sb"><a href="#A-1">합성 세트 만들기와 자동 시험</a><span class="sd">5열 94개·2열 49개 판정, 세트마다 수 분. 여기서 만든 두 세트를 A-3·A-P·A-W에서 다시 씁니다.</span><span class="ids">A-1 · A-2</span></div><span class="st"></span></li>
+    <li data-ids="A-L32 A-LN" data-opt><span class="sn">3</span><div class="sb"><a href="#A-L32">RIF 길이 회귀 (32·64·128·256)</a><span class="sd">2026-10-21에 모두 PASS해서 master에 합쳤습니다. 합성 시험 코드를 다시 고칠 때만 돌립니다(수 시간).</span><span class="ids">A-L32 · A-LN</span></div><span class="st"></span></li>
+    <li data-ids="A-3"><span class="sn">4</span><div class="sb"><a href="#A-3">2열·5열 교차 확인</a><span class="sd">CIR만 쓰는 결과 네 가지가 정확히 같은지. 수 분</span><span class="ids">A-3</span></div><span class="st"></span></li>
+    <li data-ids="A-P"><span class="sn">5</span><div class="sb"><a href="#A-P"><code>'Profile'</code> 옵션 동작</a><span class="sd">패킷 판정 설정이 한 번에 걸리는지. 수 분</span><span class="ids">A-P</span><span class="snd">보내기: A-3·A-P 결과 (단계 A 마무리)</span></div><span class="st"></span></li>
+    <li data-ids="A-W" data-opt><span class="sn">6</span><div class="sb"><a href="#A-W">결과 JSON을 해설 페이지에서 비교</a><span class="sd">권장. 그림 타일로 한눈에 확인</span><span class="ids">A-W</span></div><span class="st"></span></li>
+    <li data-ids="A-4" data-opt><span class="sn">7</span><div class="sb"><a href="#A-4">단계 B 리허설</a><span class="sd">선택. LLS를 돌리기 전에 B의 명령을 합성 2열로 연습</span><span class="ids">A-4</span></div><span class="st"></span></li>
+  </ol>
+
+  <div class="phase">B · 현재 LLS (2열 덤프, C++ 수정 없음)</div>
+  <ol class="steps">
+    <li data-ids="B-P"><span class="sn">8</span><div class="sb"><a href="#B-P">LLS 덤프 준비</a><span class="sd">공통 설정, 폴더 규칙, 만들 순서. B-0·B-H0-4 덤프부터</span><span class="ids">B-P</span></div><span class="st"></span></li>
+    <li data-ids="B-0"><span class="sn">9</span><div class="sb"><a href="#B-0">패킷 전제: 프레임 구성, 피크 이동, AGC</a><span class="sd">이후 명령의 <code>'Drift', A.suggest.Drift</code>가 이 결과를 씁니다.</span><span class="ids">B-0</span><span class="snd">보내기: A.drift, A.suggest.Drift → 결정 5 (이동 후보 확정)</span></div><span class="st"></span></li>
+    <li data-ids="B-CH B-H0-4"><span class="sn">10</span><div class="sb"><a href="#B-CH">같은 채널 확인과 멀티패스 소프트 합 꼬리</a><span class="sd">첫 검증 항목. 5,000개로 먼저 보고 30,000개로 늘립니다.</span><span class="ids">B-CH · B-H0-4</span><span class="snd">보내기: 꼬리 비율과 수락 수 → 결정 1 (패킷 10⁻⁶ 유지)</span></div><span class="st"></span></li>
+    <li data-ids="B-H0 B-H1"><span class="sn">11</span><div class="sb"><a href="#B-H0">AWGN H0 패킷 근거와 패킷 감도</a><span class="sd">패킷 꼬리·수락 수, 패킷 L90</span><span class="ids">B-H0 · B-H1</span><span class="snd">보내기: "Packet decision" 표와 패킷 L90</span></div><span class="st"></span></li>
+    <li data-ids="B-F B-S B-MD B-1R B-R" data-opt><span class="sn">12</span><div class="sb"><a href="#B-F">나머지 권장 시험</a><span class="sd">권장. 하한 비용, 바꿔치기 폐기율(결정 6 기준선), MD 패킷 평가, RIF 1개 설정, 나머지 세트</span><span class="ids">B-F · B-S · B-MD · B-1R · B-R</span></div><span class="st"></span></li>
+  </ol>
+
+  <div class="phase">C·D · C++ 5열 덤프 구현 후</div>
+  <ol class="steps">
+    <li data-ids="C-1"><span class="sn">13</span><div class="sb"><a href="#C-1">Q·Π 구현 확인 (bring-up)</a><span class="sd">조건당 200~500개로 구현만 확인</span><span class="ids">C-1~4</span><span class="snd">보내기: C-1 표의 값</span></div><span class="st"></span></li>
+    <li data-ids="D-H0 D-H1"><span class="sn">14</span><div class="sb"><a href="#D-H0">5열 최종 검증: 새 칩 패킷 판정</a><span class="sd">원시 샘플 Λ의 H0 30,000개와 패킷 감도</span><span class="ids">D-H0 · D-H1</span></div><span class="st"></span></li>
+  </ol>
+</section>
+
 <!-- ============================================================ A -->
 <section class="stage" id="sA" data-stage="A">
-  <div class="stage-head"><span class="stage-no">A</span><div class="t"><h2>합성 덤프: MATLAB 도구 점검</h2><p>LLS 없이 MATLAB만으로 수 분이면 끝납니다. 같은 시드로 만든 5열과 2열 세트는 CIR이 비트 단위로 같아서, CIR만 쓰는 결과는 정확히 같아야 합니다.</p></div></div>
+  <div class="stage-head"><span class="stage-no">A</span><div class="t"><h2>합성 덤프: MATLAB 도구 점검</h2><p>LLS 없이 MATLAB만으로 돌립니다. A-1~A-4는 수 분씩입니다. A-L32·A-LN(길이 회귀)은 이미 통과했고 몇 시간 걸리므로 코드를 고칠 때만 돌립니다. 같은 시드로 만든 5열과 2열 세트는 CIR이 비트 단위로 같아서, CIR만 쓰는 결과는 정확히 같아야 합니다.</p></div></div>
+
+  <article class="item" id="M-0" data-id="M-0" data-stage="A">
+    <div class="item-head"><span class="iid">M-0</span><h3>저장소: master 최신으로 맞추기</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="why">RIF 길이 지원은 master에 합쳤고 <code>length-support</code> 브랜치는 지웠습니다. 이제 모든 시험을 master에서 돌립니다. 로컬에 예전 브랜치가 남아 있으면 같이 정리합니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>git checkout master
+git pull
+git fetch --prune                  # 원격에서 지운 origin/length-support 정리
+git branch -d length-support       # 로컬에 남아 있을 때만 (이미 합쳐져 있어 그냥 지워짐)
+git log --oneline -1               # d000694 또는 그 뒤 커밋</code></pre></div>
+    <dl class="expect"><dt>기준</dt><dd><code>git status</code>가 깨끗하고 최신 커밋이 d000694 이후</dd><dt>막히면</dt><dd><code>git branch -d</code>가 "not fully merged"로 거부하면 지우지 말고 그 메시지를 적어 주세요.</dd></dl>
+    <div class="rec"><label for="st-M-0">상태 · 결과</label><div class="fields"><div class="row"><select id="st-M-0"></select><span class="meta" id="mt-M-0"></span></div><textarea id="nt-M-0" placeholder="예: master, 최신 커밋 해시"></textarea></div></div>
+  </article>
 
   <article class="item" id="P-0" data-id="P-0" data-stage="A">
     <div class="item-head"><span class="iid">P-0</span><h3>준비: 패치 폴더가 먼저 잡히는지</h3><span class="tags"><span class="tag req">필수</span></span></div>
-    <p class="why">원본 폴더에 같은 이름의 함수가 있습니다. MATLAB은 현재 폴더를 path보다 먼저 찾으므로, 원본 스크립트가 있는 폴더가 아닌 곳에서 실행합니다.</p>
-    <div class="cmd-box"><pre class="cmd"><code>addpath('&lt;repo&gt;/lambda_patch', '-begin');
+    <p class="why">원본 폴더에 같은 이름의 함수가 있습니다. MATLAB은 현재 폴더를 path보다 먼저 찾으므로, 원본 스크립트가 있는 폴더가 아닌 곳에서 실행합니다. <code>git pull</code>이나 브랜치를 바꾼 뒤에는 MATLAB이 예전 파일을 쥐고 있지 않도록 <code>clear all; rehash</code>부터 합니다. MATLAB을 다시 켜면 <code>addpath</code>도 다시 해야 합니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>clear all; rehash
+addpath('&lt;repo&gt;/lambda_patch', '-begin');
 addpath('&lt;repo&gt;/lambda_patch/test');
-which rif_cir_analyze        % &lt;repo&gt;\lambda_patch\rif_cir_analyze.m 이어야 함</code></pre></div>
-    <dl class="expect"><dt>기준</dt><dd><code>which</code> 결과가 <code>lambda_patch</code> 안의 파일</dd></dl>
+which rif_cir_analyze        % &lt;repo&gt;\lambda_patch\rif_cir_analyze.m 이어야 함
+which run_synthetic_test     % &lt;repo&gt;\lambda_patch\test\run_synthetic_test.m</code></pre></div>
+    <dl class="expect"><dt>기준</dt><dd><code>which</code> 결과가 두 줄 모두 <code>lambda_patch</code> 안의 파일</dd></dl>
     <div class="rec"><label for="st-P-0">상태 · 결과</label><div class="fields"><div class="row"><select id="st-P-0"></select><span class="meta" id="mt-P-0"></span></div><textarea id="nt-P-0" placeholder="예: lambda_patch 쪽으로 잡힘"></textarea></div></div>
   </article>
 
   <article class="item" id="A-1" data-id="A-1" data-stage="A">
     <div class="item-head"><span class="iid">A-1</span><h3>5열 합성 세트 자동 시험</h3><span class="tags"><span class="tag req">필수</span></span></div>
-    <p class="why">10단계(패킷 판정)의 소프트 결합 실행이 이제 <code>'Profile', 'fira-medium'</code>을 거칩니다. 문턱 69.61 항목이 OK이면 프로파일 경로도 맞게 동작하는 것입니다.</p>
-    <div class="cmd-box"><pre class="cmd"><code>gen_synthetic_dumps('D:/rif_test5');            % 5열 8,100개, 수 분
+    <p class="why">합성 덤프를 만들고 10단계 94개 항목을 자동으로 판정합니다. 10단계(패킷 판정)의 소프트 결합 실행은 <code>'Profile', 'fira-medium'</code>을 거치므로, 문턱 69.61 항목이 OK이면 프로파일 경로도 맞게 동작하는 것입니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>gen_synthetic_dumps('D:/rif_test5');            % 5열 8,100개, 수 분 (빈 폴더에)
 res5 = run_synthetic_test('D:/rif_test5');      % 10단계, 94개 항목</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd>첫 줄 <code>dump format: 5 columns (94 checks expected)</code>, 요약 <code>94 / 94 checks OK (5-column set, D:/rif_test5)</code></dd><dt>기준</dt><dd><code>[CHECK]</code> 없음. 있으면 그 줄을 결과 칸에 그대로 적어 주세요.</dd></dl>
+    <dl class="expect"><dt>기대</dt><dd>첫 두 줄 <code>dump format: 5 columns (94 checks expected)</code>, <code>set: N 32, 5 columns, Ppm 0.25, drift 0.2496 taps/fragment (linked), Scale 1, power shift +0 dB</code>. 요약 <code>94 / 94 checks OK, 0 INFO   (5-column set, N 32, D:/rif_test5)</code></dd><dt>기준</dt><dd><code>[CHECK]</code> 없음. 있으면 그 줄을 결과 칸에 그대로 적어 주세요.</dd><dt>이미 만든 세트</dt><dd>2026-10-16에 만든 세트(길이 지원 전 생성기)는 그대로 써도 됩니다. 조건 파일 <code>synthetic_set.txt</code>가 없어 <code>set:</code> 줄이 <code>drift 0.3 … (no synthetic_set.txt: older 32-symbol set, drift 0.3 taps)</code>로 끝나고, 판정은 같습니다. 지금 생성기는 피크 이동 폴더(<code>h1_drift</code>)의 이동량을 잔여 CFO에 맞춘 0.2496탭/프래그먼트로 만들고, 예전 0.3탭 세트는 <code>'Drift', 0.3</code>으로 만듭니다. 덤프가 있는 폴더에 다시 만들면 아무것도 쓰지 않고 오류로 멈추니, 새로 만들 때는 빈 폴더를 쓰세요.</dd></dl>
     <details class="guide">
       <summary>그림 해석 안내 (그림 11개)</summary>
       <div class="guide-body">
@@ -301,15 +380,71 @@ res5 = run_synthetic_test('D:/rif_test5');      % 10단계, 94개 항목</code><
     <p class="why">단계 B와 형식이 같은 세트입니다. 원시 샘플 Λ, PerClass, 스케일 검사, 형식 혼합 검사는 빠집니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>gen_synthetic_dumps('D:/rif_test2', 'Cols', 2); % 같은 시드, h0 / h0_mp20 / h1 / h1_drift
 res2 = run_synthetic_test('D:/rif_test2');      % 6단계, 49개 항목</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd>첫 줄 <code>dump format: 2 columns (49 checks expected)</code>, 요약 <code>49 / 49 checks OK (2-column set, D:/rif_test2)</code></dd><dt>94개가 나오면</dt><dd>그 폴더에 예전에 만든 <b>5열 세트</b>가 남아 있는 것입니다. 이미 덤프가 있는 폴더에는 생성 스크립트가 아무것도 쓰지 않으므로 2열 세트가 만들어지지 않았습니다. 예전 세트를 지우고 다시 만드세요(아래). 지금 버전은 이 경우 생성 단계에서 대상 폴더와 열 수를 알려 주며 멈춥니다.</dd></dl>
+    <dl class="expect"><dt>기대</dt><dd>첫 줄 <code>dump format: 2 columns (49 checks expected)</code>, 요약 <code>49 / 49 checks OK, 0 INFO   (2-column set, N 32, D:/rif_test2)</code></dd><dt>94개가 나오면</dt><dd>그 폴더에 예전에 만든 <b>5열 세트</b>가 남아 있는 것입니다. 이미 덤프가 있는 폴더에는 생성 스크립트가 아무것도 쓰지 않으므로 2열 세트가 만들어지지 않았습니다. 예전 세트를 지우고 다시 만드세요(아래). 지금 버전은 이 경우 생성 단계에서 대상 폴더와 열 수를 알려 주며 멈춥니다.</dd></dl>
     <div class="cmd-box"><pre class="cmd"><code>rmdir('D:/rif_test2', 's');                       % 예전 세트 삭제 (폴더 내용 확인 후)
 gen_synthetic_dumps('D:/rif_test2', 'Cols', 2);
 res2 = run_synthetic_test('D:/rif_test2');        % dump format: 2 columns, 49 / 49</code></pre></div>
     <div class="rec"><label for="st-A-2">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-2"></select><span class="meta" id="mt-A-2"></span></div><textarea id="nt-A-2" placeholder="예: dump format 2 columns, 49/49"></textarea></div></div>
   </article>
 
+  <article class="item" id="A-L32" data-id="A-L32" data-stage="A">
+    <div class="item-head"><span class="iid">A-L32</span><h3>RIF 길이 지원: 32심볼 회귀</h3><span class="tags"><span class="tag req">필수</span><span class="tag done">2026-10-21 PASS</span></span></div>
+    <p class="why">합성 시험이 RIF 길이 32·64·128·256을 받도록 고친 <code>gen_synthetic_dumps</code>와 <code>run_synthetic_test</code>(지금의 master)가 32심볼 결과(A-1 94/94, A-2 49/49)를 바꾸지 않았는지 보는 회귀 시험입니다. 스크립트 하나가 기존 세트 판정, 새 생성기의 <code>'Drift', 0.3</code> 세트와 기존 세트의 파일 비교, 새 기본값(이동량을 잔여 CFO와 연동, 0.2496탭) 세트 판정까지 차례로 합니다. 약 30분.</p>
+    <p class="why"><b>결과:</b> 2026-10-21에 5열·2열 모두 PASS했습니다(5열 8,100개·2열 7,680개 바이트 일치). 이 시험으로 확인을 마치고 master에 합쳤으니, 합성 시험 코드를 다시 고칠 때만 다시 돌립니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>R = regress_length32('D:/len/old5', 'D:/len/old2', 'D:/len/reg32');
+%   앞의 두 개: 길이 지원 전 생성기로 만든 5열·2열 세트(A-1·A-2 세트, 또는 커밋 87ef016의
+%   gen_synthetic_dumps로 빈 폴더에 새로 만든 세트), 세 번째: 새 세트를 만들 빈 폴더</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>마지막 표의 모든 줄이 <code>PASS</code>: A 기존 세트 <code>94 / 94</code>, <code>49 / 49 checks OK, 0 INFO</code> · B 새 세트와 기존 세트 <code>different 0, missing 0</code> · C 새 세트 94 / 94, 49 / 49 · D 새 기본값 세트는 <code>h1_drift</code> 파일만 다르고 94 / 94, 49 / 49</dd><dt>FAIL이면</dt><dd>요약 표와 <code>D:/len/reg32/regress_length32.log</code>를 보내 주세요. 오류로 멈추면 그 메시지를 그대로 적어 주세요. 다시 돌리면 이미 만든 세트는 재사용합니다(생성이 중간에 끊긴 하위 폴더는 지우고 다시). <code>No h0 folder</code>나 열 수가 다르다는 메시지는 앞의 두 경로가 틀렸다는 뜻입니다.</dd></dl>
+    <div class="rec"><label for="st-A-L32">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-L32"></select><span class="meta" id="mt-A-L32"></span></div><textarea id="nt-A-L32" placeholder="예: 10 parts PASS (A 94/94, 49/49 · B same 8100 / 7680 · D h1_drift 180 다름)"></textarea></div></div>
+  </article>
+
+  <article class="item" id="A-LN" data-id="A-LN" data-stage="A">
+    <div class="item-head"><span class="iid">A-LN</span><h3>RIF 길이 지원: 64·128·256심볼</h3><span class="tags"><span class="tag req">필수</span><span class="tag done">2026-10-21 PASS</span></span></div>
+    <p class="why">A-L32가 모두 PASS인 뒤에 돌립니다. 길이마다 빠른 세트(<code>'Scale', 0.2</code>)로 끝까지 도는지 먼저 보고, 전체 세트를 5열·2열로 판정한 다음, 2열 덤프가 5열 덤프의 re·im과 같은지 대조합니다. 판정 범위는 길이별 Python 기준 세트로 정한 <code>synthetic_expect.m</code>에서 오고, 세기가 박힌 판정은 옮긴 세기(64심볼 −3 dB, 128·256심볼 −5 dB)로 이름이 찍힙니다.</p>
+    <p class="why"><b>결과:</b> 2026-10-21에 64·128·256심볼 모두 5/5 PASS(빠른 세트 INFO 2개·1개는 정상)였습니다. 그 과정의 FAIL과 범위 수정은 <a href="length-verify.html">길이 지원 검증 기록</a>에 있습니다. 합성 시험 코드를 다시 고칠 때만 다시 돌립니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>R = regress_lengths('D:/len/reg', 'Lengths', 64);   % 먼저 64심볼만, 20~30분
+R = regress_lengths('D:/len/reg');                  % 64·128·256 전체, 2~3시간 (대부분 256)
+%   같은 폴더로 다시 돌리면 이미 만든 세트는 재사용합니다
+%   빠른 세트에서는 AND 예산 판정 [INFO] 2개(5열)·1개(2열)가 정상입니다</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>길이마다 빠른 세트·전체 세트 4줄과 5열·2열 대조 1줄이 모두 <code>PASS</code>. 전체 세트는 <code>94 / 94</code>, <code>49 / 49 checks OK, 0 INFO</code>, 첫 줄 예: <code>set: N 64, 5 columns, Ppm 0.25, drift 0.2496 taps/fragment (linked), Scale 1, power shift -3 dB</code></dd><dt>빠른 세트의 CHECK</dt><dd>표본이 1/5이라 1차 경고로 보고, 판단은 전체 세트로 합니다.</dd><dt>전체 세트의 CHECK</dt><dd>판정 이름과 값을 적어 주세요. H0 꼬리 비율(특히 패킷 soft 1e-2)은 길이와 관계없이 표본 퍼짐이 커서 가끔 경계를 넘을 수 있습니다. 요약 표와 <code>D:/len/reg/regress_lengths.log</code>를 보내 주시면 기준 세트의 퍼짐과 비교해 버그인지 가립니다.</dd></dl>
+    <details class="guide">
+      <summary>길이별 Python 기준 세트 값 (MATLAB 세트는 난수가 달라 조금 다름)</summary>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>항목</th><th class="num">32</th><th class="num">64</th><th class="num">128</th><th class="num">256</th></tr></thead>
+        <tbody>
+          <tr><td>H1 L90 MD 규칙 [dBm]</td><td class="num">−111.2</td><td class="num">−114.2</td><td class="num">−116.8</td><td class="num">−116.4</td></tr>
+          <tr><td>H1 L90 Λ [dBm]</td><td class="num">−112.3</td><td class="num">−115.1</td><td class="num">−117.3</td><td class="num">−116.8</td></tr>
+          <tr><td>패킷 AND L90 Λ̂ [dBm]</td><td class="num">−111.4</td><td class="num">−114.3</td><td class="num">−116.5</td><td class="num">−116.4</td></tr>
+          <tr><td>κ 중앙값 −40 dBm</td><td class="num">0.98</td><td class="num">0.91</td><td class="num">0.67</td><td class="num">0.38</td></tr>
+          <tr><td>MD 규칙 Pfa −82 dBm</td><td class="num">0.052</td><td class="num">0.035</td><td class="num">0.019</td><td class="num">0.011</td></tr>
+          <tr><td>이동 탐색 후 패킷 Pd (약한 이동 폴더)</td><td class="num">0.98</td><td class="num">1.00</td><td class="num">1.00</td><td class="num">0.98</td></tr>
+          <tr><td>H1 세기 / 약한 이동 폴더 [dBm]</td><td class="num">−106…−116 / −114</td><td class="num">−109…−119 / −117</td><td class="num">−111…−121 / −119</td><td class="num">−111…−121 / −119</td></tr>
+        </tbody>
+      </table></div>
+      <p class="hint">256심볼이 128심볼보다 나쁜 것은 잔여 CFO 0.25 ppm의 위상 회전 때문입니다(설계 문서 6.4절). 다른 잔여 CFO로 시험하려면 <code>'Ppm'</code> 옵션을 주세요. 그때는 CFO에 따라 달라지는 판정이 <code>[INFO]</code>가 되거나 공식만큼 옮겨집니다.</p>
+    </details>
+    <div class="rec"><label for="st-A-LN">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-LN"></select><span class="meta" id="mt-A-LN"></span></div><textarea id="nt-A-LN" placeholder="예: N64 5 parts PASS, N128 PASS, N256 full c5 CHECK 1건(이름, 값)"></textarea></div></div>
+  </article>
+
+  <article class="item" id="A-3" data-id="A-3" data-stage="A">
+    <div class="item-head"><span class="iid">A-3</span><h3>2열·5열 교차 확인</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="why">CIR만 쓰는 결과(MD 규칙, κ, CIR 추정 Λ̂)는 근사가 아니라 정확히 같아야 합니다. 하나라도 다르면 덤프 읽기나 형식 처리에 문제가 있습니다. A-2가 <b>2열 세트</b>로 49/49였는지 먼저 확인하세요. 두 폴더가 모두 5열이면 같은 덤프를 비교하는 셈이라 언제나 <code>true</code>가 나옵니다. 확실하지 않으면 A-L32가 만든 세트 <code>D:/len/reg32/t32_new_c5</code>와 <code>D:/len/reg32/t32_new_c2</code>(94/94, 49/49 확인됨)로 바꿔 돌려도 됩니다. <code>h0</code>·<code>h1</code> 폴더는 길이 지원 전후 생성기가 바이트 단위로 같게 만듭니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>R5  = h0_pfa_analyze('D:/rif_test5/h0', 'Suggest', false, 'Plot', false);
+R2  = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Plot', false);
+isequal(R5.E.k, R2.E.k)                                  % MD 오검출 수   → true
+isequal([R5.cond.kappa], [R2.cond.kappa])                % kappa          → true
+R5c = h0_pfa_analyze('D:/rif_test5/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
+R2c = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
+isequal(R5c.EL.k, R2c.EL.k)                              % Λ̂ 오검출 수    → true
+R15 = h1_pd_analyze('D:/rif_test5/h1', 'Moments', 'cir', 'Plot', false);
+R12 = h1_pd_analyze('D:/rif_test2/h1', 'Moments', 'cir', 'Plot', false);
+isequal(R15.table, R12.table)                            % H1 Pd 표       → true</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>네 줄 모두 <code>true</code></dd></dl>
+    <div class="rec"><label for="st-A-3">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-3"></select><span class="meta" id="mt-A-3"></span></div><textarea id="nt-A-3" placeholder="예: true / true / true / true"></textarea></div></div>
+  </article>
+
   <article class="item" id="A-P" data-id="A-P" data-stage="A">
-    <div class="item-head"><span class="iid">A-P</span><h3><code>'Profile'</code> 옵션 동작</h3><span class="tags"><span class="tag req">필수</span><span class="tag new">이번 변경</span></span></div>
+    <div class="item-head"><span class="iid">A-P</span><h3><code>'Profile'</code> 옵션 동작</h3><span class="tags"><span class="tag req">필수</span><span class="tag dec">결정 1</span></span></div>
     <p class="why">기본값 <code>'md'</code>는 기존 동작(프래그먼트 표만), <code>'fira-medium'</code>은 소프트 결합과 10⁻⁶을 한 번에 설정하고, 직접 준 옵션이 우선합니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>r = 'D:/rif_test2/h0';
 A = h0_pfa_analyze(r, 'Suggest', false, 'Chip', 'fixed', 'Plot', false);
@@ -325,23 +460,6 @@ H = h1_pd_analyze('D:/rif_test2/h1', 'Chip', 'fixed', 'Profile', 'fira-medium', 
 H.opt.Combine                 % 'soft'</code></pre></div>
     <dl class="expect"><dt>기대</dt><dd>주석의 값. <code>'Combine', 'none'</code> 줄은 오류 <code>h0_pfa_analyze:profile</code></dd></dl>
     <div class="rec"><label for="st-A-P">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-P"></select><span class="meta" id="mt-A-P"></span></div><textarea id="nt-A-P" placeholder="예: 모두 주석대로, 오류 메시지 확인"></textarea></div></div>
-  </article>
-
-  <article class="item" id="A-3" data-id="A-3" data-stage="A">
-    <div class="item-head"><span class="iid">A-3</span><h3>2열·5열 교차 확인</h3><span class="tags"><span class="tag req">필수</span></span></div>
-    <p class="why">CIR만 쓰는 결과(MD 규칙, κ, CIR 추정 Λ̂)는 근사가 아니라 정확히 같아야 합니다. 하나라도 다르면 덤프 읽기나 형식 처리에 문제가 있습니다. A-2가 <b>2열 세트</b>로 49/49였는지 먼저 확인하세요. 두 폴더가 모두 5열이면 같은 덤프를 비교하는 셈이라 언제나 <code>true</code>가 나옵니다.</p>
-    <div class="cmd-box"><pre class="cmd"><code>R5  = h0_pfa_analyze('D:/rif_test5/h0', 'Suggest', false, 'Plot', false);
-R2  = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Plot', false);
-isequal(R5.E.k, R2.E.k)                                  % MD 오검출 수   → true
-isequal([R5.cond.kappa], [R2.cond.kappa])                % kappa          → true
-R5c = h0_pfa_analyze('D:/rif_test5/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
-R2c = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
-isequal(R5c.EL.k, R2c.EL.k)                              % Λ̂ 오검출 수    → true
-R15 = h1_pd_analyze('D:/rif_test5/h1', 'Moments', 'cir', 'Plot', false);
-R12 = h1_pd_analyze('D:/rif_test2/h1', 'Moments', 'cir', 'Plot', false);
-isequal(R15.table, R12.table)                            % H1 Pd 표       → true</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd>네 줄 모두 <code>true</code></dd></dl>
-    <div class="rec"><label for="st-A-3">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-3"></select><span class="meta" id="mt-A-3"></span></div><textarea id="nt-A-3" placeholder="예: true / true / true / true"></textarea></div></div>
   </article>
 
   <article class="item" id="A-W" data-id="A-W" data-stage="A">
@@ -373,43 +491,6 @@ end</code></pre></div>
     <div class="rec"><label for="st-A-4">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-4"></select><span class="meta" id="mt-A-4"></span></div><textarea id="nt-A-4" placeholder="메모"></textarea></div></div>
   </article>
 
-  <article class="item" id="A-L32" data-id="A-L32" data-stage="A">
-    <div class="item-head"><span class="iid">A-L32</span><h3>RIF 길이 지원: 32심볼 회귀 (5단계)</h3><span class="tags"><span class="tag req">필수</span><span class="tag">RIF 길이</span></span></div>
-    <p class="why">합성 시험이 RIF 길이 32·64·128·256을 받도록 고친 <code>gen_synthetic_dumps</code>와 <code>run_synthetic_test</code>를 처음 MATLAB에서 돌립니다. 이미 통과한 32심볼 결과(A-1 94/94, A-2 49/49)가 그대로 나와야 합니다. 스크립트 하나가 기존 세트 판정, 새 생성기의 <code>'Drift', 0.3</code> 세트와 기존 세트의 파일 비교, 새 기본값(이동량을 잔여 CFO와 연동, 0.2496탭) 세트 판정까지 차례로 합니다. 약 30분.</p>
-    <div class="cmd-box"><pre class="cmd"><code>R = regress_length32('D:/len/old5', 'D:/len/old2', 'D:/len/reg32');
-%   앞의 두 개: 길이 지원 전 생성기로 만든 5열·2열 세트(A-1·A-2 세트, 또는 커밋 87ef016의
-%   gen_synthetic_dumps로 빈 폴더에 새로 만든 세트), 세 번째: 새 세트를 만들 빈 폴더</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd>마지막 표의 모든 줄이 <code>PASS</code>: A 기존 세트 <code>94 / 94</code>, <code>49 / 49 checks OK, 0 INFO</code> · B 새 세트와 기존 세트 <code>different 0, missing 0</code> · C 새 세트 94 / 94, 49 / 49 · D 새 기본값 세트는 <code>h1_drift</code> 파일만 다르고 94 / 94, 49 / 49</dd><dt>FAIL이면</dt><dd>요약 표와 <code>D:/rif_reg32/regress_length32.log</code>를 보내 주세요. 오류로 멈추면 그 메시지를 그대로 적어 주세요. 다시 돌리면 이미 만든 세트는 재사용합니다(생성이 중간에 끊긴 하위 폴더는 지우고 다시).</dd></dl>
-    <div class="rec"><label for="st-A-L32">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-L32"></select><span class="meta" id="mt-A-L32"></span></div><textarea id="nt-A-L32" placeholder="예: 10 parts PASS (A 94/94, 49/49 · B same 8100 / 7680 · D h1_drift 180 다름)"></textarea></div></div>
-  </article>
-
-  <article class="item" id="A-LN" data-id="A-LN" data-stage="A">
-    <div class="item-head"><span class="iid">A-LN</span><h3>RIF 길이 지원: 64·128·256심볼 (6단계)</h3><span class="tags"><span class="tag req">필수</span><span class="tag">RIF 길이</span></span></div>
-    <p class="why">A-L32가 모두 PASS인 뒤에 돌립니다. 길이마다 빠른 세트(<code>'Scale', 0.2</code>)로 끝까지 도는지 먼저 보고, 전체 세트를 5열·2열로 판정한 다음, 2열 덤프가 5열 덤프의 re·im과 같은지 대조합니다. 판정 범위는 길이별 Python 기준 세트로 정한 <code>synthetic_expect.m</code>에서 오고, 세기가 박힌 판정은 옮긴 세기(64심볼 −3 dB, 128·256심볼 −5 dB)로 이름이 찍힙니다.</p>
-    <div class="cmd-box"><pre class="cmd"><code>R = regress_lengths('D:/rif_reg', 'Lengths', 64);   % 먼저 64심볼만, 20~30분
-R = regress_lengths('D:/rif_reg');                  % 64·128·256 전체, 2~3시간 (대부분 256)
-%   같은 폴더로 다시 돌리면 이미 만든 세트는 재사용합니다
-%   빠른 세트에서는 AND 예산 판정 [INFO] 2개(5열)·1개(2열)가 정상입니다</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd>길이마다 빠른 세트·전체 세트 4줄과 5열·2열 대조 1줄이 모두 <code>PASS</code>. 전체 세트는 <code>94 / 94</code>, <code>49 / 49 checks OK, 0 INFO</code>, 첫 줄 예: <code>set: N 64, 5 columns, Ppm 0.25, drift 0.2496 taps/fragment (linked), Scale 1, power shift -3 dB</code></dd><dt>빠른 세트의 CHECK</dt><dd>표본이 1/5이라 1차 경고로 보고, 판단은 전체 세트로 합니다.</dd><dt>전체 세트의 CHECK</dt><dd>판정 이름과 값을 적어 주세요. H0 꼬리 비율(특히 패킷 soft 1e-2)은 길이와 관계없이 표본 퍼짐이 커서 가끔 경계를 넘을 수 있습니다. 버그인지는 7단계에서 가립니다.</dd></dl>
-    <details class="guide">
-      <summary>길이별 Python 기준 세트 값 (MATLAB 세트는 난수가 달라 조금 다름)</summary>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>항목</th><th class="num">32</th><th class="num">64</th><th class="num">128</th><th class="num">256</th></tr></thead>
-        <tbody>
-          <tr><td>H1 L90 MD 규칙 [dBm]</td><td class="num">−111.2</td><td class="num">−114.2</td><td class="num">−116.8</td><td class="num">−116.4</td></tr>
-          <tr><td>H1 L90 Λ [dBm]</td><td class="num">−112.3</td><td class="num">−115.1</td><td class="num">−117.3</td><td class="num">−116.8</td></tr>
-          <tr><td>패킷 AND L90 Λ̂ [dBm]</td><td class="num">−111.4</td><td class="num">−114.3</td><td class="num">−116.5</td><td class="num">−116.4</td></tr>
-          <tr><td>κ 중앙값 −40 dBm</td><td class="num">0.98</td><td class="num">0.91</td><td class="num">0.67</td><td class="num">0.38</td></tr>
-          <tr><td>MD 규칙 Pfa −82 dBm</td><td class="num">0.052</td><td class="num">0.035</td><td class="num">0.019</td><td class="num">0.011</td></tr>
-          <tr><td>이동 탐색 후 패킷 Pd (약한 이동 폴더)</td><td class="num">0.98</td><td class="num">1.00</td><td class="num">1.00</td><td class="num">0.98</td></tr>
-          <tr><td>H1 세기 / 약한 이동 폴더 [dBm]</td><td class="num">−106…−116 / −114</td><td class="num">−109…−119 / −117</td><td class="num">−111…−121 / −119</td><td class="num">−111…−121 / −119</td></tr>
-        </tbody>
-      </table></div>
-      <p class="hint">256심볼이 128심볼보다 나쁜 것은 잔여 CFO 0.25 ppm의 위상 회전 때문입니다(설계 문서 6.4절). 다른 잔여 CFO로 시험하려면 <code>'Ppm'</code> 옵션을 주세요. 그때는 CFO에 따라 달라지는 판정이 <code>[INFO]</code>가 되거나 공식만큼 옮겨집니다.</p>
-    </details>
-    <div class="rec"><label for="st-A-LN">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-LN"></select><span class="meta" id="mt-A-LN"></span></div><textarea id="nt-A-LN" placeholder="예: N64 5 parts PASS, N128 PASS, N256 full c5 CHECK 1건(이름, 값)"></textarea></div></div>
-  </article>
-
   <details>
     <summary>단계 A 기대값 (미리 만든 합성 세트 기준)</summary>
     <div class="tbl-wrap"><table>
@@ -421,16 +502,39 @@ R = regress_lengths('D:/rif_reg');                  % 64·128·256 전체, 2~3�
         <tr><td>H1 L90</td><td>MD −111.2, Λ −112.3, Λ̂ −109.7 dBm</td><td>MD, Λ̂만</td></tr>
         <tr><td>패킷 H0 (소프트, 8개)</td><td>수락 0, χ²₁₆ 꼬리 비율 0.86~1.33, 쌍 상관 ≤ 0.06</td><td>같음</td></tr>
         <tr><td>패킷 H1</td><td>소프트 Pd(−116 dBm) 1.0, AND L90 Λ −112.8 / Λ̂ −111.4 dBm</td><td>Λ̂만</td></tr>
-        <tr><td>피크 이동 (<code>h1_drift</code>)</td><td>기울기 0.32, 후보 7개, −114 dBm Pd 0.86 → 0.98</td><td>같음</td></tr>
+        <tr><td>피크 이동 (<code>h1_drift</code>)</td><td>새 기본값(0.2496탭): 기울기 0.26, 후보 5개, −114 dBm Pd 0.90 → 0.98 · 예전 세트(0.3탭): 0.32, 후보 7개, 0.86 → 0.98</td><td>같음</td></tr>
       </tbody>
     </table></div>
-    <p class="hint">MATLAB에서 새로 만든 세트는 난수가 달라 조금 다르며, 자동 시험의 범위는 그 흔들림을 감안했습니다.</p>
+    <p class="hint">MATLAB에서 새로 만든 세트는 난수가 달라 조금 다르며, 자동 시험의 범위는 그 흔들림을 감안했습니다. 64·128·256심볼 값은 A-LN의 표에 있습니다.</p>
   </details>
 </section>
 
 <!-- ============================================================ B -->
 <section class="stage" id="sB" data-stage="B">
-  <div class="stage-head"><span class="stage-no">B</span><div class="t"><h2>현재 LLS: 2열 덤프, 고정 칩 패킷 판정</h2><p>판정기의 결론은 패킷 근거(꼬리 비율, 독립성, 수락 수, 패킷 L90)로 냅니다. 프래그먼트 탭 꼬리 비율은 패킷 문턱 공식의 전제이고, 프래그먼트 Pfa는 진단입니다. B-0과 B-H0-4를 먼저 돌려 주세요.</p></div></div>
+  <div class="stage-head"><span class="stage-no">B</span><div class="t"><h2>현재 LLS: 2열 덤프, 고정 칩 패킷 판정</h2><p>판정기의 결론은 패킷 근거(꼬리 비율, 독립성, 수락 수, 패킷 L90)로 냅니다. 프래그먼트 탭 꼬리 비율은 패킷 문턱 공식의 전제이고, 프래그먼트 Pfa는 진단입니다. B-P에서 덤프를 준비하고, B-0과 B-H0-4를 먼저 돌려 주세요.</p></div></div>
+
+  <article class="item" id="B-P" data-id="B-P" data-stage="B">
+    <div class="item-head"><span class="iid">B-P</span><h3>LLS 덤프 준비: 공통 설정, 폴더 규칙, 만들 순서</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="why">단계 B의 덤프는 LLS(C++)로 만듭니다. 코드 수정은 필요 없고 지금의 2열 덤프 그대로입니다. 공통 설정은 <code>TEST_PLAN.md</code> 1.2절(MD 문서 11장), 세트 전체 목록은 3.1절입니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>Mode=HPRF Rate=R6M MMSEn=1 MMSOnlyEn=1 NumRSF=0 NumRIF=4 MMRSSeq=33 MMRSGap=33 NumRx=1
+AdcBit=6 TargetRms=31 CfoEn=1 ScoEn=1 CfoEstEn=0 ScoTrkEn=0 ScoLinkedToCFO=0
+SemiSyncOnlyMode=1 MMSPwCtrlOn=1  FreqOffset=0.25 ClkOffset=0.25  ChanType=AWGN
+RIFStsLen=0..3 (32/64/128/256심볼), SemiSyncAcclen = 심볼 수</code></pre></div>
+    <div class="cmd-box"><pre class="cmd"><code>D:/rif/&lt;세트&gt;/c&lt;심볼수&gt;_m&lt;세기 절댓값&gt;_j&lt;job&gt;/bin/&lt;SignalPower&gt;_RifCir_AccNum_&lt;N&gt;_Frame&lt;f&gt;_Samp&lt;s&gt;.txt
+예: D:/rif/h0_awgn/c32_m82_j1/bin/-82_RifCir_AccNum_32_Frame0_Samp129096.txt</code></pre></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th class="num">순서</th><th>세트 (<code>D:/rif/…</code>)</th><th>내용</th><th>쓰는 항목</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td><code>h1_strong</code></td><td>H1 32심볼 −60 / −75 / −90 dBm, 각 400개(50패킷). 0.25 ppm, 그리고 예상되는 최대 잔여 오프셋(같은 루트에 job 번호를 바꿔 넣으면 함께 분석)</td><td>B-0</td></tr>
+        <tr><td class="num">2</td><td><code>h0_mp</code></td><td>H0 32심볼 −82 / −40 dBm, LLS 실내 멀티패스(패킷 안에서 같은 채널). 5,000개 먼저, 이상이 없으면 30,000개까지</td><td>B-CH, B-H0-4, B-MD</td></tr>
+        <tr><td class="num">3</td><td><code>h0_awgn</code></td><td>H0 32심볼 14개 세기, 64·128·256심볼 −120 / −82 / −40 dBm, 각 5,000개</td><td>B-0(H0 쪽), B-H0, B-S</td></tr>
+        <tr><td class="num">4</td><td><code>h1_awgn</code></td><td>H1 32·256심볼 −120 ~ −100 dBm, 1 dB 간격, 세기당 4,000개(500패킷)</td><td>B-H1, B-F, B-S</td></tr>
+        <tr><td class="num">5</td><td><code>h0_1rif</code>, <code>h1_1rif</code> 외</td><td>권장 세트: RIF 1개 설정, CFO 0, Tx off, 64·128심볼 H1, 멀티패스 H1</td><td>B-1R, B-R</td></tr>
+      </tbody>
+    </table></div>
+    <dl class="expect"><dt>키</dt><dd>H0(틀린 키)는 Rx STS 시드만 Tx와 다르게, H1(맞는 키)는 Tx와 Rx 시드를 같게 둡니다.</dd><dt>시드</dt><dd>job마다 STS 시드와 잡음 시드를 모두 다르게 둡니다. 같으면 <code>h0_pfa_analyze</code>가 "identical Z values" 경고를 냅니다.</dd><dt>패킷</dt><dd>한 프레임이 한 패킷입니다. <code>Frame&lt;f&gt;</code>가 같은 프래그먼트 8개(NumRIF = 4)를 묶어 판정합니다.</dd></dl>
+    <div class="rec"><label for="st-B-P">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-P"></select><span class="meta" id="mt-B-P"></span></div><textarea id="nt-B-P" placeholder="예: h1_strong·h0_mp 5,000개 완료, h0_awgn 진행 중"></textarea></div></div>
+  </article>
 
   <article class="item" id="B-0" data-id="B-0" data-stage="B">
     <div class="item-head"><span class="iid">B-0</span><h3>패킷 전제: 프레임 구성, 피크 이동, AGC</h3><span class="tags"><span class="tag req">필수</span><span class="tag dec">결정 5</span></span></div>
@@ -595,18 +699,20 @@ R1n.pkt.L90, R1.L90, R1c.L90</code></pre></div>
 
 <section class="send" id="send">
   <h2>Claude에게 보낼 결과</h2>
+  <p>할 일 순서의 "보내기" 지점과 같습니다. A-1·A-2와 길이 회귀(A-L32·A-LN)의 결과는 이미 받았습니다.</p>
   <ol>
-    <li>A-1, A-2의 요약 두 줄과 <code>[CHECK]</code> 줄, A-P와 A-3의 결과, <code>rif_results.json</code></li>
+    <li>A-3의 <code>true</code> 네 줄과 A-P의 결과. A-W를 했다면 <code>rif_results.json</code></li>
     <li>B-0의 <code>A.drift</code>, <code>A.suggest.Drift</code>, <code>A.layout</code>, <code>A.agc</code>: 이동 후보 확정(결정 5)</li>
-    <li>B-H0-4 패킷 표의 꼬리 비율(P = 1e-2 / 1e-3 / 1e-4)과 수락 수: 결정 1 유지 판단</li>
+    <li>B-CH 확인 결과와 B-H0-4 패킷 표의 꼬리 비율(P = 1e-2 / 1e-3 / 1e-4)·수락 수: 결정 1 유지 판단</li>
     <li>단계 B의 나머지 표와 그림: <code>h0_pfa_analyze</code>의 "Packet decision" 표, <code>h1_pd_analyze</code>의 패킷 L90</li>
+    <li>C++ 수정 뒤 C-1 표의 값, 그다음 단계 D의 표</li>
   </ol>
   <p class="hint">이 페이지에 적은 메모는 "결과 요약 복사"로 한 번에 옮길 수 있습니다. 공유 기록에 연결된 페이지라면 Claude가 직접 읽을 수도 있습니다.</p>
 </section>
 
 <footer class="foot">
   <p>단계 E(거리 ≠ 0, 고정소수점, 다중 안테나, BPRF)는 선택이라 넣지 않았습니다. <code>TEST_PLAN.md</code> 6장을 보세요.</p>
-  <p>관련 페이지: <a href="index.html">RIF Λ 판정기</a>(전체 해설), <a href="basis.html">RIF 판정 기준 전환</a>(결정 1 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(결정 6 자료). 결정 기록은 저장소의 <code>lambda_patch/DECISIONS.md</code>에 있습니다.</p>
+  <p>관련 페이지: <a href="index.html">RIF Λ 판정기</a>(전체 해설), <a href="basis.html">RIF 판정 기준 전환</a>(결정 1 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(결정 6 자료), <a href="length.html">RIF 길이별 합성 시험</a>(결정 8), <a href="length-verify.html">길이 지원 검증 기록</a>(A-L32·A-LN의 FAIL과 수정). 결정 기록은 저장소의 <code>lambda_patch/DECISIONS.md</code>에 있습니다.</p>
 </footer>
 </div>
 
@@ -714,6 +820,42 @@ R1n.pkt.L90, R1.L90, R1c.L90</code></pre></div>
       chip.setAttribute('data-s', r.status); chip.textContent = LABEL[r.status];
       g.querySelector('.gn').textContent = r.note ? (r.note.length > 140 ? r.note.slice(0, 140) + '…' : r.note) : '';
     });
+    renderSteps();
+  }
+
+  /* step order: a step is done when all its items are passed or skipped; "next" = first open required step */
+  function renderSteps() {
+    var next = null;
+    document.querySelectorAll('.steps li').forEach(function (li) {
+      var ids = li.getAttribute('data-ids').split(' '), c = {pass: 0, check: 0, run: 0, skip: 0, todo: 0};
+      ids.forEach(function (i) { c[rec(i).status]++; });
+      var n = ids.length, fin = c.pass + c.skip, s, t;
+      if (c.check) { s = 'check'; t = LABEL.check; }
+      else if (fin === n) { s = c.pass ? 'pass' : 'skip'; t = c.pass ? LABEL.pass : LABEL.skip; }
+      else if (c.run || fin) { s = 'run'; t = LABEL.run + (n > 1 ? ' ' + fin + '/' + n : ''); }
+      else { s = 'todo'; t = LABEL.todo; }
+      if (fin === n) li.setAttribute('data-done', ''); else li.removeAttribute('data-done');
+      li.removeAttribute('data-next');
+      if (!next && fin !== n && !li.hasAttribute('data-opt')) next = li;
+      var st = li.querySelector('.st'); while (st.firstChild) st.removeChild(st.firstChild);
+      var chip = document.createElement('span'); chip.className = 'chip'; chip.setAttribute('data-s', s); chip.textContent = t;
+      st.appendChild(chip);
+    });
+    var box = $('now-text'); while (box.firstChild) box.removeChild(box.firstChild);
+    if (next) {
+      next.setAttribute('data-next', '');
+      var b = document.createElement('span'); b.className = 'badge'; b.textContent = '다음';
+      next.querySelector('.st').insertBefore(b, next.querySelector('.st').firstChild);
+      var a0 = next.querySelector('.sb > a'), open = next.getAttribute('data-ids').split(' ').filter(function (i) {
+        var x = rec(i).status; return x !== 'pass' && x !== 'skip';
+      });
+      var a = document.createElement('a'); a.href = '#' + open[0]; a.textContent = open[0] + ' ' + $(open[0]).querySelector('h3').textContent;
+      var ids = next.getAttribute('data-ids').split(' ');
+      box.appendChild(document.createTextNode(next.querySelector('.sn').textContent + '번 · ' + (ids.length > 1 ? a0.textContent + ' → ' : '')));
+      box.appendChild(a);
+    } else {
+      box.textContent = '필수 항목을 모두 마쳤습니다. 권장·선택 줄이 남아 있으면 필요한 것만 하세요.';
+    }
   }
   function renderAll() { items.forEach(function (el) { renderItem(el.getAttribute('data-id')); }); renderSummary(); resolveNames(); }
   document.querySelectorAll('.stage-sum').forEach(function (card) { card.setAttribute('data-sub', card.querySelector('.sub').textContent); });
