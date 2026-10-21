@@ -511,10 +511,11 @@ R2 = h1_pd_analyze('D:/rif_test2/h1_wide', 'Chip', 'fixed', 'Profile', 'fira-med
         <tbody>
           <tr><td>Λ (새 칩, 5열)</td><td class="num">−117.6</td><td class="num">−120.5</td><td class="num">−122.8</td><td class="num">−122.5</td></tr>
           <tr><td>Λ̂ (고정 칩)</td><td class="num">−116.7</td><td class="num">−119.5</td><td class="num">−121.9</td><td class="num">−121.5</td></tr>
+          <tr><td>Octave 사전 확인 Λ / Λ̂</td><td class="num">−117.15 / −116.62</td><td class="num">−120.20 / −119.32</td><td class="num">−122.50 / −121.70</td><td class="num">−122.12 / −121.64</td></tr>
           <tr><td><code>h1_wide</code> 세기 범위</td><td class="num">−104 … −126</td><td class="num">−107 … −129</td><td class="num">−109 … −131</td><td class="num">−109 … −131</td></tr>
         </tbody>
       </table></div>
-      <p class="hint">32심볼은 설계 문서 9.3절, 64·128·256심볼은 <code>model/length_l90.py</code>의 결과입니다. 이동 탐색 없음, 잔여 CFO 0.25 ppm. MATLAB으로는 아직 재지 않았습니다.</p>
+      <p class="hint">모델 값은 32심볼이 설계 문서 9.3절, 64·128·256심볼이 <code>model/length_l90.py</code>의 결과입니다(이동 탐색 없음, 잔여 CFO 0.25 ppm). Octave 사전 확인은 같은 생성기와 <code>h1_pd_analyze</code>를 Octave 10.3에서 돌린 값으로, 모델과 −0.13 ~ +0.45 dB 차이입니다. Λ는 네 길이 모두 모델보다 0.3~0.45 dB 나쁘게 나왔고 원인은 확인하지 않았습니다. MATLAB으로는 아직 재지 않았습니다.</p>
     </details>
     <div class="rec"><label for="st-A-5">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-5"></select><span class="meta" id="mt-A-5"></span></div><textarea id="nt-A-5" placeholder="예: N32 Λ −117.4, Λ̂ −116.5 (2열 같음), 94/94·49/49 그대로"></textarea></div></div>
   </article>
