@@ -199,7 +199,7 @@ th.sel,td.sel{background:var(--wash)}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">설명 페이지 · 2026-10-19 · 0단계 결과 추가 2026-10-20 · lambda_patch/test</span>
+  <span class="eyebrow">설명 페이지 · 2026-10-19 · 0단계 결과 추가 2026-10-20 · 길이 지원 완료 2026-10-21 · lambda_patch/test</span>
   <h1>RIF 길이별 합성 시험</h1>
   <p class="lede prose"><code>gen_synthetic_dumps</code>는 RIF 길이를 바꿀 수 있는데, <code>run_synthetic_test</code>는 왜 32심볼 세트만 받을까요? 시험을 <strong>문제지</strong>(덤프)와 <strong>정답지</strong>(판정 범위)로 나눠 보면 이유와 고칠 양이 함께 보입니다.</p>
   <dl class="thesis">
@@ -411,6 +411,7 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
 <!-- ============================================================ 6 -->
 <section class="sec" id="s6">
   <div class="sec-head"><span class="sec-no">6</span><h2>수정 순서</h2></div>
+  <div class="note"><b>진행 · 2026-10-21 · 완료</b><span>0~7단계를 모두 마쳤습니다. MATLAB에서 32심볼 회귀와 64·128·256심볼 시험이 모두 통과했고, length-support 브랜치를 master에 합쳤습니다. 실행 중에 난 FAIL과 범위 수정은 <a href="length-verify.html">RIF 길이 지원 검증 기록</a>에 있습니다. 아래 7장 설계표의 이동량 규칙은 2단계에서 정한 최종 형태로 고쳤습니다.</span></div>
   <p class="prose">정답을 먼저 정하고, MATLAB 코드는 그다음에 고칩니다. 정답을 시험할 코드 자신의 결과로 정하면 "같은 값이 다시 나온다"만 확인하게 됩니다.</p>
   <ol class="steps">
     <li><div><strong>설계 확정.</strong> 판정 분류(4장 지도)를 확정하고, 길이별 H1 세기 범위·이동 폴더 세기·개수를 정합니다. Python 미러가 다루지 않는 판정(1–9단계 60개 중 17개)에 바뀌는 판정이 있는지 봅니다. <span class="who">Claude · 코드 수정 없음 · <a href="#s7">완료, 7장</a></span></div></li>
@@ -529,11 +530,11 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
     <table>
       <thead><tr><th>이동 판정 (5열 9개, 2열 6개)</th><th>범위를 정하는 방법</th></tr></thead>
       <tbody>
-        <tr><td class="nm">assumptions: drift slope median</td><td class="why">이동량 D 중심. 32심볼(0.3탭)의 범위 0.25–0.4를 D에 맞춰 옮기고, 2단계에서 반올림(정수 탭) 효과를 확인</td></tr>
-        <tr><td class="nm">drift: median selected drift</td><td class="why">탐색 후보 중 D에 가장 가까운 값 ± 한 칸(1/7)</td></tr>
-        <tr><td class="nm">assumptions: suggested drift hypotheses</td><td class="why"><code>check_packet_assumptions</code>의 규칙 2·⌈|기울기| 99% × 7⌉ + 1을 D에서 계산하고 ± 2</td></tr>
-        <tr><td class="nm">시험이 쓰는 탐색 후보</td><td class="why">지금의 <code>(-3:3)/7</code> 대신 (−n:n)/7, n = ⌈|D| × 7⌉ + 1. 기본 0.2496탭이면 n = 3으로 지금과 같음</td></tr>
-        <tr><td class="nm">drift: packet Pd with drift search, Pd gain</td><td class="why">이동량 0.2496(기본), 0.6, 1.2탭에서 모델로 확인하고, 0 ~ 1.2탭 안에서만 판정. 밖은 <code>[INFO]</code></td></tr>
+        <tr><td class="nm">assumptions: drift slope median</td><td class="why">생성기가 피크를 정수 탭으로 옮기므로, 정수 피크 위치 round(D·f)의 최소제곱 기울기 s를 중심으로 s − 0.0714 ~ s + 0.0786 (0.3탭이면 지금의 0.25–0.4, 기본 0.2496탭이면 s = 0.262)</td></tr>
+        <tr><td class="nm">drift: median selected drift</td><td class="why">정수 피크 위치와 가장 잘 맞는 탐색 후보(들) ± 한 칸(1/7). 0.3탭이면 지금의 0.14–0.43, 기본 0.2496탭이면 0 – 0.43</td></tr>
+        <tr><td class="nm">assumptions: suggested drift hypotheses</td><td class="why"><code>check_packet_assumptions</code>의 규칙 2·⌈s × 7⌉ + 1을 중심으로 ± 2 (0.3탭이면 5–9, 0.2496탭이면 3–7)</td></tr>
+        <tr><td class="nm">시험이 쓰는 탐색 후보</td><td class="why">(−n:n)/7, n = max(3, round(|D| × 7) + 1). 기본 0.2496탭과 예전 0.3탭 모두 n = 3으로 지금과 같음 (0.6탭 5, 1.2탭 9)</td></tr>
+        <tr><td class="nm">drift: packet Pd with drift search, Pd gain</td><td class="why">이동량 0.2496(기본), 0.6, 1.2탭에서 모델로 확인했고(탐색 후 Pd 0.96–1.00), 0.25 ~ 1.2탭 안에서 하한 0.85로 판정. 밖은 <code>[INFO]</code></td></tr>
         <tr><td class="nm">assumptions: AGC level std</td><td class="why">이동량과 무관(AGC 단계 3 dB에서 정해짐), 그대로</td></tr>
       </tbody>
     </table>

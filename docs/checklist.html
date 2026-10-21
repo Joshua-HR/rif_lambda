@@ -171,7 +171,7 @@ details[open] > summary{margin-bottom:8px}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">lambda_patch · 커밋 aa96c9a 기준 · 2026-10-15 · A-L32·A-LN은 length-support 브랜치 (2026-10-20)</span>
+  <span class="eyebrow">lambda_patch · 커밋 aa96c9a 기준 · 2026-10-15 · A-L32·A-LN 추가 2026-10-20, master에 합침 2026-10-21</span>
   <h1>RIF 검증 체크리스트</h1>
   <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾼 지금의 저장소로 직접 돌려 볼 시험입니다. 이번 MATLAB 수정은 아직 한 번도 실행되지 않았으니 단계 A부터 진행해 주세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남습니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
@@ -374,21 +374,22 @@ end</code></pre></div>
   </article>
 
   <article class="item" id="A-L32" data-id="A-L32" data-stage="A">
-    <div class="item-head"><span class="iid">A-L32</span><h3>RIF 길이 지원: 32심볼 회귀 (5단계)</h3><span class="tags"><span class="tag req">필수</span><span class="tag">length-support 브랜치</span></span></div>
+    <div class="item-head"><span class="iid">A-L32</span><h3>RIF 길이 지원: 32심볼 회귀 (5단계)</h3><span class="tags"><span class="tag req">필수</span><span class="tag">RIF 길이</span></span></div>
     <p class="why">합성 시험이 RIF 길이 32·64·128·256을 받도록 고친 <code>gen_synthetic_dumps</code>와 <code>run_synthetic_test</code>를 처음 MATLAB에서 돌립니다. 이미 통과한 32심볼 결과(A-1 94/94, A-2 49/49)가 그대로 나와야 합니다. 스크립트 하나가 기존 세트 판정, 새 생성기의 <code>'Drift', 0.3</code> 세트와 기존 세트의 파일 비교, 새 기본값(이동량을 잔여 CFO와 연동, 0.2496탭) 세트 판정까지 차례로 합니다. 약 30분.</p>
-    <div class="cmd-box"><pre class="cmd"><code>% 저장소에서: git fetch  →  git checkout length-support
-R = regress_length32('D:/rif_test5', 'D:/rif_test2', 'D:/rif_reg32');
-%   앞의 두 개: A-1, A-2에서 만든 5열·2열 세트, 세 번째: 새 세트를 만들 빈 폴더</code></pre></div>
+    <div class="cmd-box"><pre class="cmd"><code>R = regress_length32('D:/len/old5', 'D:/len/old2', 'D:/len/reg32');
+%   앞의 두 개: 길이 지원 전 생성기로 만든 5열·2열 세트(A-1·A-2 세트, 또는 커밋 87ef016의
+%   gen_synthetic_dumps로 빈 폴더에 새로 만든 세트), 세 번째: 새 세트를 만들 빈 폴더</code></pre></div>
     <dl class="expect"><dt>기대</dt><dd>마지막 표의 모든 줄이 <code>PASS</code>: A 기존 세트 <code>94 / 94</code>, <code>49 / 49 checks OK, 0 INFO</code> · B 새 세트와 기존 세트 <code>different 0, missing 0</code> · C 새 세트 94 / 94, 49 / 49 · D 새 기본값 세트는 <code>h1_drift</code> 파일만 다르고 94 / 94, 49 / 49</dd><dt>FAIL이면</dt><dd>요약 표와 <code>D:/rif_reg32/regress_length32.log</code>를 보내 주세요. 오류로 멈추면 그 메시지를 그대로 적어 주세요. 다시 돌리면 이미 만든 세트는 재사용합니다(생성이 중간에 끊긴 하위 폴더는 지우고 다시).</dd></dl>
     <div class="rec"><label for="st-A-L32">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-L32"></select><span class="meta" id="mt-A-L32"></span></div><textarea id="nt-A-L32" placeholder="예: 10 parts PASS (A 94/94, 49/49 · B same 8100 / 7680 · D h1_drift 180 다름)"></textarea></div></div>
   </article>
 
   <article class="item" id="A-LN" data-id="A-LN" data-stage="A">
-    <div class="item-head"><span class="iid">A-LN</span><h3>RIF 길이 지원: 64·128·256심볼 (6단계)</h3><span class="tags"><span class="tag req">필수</span><span class="tag">length-support 브랜치</span></span></div>
+    <div class="item-head"><span class="iid">A-LN</span><h3>RIF 길이 지원: 64·128·256심볼 (6단계)</h3><span class="tags"><span class="tag req">필수</span><span class="tag">RIF 길이</span></span></div>
     <p class="why">A-L32가 모두 PASS인 뒤에 돌립니다. 길이마다 빠른 세트(<code>'Scale', 0.2</code>)로 끝까지 도는지 먼저 보고, 전체 세트를 5열·2열로 판정한 다음, 2열 덤프가 5열 덤프의 re·im과 같은지 대조합니다. 판정 범위는 길이별 Python 기준 세트로 정한 <code>synthetic_expect.m</code>에서 오고, 세기가 박힌 판정은 옮긴 세기(64심볼 −3 dB, 128·256심볼 −5 dB)로 이름이 찍힙니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>R = regress_lengths('D:/rif_reg', 'Lengths', 64);   % 먼저 64심볼만, 20~30분
 R = regress_lengths('D:/rif_reg');                  % 64·128·256 전체, 2~3시간 (대부분 256)
-%   같은 폴더로 다시 돌리면 이미 만든 세트는 재사용합니다</code></pre></div>
+%   같은 폴더로 다시 돌리면 이미 만든 세트는 재사용합니다
+%   빠른 세트에서는 AND 예산 판정 [INFO] 2개(5열)·1개(2열)가 정상입니다</code></pre></div>
     <dl class="expect"><dt>기대</dt><dd>길이마다 빠른 세트·전체 세트 4줄과 5열·2열 대조 1줄이 모두 <code>PASS</code>. 전체 세트는 <code>94 / 94</code>, <code>49 / 49 checks OK, 0 INFO</code>, 첫 줄 예: <code>set: N 64, 5 columns, Ppm 0.25, drift 0.2496 taps/fragment (linked), Scale 1, power shift -3 dB</code></dd><dt>빠른 세트의 CHECK</dt><dd>표본이 1/5이라 1차 경고로 보고, 판단은 전체 세트로 합니다.</dd><dt>전체 세트의 CHECK</dt><dd>판정 이름과 값을 적어 주세요. H0 꼬리 비율(특히 패킷 soft 1e-2)은 길이와 관계없이 표본 퍼짐이 커서 가끔 경계를 넘을 수 있습니다. 버그인지는 7단계에서 가립니다.</dd></dl>
     <details class="guide">
       <summary>길이별 Python 기준 세트 값 (MATLAB 세트는 난수가 달라 조금 다름)</summary>

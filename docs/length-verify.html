@@ -144,17 +144,17 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">검증 기록 · 2026-10-21 · length-support 브랜치 d99ce50 기준</span>
+  <span class="eyebrow">검증 기록 · 2026-10-21 · 5·6단계 통과 · master에 합침 (0f9f470)</span>
   <h1>RIF 길이 지원 검증 기록</h1>
-  <p class="lede prose">합성 시험이 RIF 길이 32·64·128·256심볼을 받도록 바꾼 내용과, MATLAB으로 돌려 본 5·6단계에서 FAIL이 난 이유와 해결 방법을 그래프로 정리했습니다. 지금까지의 FAIL은 모두 판정 코드의 결함이 아니었습니다. 비교 대상 세트의 경로가 틀렸거나, 표본 퍼짐에 비해 범위 규칙이 좁았던 경우입니다.</p>
+  <p class="lede prose">합성 시험이 RIF 길이 32·64·128·256심볼을 받도록 바꾼 내용과, MATLAB으로 돌려 본 5·6단계에서 FAIL이 난 이유와 해결 방법을 그래프로 정리했습니다. 수정 뒤 5·6단계는 모두 통과했습니다. 지금까지의 FAIL은 모두 판정 코드의 결함이 아니었습니다. 비교 대상 세트의 경로가 틀렸거나, 범위 규칙이 표본 퍼짐이나 표본 수에 맞지 않았던 경우입니다.</p>
   <div class="track" aria-label="단계별 상태">
     <div class="stg"><span class="k">0단계</span><span class="t">설계</span><span class="d">세기 이동 S, 판정 분류, 규칙</span></div>
     <div class="stg"><span class="k">1단계</span><span class="t">Python 생성기</span><span class="d">32심볼 8,100개 바이트 일치</span></div>
     <div class="stg"><span class="k">2단계</span><span class="t">길이별 정답</span><span class="d">Python 94/49 네 길이 모두</span></div>
     <div class="stg"><span class="k">3·4단계</span><span class="t">MATLAB 코드</span><span class="d">생성기, 판정, 범위 표</span></div>
-    <div class="stg" data-s="fix"><span class="k">5단계</span><span class="t">32심볼 회귀</span><span class="d">경로 문제 2건 → 5열 일치 확인</span></div>
+    <div class="stg" data-s="fix"><span class="k">5단계</span><span class="t">32심볼 회귀</span><span class="d">경로 문제 2건 → 5열·2열 모두 예전과 일치, PASS</span></div>
     <div class="stg" data-s="fix"><span class="k">6단계 · 64</span><span class="t">64심볼</span><span class="d">FAIL 4건 → 규칙 수정 → 5/5 PASS</span></div>
-    <div class="stg" data-s="run"><span class="k">6단계 · 128·256</span><span class="t">128·256심볼</span><span class="d">실행 중</span></div>
+    <div class="stg" data-s="fix"><span class="k">6단계 · 128·256</span><span class="t">128·256심볼</span><span class="d">128: FAIL 2건 → 수정 → 5/5 PASS · 256: 5/5 PASS</span></div>
   </div>
   <nav aria-label="목차">
     <ol class="toc">
@@ -163,8 +163,9 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
       <li><a href="#v3"><span class="n">3</span>5단계: 경로 문제</a></li>
       <li><a href="#v4"><span class="n">4</span>64심볼: 빠른 세트</a></li>
       <li><a href="#v5"><span class="n">5</span>64심볼: 전체 세트</a></li>
-      <li><a href="#v6"><span class="n">6</span>꼬리·상관 판정 탐색기</a></li>
-      <li><a href="#v7"><span class="n">7</span>남은 일</a></li>
+      <li><a href="#v6"><span class="n">6</span>128심볼: 예산 판정</a></li>
+      <li><a href="#v7"><span class="n">7</span>꼬리·상관 판정 탐색기</a></li>
+      <li><a href="#v8"><span class="n">8</span>남은 일</a></li>
     </ol>
   </nav>
 </header>
@@ -175,7 +176,7 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
   <p class="prose">원래 합성 시험은 32심볼 한 길이만 만들고 판정했습니다. 이제 정답(판정 범위)은 Python 기준 세트로 길이마다 따로 만들고, MATLAB은 세트의 조건을 읽어 해당 길이의 정답으로 판정합니다. 분석 함수(<code>rif_cir_analyze</code>, <code>h0_pfa_analyze</code>, <code>h1_pd_analyze</code>, <code>rif_packet</code>)는 바꾸지 않았습니다.</p>
   <figure class="plate">
     <div class="scroll-x"><svg class="ch" id="pipe" viewBox="0 0 960 250" role="img" aria-label="Python 기준 세트에서 범위 표를 만들고 MATLAB 시험이 그 표로 판정하는 흐름"></svg></div>
-    <figcaption>위 줄(Python, master)이 정답을 만들고, 아래 줄(MATLAB, length-support)이 그 정답으로 판정합니다. 두 줄을 잇는 것은 생성된 <code>synthetic_expect.m</code> 한 파일입니다. 같은 모델이지만 난수가 달라서, MATLAB 세트는 Python 세트와 값이 조금씩 다르게 나오는 것이 정상입니다.</figcaption>
+    <figcaption>위 줄(Python)이 정답을 만들고, 아래 줄(MATLAB)이 그 정답으로 판정합니다. MATLAB 쪽은 length-support 브랜치에서 검증한 뒤 master에 합쳤습니다. 두 줄을 잇는 것은 생성된 <code>synthetic_expect.m</code> 한 파일입니다. 같은 모델이지만 난수가 달라서, MATLAB 세트는 Python 세트와 값이 조금씩 다르게 나오는 것이 정상입니다.</figcaption>
   </figure>
   <div class="tbl-wrap">
     <table>
@@ -188,6 +189,9 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
         <tr><td>length-support</td><td class="mono">9ac6f6b · 2c8fbac</td><td>5·6단계 실행 스크립트 <code>regress_length32</code>, <code>regress_lengths</code></td></tr>
         <tr><td>length-support</td><td class="mono">14e55ed</td><td>수정: 기존 세트 경로에 <code>h0</code>가 없으면 처음에 알림 (3장)</td></tr>
         <tr><td>length-support</td><td class="mono">d99ce50</td><td>수정: H0 꼬리·상관 판정 범위를 표본 퍼짐에 맞춤 (4·5장)</td></tr>
+        <tr><td>length-support</td><td class="mono">b197780</td><td>수정: 빠른 세트에서 AND 예산 판정은 [INFO] (6장)</td></tr>
+        <tr><td>length-support</td><td class="mono">4cae860</td><td>7단계 문서: 결정 8, 설계 문서 7.4절, TEST_PLAN A-L</td></tr>
+        <tr><td>master</td><td class="mono">0f9f470</td><td>length-support 합치기</td></tr>
       </tbody>
     </table>
   </div>
@@ -248,7 +252,7 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
       <div class="fix"><span class="lab">해결</span><span>2열 세트를 빈 새 폴더에 다시 만들어 씁니다. 판정 94개는 모두 OK였으므로 판정 코드에는 문제가 없습니다.</span></div>
     </div>
     <svg class="ch" id="c-f2" viewBox="0 0 960 150" role="img" aria-label="FAIL 2 파일 비교 결과 막대"></svg>
-    <figcaption>5열 쪽 비교는 통과했습니다. 새 생성기로 만든 <code>'Drift', 0.3</code> 세트가 예전 5열 세트 8,100개와 바이트 단위로 같았습니다. 그래서 MATLAB 생성기가 32심볼에서 예전과 같은 덤프를 만든다는 것은 확인됐습니다.</figcaption>
+    <figcaption>올바른 예전 세트로 다시 돌린 결과, 새 생성기로 만든 <code>'Drift', 0.3</code> 세트가 예전 5열 세트 8,100개, 2열 세트 7,680개와 모두 바이트 단위로 같았습니다. 예전 세트의 판정도 94/94, 49/49였습니다. 2열 실행은 <code>all 8 parts PASS: the 32-symbol test is unchanged</code>였습니다. 그래서 MATLAB 생성기와 판정 코드가 32심볼에서 예전과 같다는 것이 확인됐습니다.</figcaption>
   </figure>
 </section>
 
@@ -301,7 +305,33 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
 
 <!-- ============================================================ 6 -->
 <section class="sec" id="v6">
-  <div class="sec-head"><span class="sec-no">6</span><h2>H0 꼬리·상관 판정 탐색기</h2></div>
+  <div class="sec-head"><span class="sec-no">6</span><h2>128심볼 빠른 세트: 참·거짓 판정은 표본이 적으면 넓힐 수 없습니다</h2></div>
+  <div class="term"><span class="ok">128·256심볼 전체 세트 4개, 5열·2열 대조 2개, 256심볼 빠른 세트 2개: PASS</span>
+<span class="bad">N128 FAIL N 128, 5 columns, quick set</span>  93 / 94 checks OK; CHECK pkt fixed h0 and: every condition within the budget = 0
+<span class="bad">N128 FAIL N 128, 2 columns, quick set</span>  48 / 49 checks OK; CHECK 2col pkt fixed h0 and: every condition within the budget = 0
+<span class="dim">수정(b197780) 뒤 다시 실행:</span>
+<span class="ok">N128 PASS</span>  all 5 parts PASS · 빠른 세트 5열 [INFO] 2개, 2열 [INFO] 1개 (예산 판정, 전체 세트에서 판정)</div>
+  <div class="grid2">
+    <figure class="plate">
+      <h3>이 판정이 FAIL할 확률 (H0 네 조건 중 하나라도)</h3>
+      <div class="legend" id="lg-b"></div>
+      <svg class="ch" id="c-b" viewBox="0 0 520 300" role="img" aria-label="프래그먼트 비율에 따른 예산 판정 실패 확률, 전체 세트와 빠른 세트"></svg>
+      <div class="read"><b>읽는 법</b><span>판정 내용은 "조건마다 AND 문턱(1e-6^(1/8) = 0.178 예산)을 넘는 프래그먼트 비율의 95% 상한이 0.178 이하인가"입니다. 전체 세트(조건당 992개)는 상한이 0.158을 넘어야 실패해서, 실제 비율이 0.10–0.12면 실패 확률이 0–0.1%입니다. 빠른 세트(192개)는 0.135만 넘어도 실패하므로 같은 비율에서 25–74%입니다. 회색 띠는 Python 기준 세트의 실제 최대 비율(0.10–0.13)입니다.</span></div>
+    </figure>
+    <figure class="plate">
+      <h3>원인과 해결</h3>
+      <div class="fail" style="grid-template-columns:1fr">
+        <div class="saw"><span class="lab">본 것</span><span>128심볼 빠른 세트에서만 <code>every condition within the budget = 0</code>. 전체 세트와 256심볼 빠른 세트는 PASS.</span></div>
+        <div class="why"><span class="lab">원인</span><span>참·거짓 판정이라 Scale 규칙이 넓힐 범위가 없어 그대로 판정했습니다. 표본이 1/5이면 95% 상한이 부풀려져, 길이와 관계없이 4번에 1번 이상 실패합니다. 이번에 128심볼에서만 나온 것은 우연입니다.</span></div>
+        <div class="fix"><span class="lab">해결 (b197780)</span><span>빠른 세트에서는 이 판정 3개(5열 new·fixed, 2열 fixed)를 <code>[INFO]</code>로 둡니다. 같은 비율을 직접 보는 <code>largest per-fragment rate (budget 0.178)</code>은 넓힌 범위로 계속 판정하고, 상한 판정은 전체 세트에서 합니다. <code>regress_lengths</code>는 이런 <code>[INFO]</code>가 있어도 빠른 세트를 PASS로 봅니다.</span></div>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<!-- ============================================================ 7 -->
+<section class="sec" id="v7">
+  <div class="sec-head"><span class="sec-no">7</span><h2>H0 꼬리·상관 판정 탐색기</h2></div>
   <p class="prose">새 규칙이 적용된 19개 판정을 하나씩 볼 수 있습니다. 점은 길이별 Python 값, 막대는 ±4σ(bootstrap)입니다. 연한 띠는 32심볼 범위, 진한 띠는 그 길이에서 쓰는 범위입니다. 64–256심볼에서 띠가 넓어진 만큼이 이번 수정입니다.</p>
   <figure class="plate">
     <div class="controls"><label for="sel-x" class="small">판정</label><select id="sel-x"></select></div>
@@ -310,26 +340,27 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
   </figure>
 </section>
 
-<!-- ============================================================ 7 -->
-<section class="sec" id="v7">
-  <div class="sec-head"><span class="sec-no">7</span><h2>남은 일</h2></div>
+<!-- ============================================================ 8 -->
+<section class="sec" id="v8">
+  <div class="sec-head"><span class="sec-no">8</span><h2>남은 일</h2></div>
   <div class="tbl-wrap">
     <table>
       <thead><tr><th>항목</th><th>상태</th><th>다음</th></tr></thead>
       <tbody>
         <tr><td>5단계 5열 비교 (새 생성기 = 예전)</td><td><span class="chip pass"><i></i>PASS</span></td><td>8,100개 바이트 일치</td></tr>
-        <tr><td>5단계 2열 비교</td><td><span class="chip run"><i></i>확인 필요</span></td><td>빈 폴더에 만든 예전 2열 세트로 결과를 받으면 끝</td></tr>
+        <tr><td>5단계 2열 비교</td><td><span class="chip pass"><i></i>PASS</span></td><td>7,680개 바이트 일치, 예전 2열 세트 49/49 (all 8 parts PASS)</td></tr>
         <tr><td>6단계 64심볼</td><td><span class="chip pass"><i></i>5/5 PASS</span></td><td>범위 수정(d99ce50) 뒤 다시 실행</td></tr>
-        <tr><td>6단계 128·256심볼</td><td><span class="chip run"><i></i>실행 중</span></td><td>요약 표를 받아 같은 방식으로 확인</td></tr>
-        <tr><td>32심볼에도 새 범위 규칙 적용 (3안)</td><td><span class="chip run"><i></i>보류</span></td><td>7단계에서 판단 (32심볼 MATLAB 실행은 지금까지 모두 통과)</td></tr>
-        <tr><td>7단계 문서, 브랜치 합치기</td><td><span class="chip run"><i></i>대기</span></td><td>6단계 통과 뒤 TEST_PLAN, 체크리스트, 설계 문서와 함께</td></tr>
+        <tr><td>6단계 128·256심볼 전체 세트</td><td><span class="chip pass"><i></i>PASS</span></td><td>전체 세트 4개와 5열·2열 대조 2개 모두 통과</td></tr>
+        <tr><td>6단계 빠른 세트 예산 판정</td><td><span class="chip pass"><i></i>PASS</span></td><td>b197780 뒤 128심볼 5/5 PASS, 빠른 세트 [INFO] 2개(5열)·1개(2열)</td></tr>
+        <tr><td>32심볼에도 새 범위 규칙 적용 (3안)</td><td><span class="chip pass"><i></i>적용 안 함</span></td><td>32심볼 범위는 그대로 (결정 8). 32심볼 실행에서 표본 퍼짐에 의한 CHECK가 나오면 다시 판단</td></tr>
+        <tr><td>7단계 문서, 브랜치 합치기</td><td><span class="chip pass"><i></i>완료</span></td><td>결정 8(DECISIONS.md), 설계 문서 7.4절, TEST_PLAN A-L, 체크리스트, 길이별 합성 시험 페이지 → length-support를 master에 합침(0f9f470)</td></tr>
       </tbody>
     </table>
   </div>
 </section>
 
 <footer class="foot">
-  <p>그래프 수치: <code>lambda_patch/model/results/</code>의 <code>length_l90.json</code>(통계 모델 L90), <code>length_h0md.json</code>(MD 규칙 H0 모델), <code>expect_n*.json</code>(Python 기준 세트의 κ), <code>drift_check.json</code>(이동 확인), <code>expect_spread.json</code>(bootstrap 퍼짐). 범위는 length-support의 <code>test/synthetic_expect.m</code>입니다. 조건별 Λ̂ 꼬리와 1.3 초과 확률은 같은 기준 세트의 2,000번 bootstrap(2026-10-21)이고, MATLAB 값은 실행 요약 표에서 옮겼습니다.</p>
+  <p>그래프 수치: <code>lambda_patch/model/results/</code>의 <code>length_l90.json</code>(통계 모델 L90), <code>length_h0md.json</code>(MD 규칙 H0 모델), <code>expect_n*.json</code>(Python 기준 세트의 κ), <code>drift_check.json</code>(이동 확인), <code>expect_spread.json</code>(bootstrap 퍼짐). 범위는 length-support의 <code>test/synthetic_expect.m</code>입니다. 조건별 Λ̂ 꼬리와 1.3 초과 확률은 같은 기준 세트의 2,000번 bootstrap(2026-10-21)이고, 예산 판정 실패 확률은 이항 분포와 Clopper-Pearson 95% 상한으로 계산했습니다. MATLAB 값은 실행 요약 표에서 옮겼습니다.</p>
   <p>관련 페이지: <a href="length.html">RIF 길이별 합성 시험</a>, <a href="checklist.html">RIF 검증 체크리스트</a>, <a href="index.html">RIF Λ 판정기</a>.</p>
 </footer>
 </div>
@@ -403,8 +434,8 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
       if (i % 4 < 3) s += '<path d="M' + (x[0] + 210) + ',' + (x[1] + 41) + ' H' + (x[0] + 248) + '" stroke="var(--ink-2)" stroke-width="1.4" marker-end="url(#ah)"/>';
     });
     s += '<path d="M815,102 V122 H585 V148" fill="none" stroke="var(--s1)" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ah)"/>';
-    s += '<text x="600" y="137" class="lbl">synthetic_expect.m (length-support에 커밋)</text>';
-    s += '<text x="20" y="14" class="tick">master · 정답 만들기</text><text x="20" y="246" class="tick">length-support · MATLAB 판정</text>';
+    s += '<text x="600" y="137" class="lbl">synthetic_expect.m (생성 파일)</text>';
+    s += '<text x="20" y="14" class="tick">master · 정답 만들기</text><text x="20" y="246" class="tick">MATLAB 판정 (master에 합침)</text>';
     $('pipe').innerHTML = s;
   })();
 
@@ -542,7 +573,25 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
   strips($('c-r'), cirIt, {x: 1, v: 1.307});
   legend($('lg-r'), [{name: '32심볼 범위', color: 'var(--band)', band: true}, {name: '그 길이에서 쓰는 범위', color: 'var(--n64)', band: true}, {name: 'Python 값 ± 4σ', color: 'var(--ink)'}, {name: 'MATLAB 64심볼', color: 'var(--crit)', diamond: true}]);
 
-  /* ---------------- section 6: explorer */
+  /* ---------------- section 6: AND budget check */
+  (function () {
+    var C = {"992":[[0.06,0.0],[0.065,0.0],[0.07,0.0],[0.075,0.0],[0.08,0.0],[0.085,0.0],[0.09,0.0],[0.095,0.0],[0.1,0.0],[0.105,0.0],[0.11,0.0],[0.115,0.0001],[0.12,0.0008],[0.125,0.0049],[0.13,0.022],[0.135,0.0761],[0.14,0.2034]],"192":[[0.06,0.0004],[0.065,0.0013],[0.07,0.0039],[0.075,0.0102],[0.08,0.0235],[0.085,0.0488],[0.09,0.0919],[0.095,0.1581],[0.1,0.2497],[0.105,0.3641],[0.11,0.4926],[0.115,0.6223],[0.12,0.7397],[0.125,0.8349],[0.13,0.9041],[0.135,0.9491],[0.14,0.9754]]};
+    var W = 520, H = 300, L = 58, R = 18, T = 16, B = 44, x0 = 0.06, x1 = 0.14, s = '';
+    var xs = function (x) { return L + (x - x0) / (x1 - x0) * (W - L - R); }, ys = function (v) { return T + (1 - v) * (H - T - B); };
+    s += '<rect x="' + xs(0.10) + '" y="' + T + '" width="' + (xs(0.13) - xs(0.10)) + '" height="' + (H - T - B) + '" fill="var(--grid)"/>';
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (v) { s += '<line class="gl" x1="' + L + '" x2="' + (W - R) + '" y1="' + ys(v) + '" y2="' + ys(v) + '"/><text class="tick" x="' + (L - 8) + '" y="' + (ys(v) + 4) + '" text-anchor="end">' + Math.round(v * 100) + '%</text>'; });
+    [0.06, 0.08, 0.10, 0.12, 0.14].forEach(function (x) { s += '<text class="tick" x="' + xs(x) + '" y="' + (H - B + 18) + '" text-anchor="middle">' + x.toFixed(2) + '</text>'; });
+    s += '<line class="axl" x1="' + L + '" x2="' + (W - R) + '" y1="' + ys(0) + '" y2="' + ys(0) + '"/>';
+    s += '<text class="axt" x="' + ((L + W - R) / 2) + '" y="' + (H - 8) + '" text-anchor="middle">조건의 실제 AND 문턱 초과 비율</text>';
+    s += '<text class="axt" transform="translate(14 ' + ((T + H - B) / 2) + ') rotate(-90)" text-anchor="middle">판정 실패 확률</text>';
+    [['992', 'var(--s1)', '전체 세트 (조건당 992개)'], ['192', 'var(--s2)', '빠른 세트 (192개)']].forEach(function (c) {
+      s += '<path d="' + C[c[0]].map(function (p, i) { return (i ? 'L' : 'M') + xs(p[0]).toFixed(1) + ',' + ys(p[1]).toFixed(1); }).join(' ') + '" fill="none" stroke="' + c[1] + '" stroke-width="2.2"/>';
+    });
+    $('c-b').innerHTML = s;
+    legend($('lg-b'), [{name: '전체 세트 (조건당 992개)', color: 'var(--s1)', dot: false}, {name: '빠른 세트 (192개)', color: 'var(--s2)', dot: false}, {name: '기준 세트의 실제 최대 비율', color: 'var(--grid)', band: true}]);
+  })();
+
+  /* ---------------- section 7: explorer */
   var sel = $('sel-x');
   sel.innerHTML = DATA.spread.map(function (x, i) { return '<option value="' + i + '">' + esc(x.id) + '</option>'; }).join('');
   sel.value = String(DATA.spread.indexOf(cirIt));
