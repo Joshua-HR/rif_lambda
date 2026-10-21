@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RIF 길이 지원 검증 기록</title>
+<meta name="description" content="RIF 길이 32·64·128·256 지원을 위해 바꾼 것, MATLAB 5·6단계에서 FAIL이 난 이유와 해결 방법을 그래프와 해석으로 정리한 검증 기록">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<script>
+  (function () {  /* 저장된 테마를 첫 렌더링 전에 적용 */
+    try { var t = localStorage.getItem('rif-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  })();
+</script>
+<style>
+/* Layout: RIF 페이지들과 같은 체계(68ch 본문 + 1080px 도판). 무엇을 바꿨나 → 정답이 움직인 모습 → FAIL 사례별(본 것·원인·해결) → 탐색기 → 남은 일.
+   Color: 페이지들과 같은 토큰. 길이 32/64/128/256은 순서가 있는 4색(파랑 → 청록 → 주황 → 빨강), PASS/FAIL은 상태 전용 초록/빨강. */
+:root{
+  --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
+  --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.11);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#8a5cc2;
+  --n32:#2a78d6; --n64:#1a9e8f; --n128:#e08a1e; --n256:#c9442f;
+  --crit:#d03b3b; --good:#0c9a3e; --warn:#b7791f;
+  --band:rgba(42,120,214,.12); --band2:rgba(12,154,62,.14);
+  --wash:#e6eef9; --code-bg:#e9eae6;
+  --f-sans:"IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+    --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+    --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#9b72d0;
+    --n32:#4a93ea; --n64:#2bb5a4; --n128:#eba03f; --n256:#e0614b;
+    --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
+    --band:rgba(74,147,234,.16); --band2:rgba(47,181,95,.18);
+    --wash:#1b2636; --code-bg:#242422;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+  --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+  --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#9b72d0;
+  --n32:#4a93ea; --n64:#2bb5a4; --n128:#eba03f; --n256:#e0614b;
+  --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
+  --band:rgba(74,147,234,.16); --band2:rgba(47,181,95,.18);
+  --wash:#1b2636; --code-bg:#242422;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:36px 80px;display:flex;flex-direction:column}
+h1,h2,h3{text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:clamp(30px,5vw,44px);font-weight:700;letter-spacing:-0.02em}
+h2{font-size:clamp(21px,2.8vw,27px);font-weight:700;letter-spacing:-0.01em}
+h3{font-size:16.5px;font-weight:600}
+p,ul,ol,dl{margin:0}
+ul,ol{padding-left:1.3em}
+li + li{margin-top:6px}
+a{color:var(--s1)}
+code,.mono{font-family:var(--f-mono);font-size:.9em}
+strong{font-weight:600}
+.stack{display:flex;flex-direction:column;gap:14px}
+.prose{max-width:68ch}
+.small{font-size:14px;color:var(--ink-2)}
+.eyebrow{font:500 12.5px/1.5 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:18px;line-height:1.7;color:var(--ink-2)}
+.hero{display:flex;flex-direction:column;gap:22px;padding-block:8px 36px}
+.toc{display:flex;flex-wrap:wrap;gap:6px 8px;padding:0;list-style:none}
+.toc li{margin:0}
+.toc a{display:inline-flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink-2);font-size:14px;padding:5px 10px;border-radius:999px;border:1px solid var(--hair);background:var(--surface)}
+.toc a:hover{color:var(--ink);border-color:var(--axis)}
+.toc .n{font:500 12px var(--f-mono);color:var(--muted)}
+
+/* stage track */
+.track{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.stg{background:var(--surface);border:1px solid var(--hair);border-radius:9px;padding:10px 11px;display:flex;flex-direction:column;gap:5px;min-width:0;border-top:3px solid var(--good)}
+.stg[data-s="run"]{border-top-color:var(--warn)}
+.stg[data-s="fix"]{border-top-color:var(--s1)}
+.stg .k{font:600 12px var(--f-mono);color:var(--muted)}
+.stg .t{font-size:13.5px;font-weight:600;line-height:1.35}
+.stg .d{font-size:12.5px;color:var(--ink-2);line-height:1.45}
+@media (max-width:820px){.track{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.sec{display:flex;flex-direction:column;gap:18px;padding-block:48px 4px;border-top:1px solid var(--hair);scroll-margin-top:12px}
+.sec-head{display:flex;align-items:baseline;gap:14px}
+.sec-no{font:600 15px var(--f-mono);color:var(--muted);min-width:1.4em}
+.plate{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;margin:0;min-width:0}
+.plate figcaption{font-size:13.5px;color:var(--ink-2);line-height:1.65;max-width:84ch}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:16px}
+.scroll-x{overflow-x:auto;max-width:100%}
+.scroll-x > svg{min-width:620px;width:100%;height:auto;display:block}
+svg.ch{width:100%;height:auto;display:block;overflow:visible}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-2)}
+.key{display:inline-flex;align-items:center;gap:6px}
+.key svg{width:22px;height:12px;flex:none}
+.read{background:var(--wash);border-radius:8px;padding:11px 14px;font-size:14px;line-height:1.65;display:flex;flex-direction:column;gap:4px}
+.read b{font:600 12px var(--f-mono);letter-spacing:.06em;color:var(--s1);text-transform:uppercase}
+
+/* failure cards */
+.fail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.fail > div{background:var(--raised);border:1px solid var(--hair);border-radius:9px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0;font-size:14px;line-height:1.6}
+.fail .lab{font:600 12px var(--f-mono);letter-spacing:.06em;text-transform:uppercase}
+.fail .saw .lab{color:var(--crit)} .fail .why .lab{color:var(--warn)} .fail .fix .lab{color:var(--good)}
+@media (max-width:820px){.fail{grid-template-columns:1fr}}
+.term{font-family:var(--f-mono);font-size:12.5px;line-height:1.6;background:var(--code-bg);border-radius:8px;padding:10px 12px;overflow-x:auto;white-space:pre;max-width:100%}
+.term .bad{color:var(--crit)} .term .ok{color:var(--good)} .term .dim{color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:1px 9px;border-radius:999px;font:600 12px var(--f-mono);border:1px solid var(--hair);background:var(--raised);white-space:nowrap}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.chip.pass i{background:var(--good)} .chip.fail i{background:var(--crit)} .chip.run i{background:var(--warn)}
+
+.tbl-wrap{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;font-size:13.5px;min-width:100%}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--hair);vertical-align:top}
+th{font-weight:600;color:var(--ink-2);font-size:12.5px;white-space:nowrap}
+td.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.mono{font-family:var(--f-mono);font-size:12.5px}
+
+/* chart marks */
+.gl{stroke:var(--grid);stroke-width:1}
+.axl{stroke:var(--axis);stroke-width:1}
+.tick{fill:var(--muted);font:11.5px var(--f-sans);font-variant-numeric:tabular-nums}
+.axt{fill:var(--ink-2);font:12px var(--f-sans)}
+.lbl{fill:var(--ink-2);font:11.5px var(--f-sans)}
+.lblb{fill:var(--ink);font:600 11.5px var(--f-sans)}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+select{font:inherit;font-size:14px;padding:6px 9px;border-radius:7px;border:1px solid var(--hair);background:var(--raised);color:var(--ink);max-width:100%}
+select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.foot{padding-block:44px 0;border-top:1px solid var(--hair);margin-top:48px;font-size:14px;color:var(--ink-2);display:flex;flex-direction:column;gap:8px}
+.theme-btn{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);right:12px;z-index:40;font:500 12.5px var(--f-sans);padding:6px 11px;border-radius:999px;border:1px solid var(--hair);background:var(--raised);color:var(--ink-2);cursor:pointer}
+.theme-btn:hover{color:var(--ink);border-color:var(--axis)}
+</style>
+</head>
+<body>
+<button type="button" class="theme-btn" id="theme-btn" aria-label="테마 바꾸기">테마: 시스템</button>
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">검증 기록 · 2026-10-21 · length-support 브랜치 d99ce50 기준</span>
+  <h1>RIF 길이 지원 검증 기록</h1>
+  <p class="lede prose">합성 시험이 RIF 길이 32·64·128·256심볼을 받도록 바꾼 내용과, MATLAB으로 돌려 본 5·6단계에서 FAIL이 난 이유와 해결 방법을 그래프로 정리했습니다. 지금까지의 FAIL은 모두 판정 코드의 결함이 아니었습니다. 비교 대상 세트의 경로가 틀렸거나, 표본 퍼짐에 비해 범위 규칙이 좁았던 경우입니다.</p>
+  <div class="track" aria-label="단계별 상태">
+    <div class="stg"><span class="k">0단계</span><span class="t">설계</span><span class="d">세기 이동 S, 판정 분류, 규칙</span></div>
+    <div class="stg"><span class="k">1단계</span><span class="t">Python 생성기</span><span class="d">32심볼 8,100개 바이트 일치</span></div>
+    <div class="stg"><span class="k">2단계</span><span class="t">길이별 정답</span><span class="d">Python 94/49 네 길이 모두</span></div>
+    <div class="stg"><span class="k">3·4단계</span><span class="t">MATLAB 코드</span><span class="d">생성기, 판정, 범위 표</span></div>
+    <div class="stg" data-s="fix"><span class="k">5단계</span><span class="t">32심볼 회귀</span><span class="d">경로 문제 2건 → 5열 일치 확인</span></div>
+    <div class="stg" data-s="fix"><span class="k">6단계 · 64</span><span class="t">64심볼</span><span class="d">FAIL 4건 → 규칙 수정 → 5/5 PASS</span></div>
+    <div class="stg" data-s="run"><span class="k">6단계 · 128·256</span><span class="t">128·256심볼</span><span class="d">실행 중</span></div>
+  </div>
+  <nav aria-label="목차">
+    <ol class="toc">
+      <li><a href="#v1"><span class="n">1</span>무엇을 바꿨나</a></li>
+      <li><a href="#v2"><span class="n">2</span>길이에 따라 움직이는 정답</a></li>
+      <li><a href="#v3"><span class="n">3</span>5단계: 경로 문제</a></li>
+      <li><a href="#v4"><span class="n">4</span>64심볼: 빠른 세트</a></li>
+      <li><a href="#v5"><span class="n">5</span>64심볼: 전체 세트</a></li>
+      <li><a href="#v6"><span class="n">6</span>꼬리·상관 판정 탐색기</a></li>
+      <li><a href="#v7"><span class="n">7</span>남은 일</a></li>
+    </ol>
+  </nav>
+</header>
+
+<!-- ============================================================ 1 -->
+<section class="sec" id="v1">
+  <div class="sec-head"><span class="sec-no">1</span><h2>무엇을 바꿨나</h2></div>
+  <p class="prose">원래 합성 시험은 32심볼 한 길이만 만들고 판정했습니다. 이제 정답(판정 범위)은 Python 기준 세트로 길이마다 따로 만들고, MATLAB은 세트의 조건을 읽어 해당 길이의 정답으로 판정합니다. 분석 함수(<code>rif_cir_analyze</code>, <code>h0_pfa_analyze</code>, <code>h1_pd_analyze</code>, <code>rif_packet</code>)는 바꾸지 않았습니다.</p>
+  <figure class="plate">
+    <div class="scroll-x"><svg class="ch" id="pipe" viewBox="0 0 960 250" role="img" aria-label="Python 기준 세트에서 범위 표를 만들고 MATLAB 시험이 그 표로 판정하는 흐름"></svg></div>
+    <figcaption>위 줄(Python, master)이 정답을 만들고, 아래 줄(MATLAB, length-support)이 그 정답으로 판정합니다. 두 줄을 잇는 것은 생성된 <code>synthetic_expect.m</code> 한 파일입니다. 같은 모델이지만 난수가 달라서, MATLAB 세트는 Python 세트와 값이 조금씩 다르게 나오는 것이 정상입니다.</figcaption>
+  </figure>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>브랜치</th><th>커밋</th><th>내용</th></tr></thead>
+      <tbody>
+        <tr><td>master</td><td class="mono">88aa575</td><td>1단계: Python 생성기에 <code>--N</code>, <code>--ppm</code>, 이동량, 세기 이동, 생성 조건 파일</td></tr>
+        <tr><td>master</td><td class="mono">1908194</td><td>2단계: 미러 <code>expect_synthetic.py</code>, 모델 L90·MD 통계·이동 확인, 범위 표 생성기</td></tr>
+        <tr><td>master</td><td class="mono">47483ef</td><td>체크리스트 A-L32, A-LN</td></tr>
+        <tr><td>length-support</td><td class="mono">1f8ea03</td><td>3·4단계: <code>gen_synthetic_dumps</code>, <code>run_synthetic_test</code>, <code>synthetic_expect.m</code></td></tr>
+        <tr><td>length-support</td><td class="mono">9ac6f6b · 2c8fbac</td><td>5·6단계 실행 스크립트 <code>regress_length32</code>, <code>regress_lengths</code></td></tr>
+        <tr><td>length-support</td><td class="mono">14e55ed</td><td>수정: 기존 세트 경로에 <code>h0</code>가 없으면 처음에 알림 (3장)</td></tr>
+        <tr><td>length-support</td><td class="mono">d99ce50</td><td>수정: H0 꼬리·상관 판정 범위를 표본 퍼짐에 맞춤 (4·5장)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ 2 -->
+<section class="sec" id="v2">
+  <div class="sec-head"><span class="sec-no">2</span><h2>길이에 따라 움직이는 정답</h2></div>
+  <p class="prose">길이별 정답을 따로 만든 이유는 길이가 바뀌면 판정 값의 정답 자체가 바뀌기 때문입니다. 아래 그림은 Python 기준 세트와 통계 모델에서 나온 값입니다.</p>
+  <div class="grid2">
+    <figure class="plate">
+      <h3>L90 이동량은 CFO 공식 하나로 설명됩니다</h3>
+      <div class="legend" id="lg-l90"></div>
+      <svg class="ch" id="c-l90" viewBox="0 0 520 300" role="img" aria-label="판정 규칙별 32심볼 대비 L90 이동량과 CFO 공식"></svg>
+      <div class="read"><b>읽는 법</b><span>모든 규칙이 길이에 따라 거의 같은 양(0.2 dB 안)만큼 낮은 세기 쪽으로 옮겨 갑니다. 256심볼이 128심볼보다 덜 옮겨 가는 것은 잔여 CFO 0.25 ppm이 긴 누적 동안 위상을 돌려 피크를 깎기 때문입니다. 그래서 세트의 H1 세기를 S = 0 / −3 / −5 / −5 dB만큼 옮기고, L90 범위도 규칙별로 옮겼습니다.</span></div>
+    </figure>
+    <figure class="plate">
+      <h3>MD 규칙 H0 오검출률은 길이가 길수록 줄어듭니다</h3>
+      <div class="legend" id="lg-md"></div>
+      <svg class="ch" id="c-md" viewBox="0 0 520 300" role="img" aria-label="H0 조건별 MD 규칙 오검출률과 32심볼 −82 dBm 범위"></svg>
+      <div class="read"><b>읽는 법</b><span>열잡음만 있는 −120 dBm은 그대로이고, 틀린 키 신호가 섞인 조건은 길이가 길수록 줄어듭니다. 256심볼의 −82 dBm(0.011)은 32심볼 범위(색 띠, 0.028–0.078) 밑입니다. 그래서 MD 규칙 통계는 길이별 모델 값으로 범위를 옮겼습니다. MD 규칙은 판정기가 아니라 비교 기준선입니다.</span></div>
+    </figure>
+    <figure class="plate">
+      <h3>κ(비원형성)는 CFO 비원형 계수를 따라 내려갑니다</h3>
+      <div class="legend" id="lg-kp"></div>
+      <svg class="ch" id="c-kp" viewBox="0 0 520 300" role="img" aria-label="H0 조건별 kappa 중앙값과 CFO 비원형 계수"></svg>
+      <div class="read"><b>읽는 법</b><span>강한 틀린 키 신호(−40 dBm)의 κ는 32심볼 0.98에서 256심볼 0.38까지 내려갑니다. 점선은 CFO가 만드는 비원형 계수 |sin Φ / Φ|입니다. 고전력일수록 이 선을 따라갑니다. 열잡음만 있는 −120 dBm은 길이와 무관하게 약 0.37입니다.</span></div>
+    </figure>
+    <figure class="plate">
+      <h3>이동 탐색이 이동량과 관계없이 검출을 되살립니다</h3>
+      <div class="legend" id="lg-dr"></div>
+      <svg class="ch" id="c-dr" viewBox="0 0 520 300" role="img" aria-label="이동량별 패킷 Pd, 탐색 없이와 탐색 후"></svg>
+      <div class="read"><b>읽는 법</b><span>고정 칩, 약한 이동 폴더, 패킷 100개 기준입니다. 탐색 없이는 이동량이 클수록 Pd가 떨어지고(1.2탭에서 0.02–0.04), 탐색 후에는 모든 길이에서 0.96–1.00입니다. 이동 Pd 판정은 0.25–1.2탭에서 하한 0.85로 판정합니다.</span></div>
+    </figure>
+  </div>
+</section>
+
+<!-- ============================================================ 3 -->
+<section class="sec" id="v3">
+  <div class="sec-head"><span class="sec-no">3</span><h2>5단계: FAIL은 비교 대상 세트의 경로 문제였습니다</h2></div>
+  <p class="prose">5단계 스크립트 <code>regress_length32</code>는 길이 지원 전에 만든 세트(예전 세트)와 새 코드의 결과를 비교합니다. 두 번 돌린 결과 모두 새 코드로 만든 세트(C, D)는 PASS였고, 예전 세트 쪽(A, B)만 FAIL이었습니다.</p>
+
+  <figure class="plate">
+    <h3>FAIL 1: 예전 세트 경로에 세트가 없었습니다</h3>
+    <div class="fail">
+      <div class="saw"><span class="lab">본 것</span><span>A: <code>error: No h0 folder under "…"</code><br>B: <code>same 0, different 0, missing 0, extra 8100</code> (5열) / <code>extra 7680</code> (2열)</span></div>
+      <div class="why"><span class="lab">원인</span><span>넣은 경로에 <code>h0</code> 폴더가 없어 시험 세트가 아니었습니다. 비교할 덤프가 0개라, 새 세트의 파일이 전부 상대 없는 "extra"로 잡혔습니다.</span></div>
+      <div class="fix"><span class="lab">해결</span><span>master(예전 코드)로 예전 세트를 새 폴더에 다시 만들어 비교 기준으로 씁니다. 스크립트는 경로에 <code>h0</code>가 없으면 처음에 알리도록 고쳤습니다(14e55ed).</span></div>
+    </div>
+    <svg class="ch" id="c-f1" viewBox="0 0 960 150" role="img" aria-label="FAIL 1 파일 비교 결과 막대"></svg>
+  </figure>
+
+  <figure class="plate">
+    <h3>FAIL 2: "예전 2열 세트" 폴더에 5열 세트가 들어 있었습니다</h3>
+    <div class="fail">
+      <div class="saw"><span class="lab">본 것</span><span>A: <code>old 2-column set 94 / 94 checks OK</code> (49개를 기대)<br>B: <code>same 0, different 7680 (h1_drift 480), missing 420</code></span></div>
+      <div class="why"><span class="lab">원인</span><span><code>run_synthetic_test</code>는 열 수를 보고 판정 묶음을 고르는데, 이 폴더를 5열로 보고 94개를 판정했습니다. 5열 전용 폴더 420개(<code>h0_2col</code> 300, <code>scale_test</code> 100, <code>mixed_test</code> 20)는 2열 세트에 없어 missing, 나머지는 열 수가 달라 different입니다. A-2 때 남아 있던 5열 세트와 같은 상황입니다.</span></div>
+      <div class="fix"><span class="lab">해결</span><span>2열 세트를 빈 새 폴더에 다시 만들어 씁니다. 판정 94개는 모두 OK였으므로 판정 코드에는 문제가 없습니다.</span></div>
+    </div>
+    <svg class="ch" id="c-f2" viewBox="0 0 960 150" role="img" aria-label="FAIL 2 파일 비교 결과 막대"></svg>
+    <figcaption>5열 쪽 비교는 통과했습니다. 새 생성기로 만든 <code>'Drift', 0.3</code> 세트가 예전 5열 세트 8,100개와 바이트 단위로 같았습니다. 그래서 MATLAB 생성기가 32심볼에서 예전과 같은 덤프를 만든다는 것은 확인됐습니다.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ 4 -->
+<section class="sec" id="v4">
+  <div class="sec-head"><span class="sec-no">4</span><h2>64심볼 빠른 세트: 개수가 적은 통계에 규칙이 좁았습니다</h2></div>
+  <div class="term"><span class="bad">N64 FAIL N 64, 5 columns, quick set</span>  92 / 94 checks OK; CHECK pkt new h0: largest |correlation| of fragment pairs = 0.4089; CHECK pkt fixed h0 soft: smallest tail ratio at P = 1e-2 = 0
+<span class="bad">N64 FAIL N 64, 2 columns, quick set</span>  48 / 49 checks OK; CHECK 2col pkt fixed h0 soft: smallest tail ratio at P = 1e-2 = 0</div>
+  <div class="grid2">
+    <figure class="plate">
+      <h3>빠른 세트는 판정에 쓰는 개수가 1/5입니다</h3>
+      <svg class="ch" id="c-q1" viewBox="0 0 520 260" role="img" aria-label="전체 세트와 빠른 세트의 패킷, 쌍, 꼬리 경로 수"></svg>
+      <div class="read"><b>읽는 법</b><span>H0 조건 하나에 패킷 124개가 24개로, 상관을 계산하는 쌍이 496개에서 96개로 줄어듭니다. soft 꼬리 비율(1e-2 지점)에서 기대되는 경로 수는 약 70개에서 13개로 줄고, 같은 패킷의 57개 경로가 겹쳐 있어 실제로 독립인 개수는 더 적습니다. 그래서 0개도 나올 수 있습니다.</span></div>
+    </figure>
+    <figure class="plate">
+      <h3>예전 규칙과 새 규칙의 범위</h3>
+      <div class="legend" id="lg-q2"></div>
+      <svg class="ch" id="c-q2" viewBox="0 0 520 260" role="img" aria-label="빠른 세트 CHECK 두 판정의 예전 범위, 새 범위, 관측값"></svg>
+      <div class="read"><b>읽는 법</b><span>예전 규칙은 모든 통계를 1/√Scale(×2.2)만큼 넓혔습니다. 개수 기반 통계에는 그것으로 부족했습니다. 새 규칙에서 꼬리 비율은 하한을 0까지 허용하고 상한은 1/Scale(×5)만큼 넓힙니다. 쌍 상관은 상한을 5/√(쌍 수 × Scale)(Scale 0.2에서 0.50) 이상으로 둡니다. 관측값(◆)이 새 범위 안에 들어옵니다.</span></div>
+    </figure>
+  </div>
+</section>
+
+<!-- ============================================================ 5 -->
+<section class="sec" id="v5">
+  <div class="sec-head"><span class="sec-no">5</span><h2>64심볼 전체 세트: −40 dBm 조건의 Λ̂ 꼬리가 길이에 따라 바뀌었습니다</h2></div>
+  <div class="term"><span class="bad">N64 FAIL N 64, 5 columns, full set</span>  93 / 94 checks OK; CHECK cir h0: largest tail ratio t=10 = 1.307   <span class="dim">(범위 0.7 .. 1.3)</span>
+<span class="bad">N64 FAIL N 64, 2 columns, full set</span>  48 / 49 checks OK; CHECK 2col h0 cir: largest tail ratio t=10 = 1.307   <span class="dim">(같은 CIR이라 같은 값)</span></div>
+  <p class="prose">이 판정은 Λ̂(CIR에서 Q·Π를 추정한 고정 칩 판정기)로 잡음만 있을 때, 탭마다 Λ̂ ≥ 10인 비율을 χ²₂의 기대값 e⁻⁵로 나눈 값입니다. H0 네 조건 중 가장 큰 값을 봅니다. 1에 가까워야 정상이고, 범위 0.7–1.3은 32심볼에서 쓰던 값입니다.</p>
+  <div class="grid2">
+    <figure class="plate">
+      <h3>조건별 Λ̂ 꼬리 비율 (Python 기준 세트, ±1σ)</h3>
+      <div class="legend" id="lg-t"></div>
+      <svg class="ch" id="c-t" viewBox="0 0 520 300" role="img" aria-label="H0 조건별 Lambda-hat 꼬리 비율과 표준편차, 길이별"></svg>
+      <div class="read"><b>읽는 법</b><span>−40 dBm(빨강)만 다르게 움직입니다. 32심볼에서는 0.78로 낮습니다. 비원형성이 0.98로 Λ 계산의 상한(ρ ≤ 0.98)에 걸려 꼬리가 눌려 있기 때문입니다(설계 문서 6.2절의 "클램프로 보수적"). 64심볼 이상에서는 CFO 회전으로 비원형성이 줄어 상한이 풀리고 1.02–1.10으로 올라와, 네 조건 중 최댓값이 됩니다. 또 이 조건은 표준편차가 0.11–0.14로 다른 조건(약 0.06)의 두 배입니다. 강한 자기 잡음에서 위상당 24–25개 탭으로 Q·Π를 추정하기 때문입니다.</span></div>
+    </figure>
+    <figure class="plate">
+      <h3>범위 1.3을 넘을 확률 (bootstrap)</h3>
+      <svg class="ch" id="c-p" viewBox="0 0 520 300" role="img" aria-label="길이별로 네 조건의 최댓값이 1.3을 넘을 확률"></svg>
+      <div class="read"><b>읽는 법</b><span>Python 세트의 프래그먼트를 다시 뽑아(2,000번) 네 조건의 최댓값을 다시 계산했습니다. 32심볼에서는 1.3을 넘을 확률이 사실상 0이지만, 64심볼 이상에서는 3–9%입니다. MATLAB의 1.307은 이 몇 % 쪽에 든 결과입니다. 코드나 세트의 문제가 아닙니다.</span></div>
+    </figure>
+  </div>
+  <figure class="plate">
+    <h3>해결: 64·128·256심볼은 "32심볼 범위 ∪ (평균 ± 4σ)"</h3>
+    <div class="legend" id="lg-r"></div>
+    <svg class="ch" id="c-r" viewBox="0 0 960 220" role="img" aria-label="cir h0 largest tail ratio의 길이별 범위와 값"></svg>
+    <figcaption>H0 꼬리 비율·쌍 상관 판정 19종을 같은 방식으로 bootstrap했습니다. 64–256심볼에서는 범위를 "32심볼 범위 ∪ (64–256심볼 Python 값의 평균 ± 4σ)"로 정했습니다. 이 판정은 0.7–1.413이 되어 1.307이 OK입니다. 넓히기만 하고 좁히지는 않으며, 32심볼 범위는 그대로입니다. 고친 뒤 64심볼을 다시 돌려 5개 부분 모두 PASS였습니다.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ 6 -->
+<section class="sec" id="v6">
+  <div class="sec-head"><span class="sec-no">6</span><h2>H0 꼬리·상관 판정 탐색기</h2></div>
+  <p class="prose">새 규칙이 적용된 19개 판정을 하나씩 볼 수 있습니다. 점은 길이별 Python 값, 막대는 ±4σ(bootstrap)입니다. 연한 띠는 32심볼 범위, 진한 띠는 그 길이에서 쓰는 범위입니다. 64–256심볼에서 띠가 넓어진 만큼이 이번 수정입니다.</p>
+  <figure class="plate">
+    <div class="controls"><label for="sel-x" class="small">판정</label><select id="sel-x"></select></div>
+    <svg class="ch" id="c-x" viewBox="0 0 960 280" role="img" aria-label="선택한 판정의 길이별 값, 4시그마 막대, 범위"></svg>
+    <div class="read" id="x-read"></div>
+  </figure>
+</section>
+
+<!-- ============================================================ 7 -->
+<section class="sec" id="v7">
+  <div class="sec-head"><span class="sec-no">7</span><h2>남은 일</h2></div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>항목</th><th>상태</th><th>다음</th></tr></thead>
+      <tbody>
+        <tr><td>5단계 5열 비교 (새 생성기 = 예전)</td><td><span class="chip pass"><i></i>PASS</span></td><td>8,100개 바이트 일치</td></tr>
+        <tr><td>5단계 2열 비교</td><td><span class="chip run"><i></i>확인 필요</span></td><td>빈 폴더에 만든 예전 2열 세트로 결과를 받으면 끝</td></tr>
+        <tr><td>6단계 64심볼</td><td><span class="chip pass"><i></i>5/5 PASS</span></td><td>범위 수정(d99ce50) 뒤 다시 실행</td></tr>
+        <tr><td>6단계 128·256심볼</td><td><span class="chip run"><i></i>실행 중</span></td><td>요약 표를 받아 같은 방식으로 확인</td></tr>
+        <tr><td>32심볼에도 새 범위 규칙 적용 (3안)</td><td><span class="chip run"><i></i>보류</span></td><td>7단계에서 판단 (32심볼 MATLAB 실행은 지금까지 모두 통과)</td></tr>
+        <tr><td>7단계 문서, 브랜치 합치기</td><td><span class="chip run"><i></i>대기</span></td><td>6단계 통과 뒤 TEST_PLAN, 체크리스트, 설계 문서와 함께</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>그래프 수치: <code>lambda_patch/model/results/</code>의 <code>length_l90.json</code>(통계 모델 L90), <code>length_h0md.json</code>(MD 규칙 H0 모델), <code>expect_n*.json</code>(Python 기준 세트의 κ), <code>drift_check.json</code>(이동 확인), <code>expect_spread.json</code>(bootstrap 퍼짐). 범위는 length-support의 <code>test/synthetic_expect.m</code>입니다. 조건별 Λ̂ 꼬리와 1.3 초과 확률은 같은 기준 세트의 2,000번 bootstrap(2026-10-21)이고, MATLAB 값은 실행 요약 표에서 옮겼습니다.</p>
+  <p>관련 페이지: <a href="length.html">RIF 길이별 합성 시험</a>, <a href="checklist.html">RIF 검증 체크리스트</a>, <a href="index.html">RIF Λ 판정기</a>.</p>
+</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var DATA = {"l90": {"md1": [-111.29, -114.21, -116.47, -116.23], "cur_x": [-112.06, -114.75, -117.14, -116.93], "cur_c": [-109.61, -112.49, -114.8, -114.53], "single_c": [-106.21, -109.12, -111.35, -111.11], "and_c": [-111.27, -114.21, -116.42, -116.14], "soft_c": [-116.73, -119.53, -121.94, -121.51], "soft_x": [-117.54, -120.47, -122.83, -122.49]}, "formula": [-0.0, -2.9, -5.19, -4.89], "h0md": {"-120 dBm": [0.0009, 0.0008, 0.0013, 0.0006], "-88 dBm": [0.0172, 0.0139, 0.0091, 0.0069], "-82 dBm": [0.0532, 0.0464, 0.0273, 0.0112], "-40 dBm": [0.0021, 0.0011, 0.0001, 0.0], "mp20 -40 dBm": [0.0429, 0.037, 0.0217, 0.0113]}, "kappa": {"120": [0.383, 0.367, 0.373, 0.375], "88": [0.569, 0.549, 0.436, 0.359], "82": [0.824, 0.771, 0.578, 0.37], "40": [0.977, 0.909, 0.665, 0.377]}, "pseudo": [0.974, 0.894, 0.611, -0.042], "drift": [{"N": 32, "D": 0.2496, "new0": 0.92, "new": 0.99, "fix0": 0.94, "fix": 0.99, "slope": 0.261, "nhyp": 5, "dmed": 0.143}, {"N": 64, "D": 0.2496, "new0": 0.87, "new": 0.96, "fix0": 0.85, "fix": 0.96, "slope": 0.263, "nhyp": 5, "dmed": 0.143}, {"N": 128, "D": 0.2496, "new0": 0.91, "new": 0.99, "fix0": 0.85, "fix": 1.0, "slope": 0.262, "nhyp": 5, "dmed": 0.143}, {"N": 256, "D": 0.2496, "new0": 0.91, "new": 0.98, "fix0": 0.92, "fix": 0.97, "slope": 0.262, "nhyp": 5, "dmed": 0.143}, {"N": 32, "D": 0.6, "new0": 0.28, "new": 1.0, "fix0": 0.21, "fix": 1.0, "slope": 0.583, "nhyp": 11, "dmed": 0.571}, {"N": 64, "D": 0.6, "new0": 0.27, "new": 0.99, "fix0": 0.25, "fix": 0.99, "slope": 0.583, "nhyp": 11, "dmed": 0.571}, {"N": 128, "D": 0.6, "new0": 0.29, "new": 1.0, "fix0": 0.22, "fix": 1.0, "slope": 0.583, "nhyp": 11, "dmed": 0.571}, {"N": 256, "D": 0.6, "new0": 0.27, "new": 0.99, "fix0": 0.24, "fix": 1.0, "slope": 0.584, "nhyp": 11, "dmed": 0.571}, {"N": 32, "D": 1.2, "new0": 0.1, "new": 0.99, "fix0": 0.04, "fix": 0.99, "slope": 1.179, "nhyp": 19, "dmed": 1.143}, {"N": 64, "D": 1.2, "new0": 0.08, "new": 1.0, "fix0": 0.02, "fix": 1.0, "slope": 1.179, "nhyp": 19, "dmed": 1.143}, {"N": 128, "D": 1.2, "new0": 0.08, "new": 1.0, "fix0": 0.02, "fix": 0.98, "slope": 1.178, "nhyp": 19, "dmed": 1.143}, {"N": 256, "D": 1.2, "new0": 0.11, "new": 0.99, "fix0": 0.03, "fix": 0.98, "slope": 1.178, "nhyp": 19, "dmed": 1.143}], "spread": [{"id": "h0 -120 dBm: per-tap tail ratio t=10", "v": [1.01, 1.117, 0.989, 0.94], "sd": [0.064, 0.06, 0.055, 0.057], "lo": [0.8, 0.786, 0.786, 0.786], "hi": [1.25, 1.25, 1.25, 1.25]}, {"id": "h0 -120 dBm: per-tap tail ratio t=14", "v": [0.981, 1.404, 0.943, 0.866], "sd": [0.158, 0.192, 0.138, 0.145], "lo": [0.55, 0.438, 0.438, 0.438], "hi": [1.5, 1.704, 1.704, 1.704]}, {"id": "h0 -88 dBm: per-tap tail ratio t=10", "v": [0.987, 1.081, 0.976, 0.979], "sd": [0.059, 0.062, 0.059, 0.056], "lo": [0.8, 0.775, 0.775, 0.775], "hi": [1.25, 1.25, 1.25, 1.25]}, {"id": "h0 -88 dBm: per-tap tail ratio t=14", "v": [0.827, 1.231, 0.789, 0.847], "sd": [0.132, 0.164, 0.128, 0.146], "lo": [0.55, 0.372, 0.372, 0.372], "hi": [1.5, 1.539, 1.539, 1.539]}, {"id": "h0 -82 dBm: per-tap tail ratio t=10", "v": [1.047, 0.917, 1.021, 1.073], "sd": [0.061, 0.061, 0.061, 0.065], "lo": [0.8, 0.754, 0.754, 0.754], "hi": [1.25, 1.252, 1.252, 1.252]}, {"id": "h0 -82 dBm: per-tap tail ratio t=14", "v": [0.923, 0.943, 0.866, 1.02], "sd": [0.15, 0.167, 0.161, 0.15], "lo": [0.55, 0.305, 0.305, 0.305], "hi": [1.5, 1.581, 1.581, 1.581]}, {"id": "h0 -40 dBm: per-tap tail ratio t=10", "v": [1.039, 1.023, 0.849, 1.133], "sd": [0.134, 0.129, 0.119, 0.159], "lo": [0.3, 0.3, 0.3, 0.3], "hi": [1.25, 1.543, 1.543, 1.543]}, {"id": "h0 -40 dBm: per-tap tail ratio t=14", "v": [1.251, 1.154, 0.596, 0.808], "sd": [0.386, 0.391, 0.277, 0.323], "lo": [0.2, 0.0, 0.0, 0.0], "hi": [1.5, 2.175, 2.175, 2.175]}, {"id": "mp20: per-tap tail ratio t=10", "v": [0.948, 0.984, 1.036, 0.89], "sd": [0.097, 0.098, 0.099, 0.078], "lo": [0.3, 0.3, 0.3, 0.3], "hi": [1.25, 1.338, 1.338, 1.338]}, {"id": "PerClass: smallest tail ratio t=10", "v": [0.984, 0.917, 0.854, 0.94], "sd": [0.06, 0.057, 0.099, 0.051], "lo": [0.3, 0.3, 0.3, 0.3], "hi": [1.3, 1.3, 1.3, 1.3]}, {"id": "PerClass: largest tail ratio t=10", "v": [1.055, 1.117, 1.023, 1.135], "sd": [0.083, 0.062, 0.053, 0.116], "lo": [0.7, 0.7, 0.7, 0.7], "hi": [1.3, 1.4, 1.4, 1.4]}, {"id": "cir h0: smallest tail ratio t=10", "v": [0.776, 0.87, 0.888, 0.974], "sd": [0.093, 0.056, 0.05, 0.066], "lo": [0.5, 0.5, 0.5, 0.5], "hi": [1.3, 1.3, 1.3, 1.3]}, {"id": "cir h0: largest tail ratio t=10", "v": [1.015, 1.055, 1.101, 1.036], "sd": [0.052, 0.067, 0.113, 0.081], "lo": [0.7, 0.7, 0.7, 0.7], "hi": [1.3, 1.413, 1.413, 1.413]}, {"id": "pkt new h0 soft: smallest tail ratio at P = 1e-2", "v": [0.877, 0.863, 0.623, 0.849], "sd": [0.124, 0.122, 0.185, 0.181], "lo": [0.6, 0.127, 0.127, 0.127], "hi": [1.6, 1.6, 1.6, 1.6]}, {"id": "pkt new h0 soft: largest tail ratio at P = 1e-2", "v": [1.104, 1.089, 1.047, 1.288], "sd": [0.166, 0.168, 0.107, 0.139], "lo": [0.6, 0.588, 0.588, 0.588], "hi": [1.6, 1.695, 1.695, 1.695]}, {"id": "pkt new h0: largest |correlation| of fragment pairs", "v": [0.055, 0.067, 0.064, 0.085], "sd": [0.033, 0.036, 0.029, 0.033], "lo": [0.0, 0.0, 0.0, 0.0], "hi": [0.2, 0.203, 0.203, 0.203]}, {"id": "pkt fixed h0 soft: smallest tail ratio at P = 1e-2", "v": [0.863, 0.764, 0.835, 0.948], "sd": [0.147, 0.092, 0.142, 0.103], "lo": [0.6, 0.399, 0.399, 0.399], "hi": [1.6, 1.6, 1.6, 1.6]}, {"id": "pkt fixed h0 soft: largest tail ratio at P = 1e-2", "v": [1.33, 1.57, 0.934, 1.231], "sd": [0.16, 0.36, 0.187, 0.283], "lo": [0.6, 0.137, 0.137, 0.137], "hi": [1.6, 2.353, 2.353, 2.353]}, {"id": "pkt fixed h0: largest |correlation| of fragment pairs", "v": [0.018, 0.091, 0.035, 0.045], "sd": [0.026, 0.033, 0.031, 0.032], "lo": [0.0, 0.0, 0.0, 0.0], "hi": [0.2, 0.2, 0.2, 0.2]}]};
+  var NS = [32, 64, 128, 256], NC = ['var(--n32)', 'var(--n64)', 'var(--n128)', 'var(--n256)'];
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function fmt(v, d) { return (v < 0 ? '−' : '') + Math.abs(v).toFixed(d); }
+
+  /* generic x = length chart; opts: {w,h,yMin,yMax,ticks,yLab,fmtY,series:[{name,v,color,dash,mk,err}],bands:[{lo,hi,fill}],hl:[{y,label,color}],pts:[{x,y,color,label,shape}]} */
+  function chart(svg, o) {
+    var W = o.w || 520, H = o.h || 300, L = o.left || 58, R = 18, T = 16, B = 44;
+    var xs = function (i) { return L + 24 + i * (W - L - R - 48) / 3; };
+    var ys = function (v) { return T + (o.yMax - v) / (o.yMax - o.yMin) * (H - T - B); };
+    var s = '';
+    (o.bands || []).forEach(function (b) {
+      var y0 = ys(Math.min(b.hi, o.yMax)), y1 = ys(Math.max(b.lo, o.yMin));
+      s += '<rect x="' + (b.x0 !== undefined ? xs(b.x0) - 30 : L) + '" y="' + y0 + '" width="' + (b.x0 !== undefined ? 60 : W - L - R) + '" height="' + Math.max(0, y1 - y0) + '" fill="' + b.fill + '"/>';
+    });
+    o.ticks.forEach(function (v) {
+      s += '<line class="gl" x1="' + L + '" x2="' + (W - R) + '" y1="' + ys(v) + '" y2="' + ys(v) + '"/>';
+      s += '<text class="tick" x="' + (L - 8) + '" y="' + (ys(v) + 4) + '" text-anchor="end">' + (o.fmtY ? o.fmtY(v) : v) + '</text>';
+    });
+    s += '<line class="axl" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/>';
+    NS.forEach(function (n, i) { s += '<text class="tick" x="' + xs(i) + '" y="' + (H - B + 18) + '" text-anchor="middle">' + n + '</text>'; });
+    s += '<text class="axt" x="' + ((L + W - R) / 2) + '" y="' + (H - 8) + '" text-anchor="middle">RIF 길이 [심볼]</text>';
+    s += '<text class="axt" transform="translate(14 ' + ((T + H - B) / 2) + ') rotate(-90)" text-anchor="middle">' + o.yLab + '</text>';
+    (o.hl || []).forEach(function (h) {
+      s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + ys(h.y) + '" y2="' + ys(h.y) + '" stroke="' + h.color + '" stroke-width="1.4" stroke-dasharray="5 4"/>';
+      s += '<text class="lbl" x="' + (W - R - 4) + '" y="' + (ys(h.y) - 5) + '" text-anchor="end">' + h.label + '</text>';
+    });
+    (o.series || []).forEach(function (se) {
+      var d = se.v.map(function (v, i) { return (i ? 'L' : 'M') + xs(i).toFixed(1) + ',' + ys(v).toFixed(1); }).join(' ');
+      if (se.err) se.v.forEach(function (v, i) {
+        var e = se.err[i];
+        s += '<line x1="' + xs(i) + '" x2="' + xs(i) + '" y1="' + ys(v + e) + '" y2="' + ys(v - e) + '" stroke="' + se.color + '" stroke-width="1.6" opacity=".55"/>';
+      });
+      if (!se.noLine) s += '<path d="' + d + '" fill="none" stroke="' + se.color + '" stroke-width="' + (se.width || 2) + '"' + (se.dash ? ' stroke-dasharray="' + se.dash + '"' : '') + '/>';
+      if (se.mk !== false) se.v.forEach(function (v, i) { s += '<circle cx="' + xs(i) + '" cy="' + ys(v) + '" r="3.6" fill="' + se.color + '"/>'; });
+    });
+    (o.pts || []).forEach(function (p) {
+      var x = xs(p.x), y = ys(p.y);
+      s += '<path d="M' + x + ',' + (y - 7) + ' L' + (x + 7) + ',' + y + ' L' + x + ',' + (y + 7) + ' L' + (x - 7) + ',' + y + ' Z" fill="' + p.color + '"/>';
+      if (p.label) s += '<text class="lblb" x="' + (x + 11) + '" y="' + (y + 4) + '">' + p.label + '</text>';
+    });
+    svg.innerHTML = s;
+  }
+  function legend(el, items) {
+    el.innerHTML = items.map(function (it) {
+      var g = it.diamond ? '<path d="M11,1 L17,6 L11,11 L5,6 Z" fill="' + it.color + '"/>' : it.band ? '<rect x="1" y="1" width="20" height="10" fill="' + it.color + '"/>' :
+        '<line x1="1" y1="6" x2="21" y2="6" stroke="' + it.color + '" stroke-width="2"' + (it.dash ? ' stroke-dasharray="' + it.dash + '"' : '') + '/>' + (it.dot !== false ? '<circle cx="11" cy="6" r="3" fill="' + it.color + '"/>' : '');
+      return '<span class="key"><svg viewBox="0 0 22 12" aria-hidden="true">' + g + '</svg>' + esc(it.name) + '</span>';
+    }).join('');
+  }
+
+  /* ---------------- pipeline diagram */
+  (function () {
+    var b = [[20, 20, '기준 세트 (Python)', 'gen_dumps.py --N', '32·64·128·256, 5열·2열'], [250, 20, '판정 값 94/49', 'expect_synthetic.py', '+ 모델: L90, MD, 이동'], [480, 20, '퍼짐', 'expect_spread.py', 'H0 꼬리·상관 19종'], [710, 20, '범위 표', 'build_expect.py', '→ synthetic_expect.m'],
+             [20, 150, '세트 생성 (MATLAB)', 'gen_synthetic_dumps', "'N', 'Sco', 생성 조건 파일"], [250, 150, '세트 읽기', 'run_synthetic_test', 'N, Ppm, 이동량, Scale'], [480, 150, '판정', 'synthetic_expect(N)', '+ CFO·이동·Scale 규칙'], [710, 150, '실행 묶음', 'regress_length32 / _lengths', 'PASS/FAIL 표']];
+    var s = '<defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--ink-2)"/></marker></defs>';
+    b.forEach(function (x, i) {
+      var top = i < 4;
+      s += '<rect x="' + x[0] + '" y="' + x[1] + '" width="210" height="82" rx="8" fill="' + (top ? 'var(--raised)' : 'var(--wash)') + '" stroke="' + (top ? 'var(--axis)' : 'var(--s1)') + '"/>';
+      s += '<text x="' + (x[0] + 12) + '" y="' + (x[1] + 24) + '" class="lblb" style="font-size:13.5px">' + x[2] + '</text>';
+      s += '<text x="' + (x[0] + 12) + '" y="' + (x[1] + 46) + '" class="lbl" style="font-family:var(--f-mono)">' + esc(x[3]) + '</text>';
+      s += '<text x="' + (x[0] + 12) + '" y="' + (x[1] + 66) + '" class="lbl">' + esc(x[4]) + '</text>';
+      if (i % 4 < 3) s += '<path d="M' + (x[0] + 210) + ',' + (x[1] + 41) + ' H' + (x[0] + 248) + '" stroke="var(--ink-2)" stroke-width="1.4" marker-end="url(#ah)"/>';
+    });
+    s += '<path d="M815,102 V122 H585 V148" fill="none" stroke="var(--s1)" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ah)"/>';
+    s += '<text x="600" y="137" class="lbl">synthetic_expect.m (length-support에 커밋)</text>';
+    s += '<text x="20" y="14" class="tick">master · 정답 만들기</text><text x="20" y="246" class="tick">length-support · MATLAB 판정</text>';
+    $('pipe').innerHTML = s;
+  })();
+
+  /* ---------------- section 2 */
+  var RULES = [['md1', 'MD 규칙 (프래그먼트)', 'var(--s2)'], ['cur_x', 'Λ 프래그먼트 1e-3', 'var(--s1)'], ['cur_c', 'Λ̂ 프래그먼트 1e-3', 'var(--s3)'], ['soft_c', 'Λ̂ 패킷 soft', 'var(--s4)']];
+  var l90s = RULES.map(function (r) { var v = DATA.l90[r[0]]; return {name: r[1], color: r[2], v: v.map(function (x) { return x - v[0]; })}; });
+  l90s.push({name: 'CFO 공식', color: 'var(--ink-2)', dash: '6 4', v: DATA.formula, mk: false, width: 1.6});
+  legend($('lg-l90'), l90s.map(function (s) { return {name: s.name, color: s.color, dash: s.dash, dot: s.mk !== false}; }));
+  chart($('c-l90'), {yMin: -6, yMax: 0.5, ticks: [0, -1, -2, -3, -4, -5, -6], yLab: '32심볼 대비 L90 이동 [dB]', fmtY: function (v) { return v === 0 ? '0' : fmt(v, 0); }, series: l90s});
+
+  var MDC = [['-120 dBm', '−120 dBm (열잡음)', 'var(--muted)'], ['-88 dBm', '−88 dBm', 'var(--s3)'], ['-82 dBm', '−82 dBm', 'var(--s2)'], ['-40 dBm', '−40 dBm', 'var(--s4)'], ['mp20 -40 dBm', '멀티패스 −40 dBm', 'var(--s1)']];
+  var mds = MDC.map(function (c) { return {name: c[1], color: c[2], v: DATA.h0md[c[0]].map(function (x) { return x * 100; })}; });
+  legend($('lg-md'), mds.map(function (s) { return {name: s.name, color: s.color}; }).concat([{name: '32심볼 −82 dBm 범위', color: 'var(--band)', band: true}]));
+  chart($('c-md'), {yMin: 0, yMax: 8, ticks: [0, 2, 4, 6, 8], yLab: 'MD 규칙 오검출률 [%]', bands: [{lo: 2.8, hi: 7.8, fill: 'var(--band)'}], series: mds});
+
+  var KP = [['120', '−120 dBm', 'var(--muted)'], ['88', '−88 dBm', 'var(--s3)'], ['82', '−82 dBm', 'var(--s2)'], ['40', '−40 dBm', 'var(--s4)']];
+  var kps = KP.map(function (c) { return {name: c[1], color: c[2], v: DATA.kappa[c[0]]}; });
+  kps.push({name: '|sin Φ / Φ| (CFO 비원형 계수)', color: 'var(--ink-2)', dash: '6 4', v: DATA.pseudo.map(Math.abs), mk: false, width: 1.6});
+  legend($('lg-kp'), kps.map(function (s) { return {name: s.name, color: s.color, dash: s.dash, dot: s.mk !== false}; }));
+  chart($('c-kp'), {yMin: 0, yMax: 1.05, ticks: [0, 0.2, 0.4, 0.6, 0.8, 1.0], yLab: 'κ 중앙값', fmtY: function (v) { return v.toFixed(1); }, series: kps});
+
+  var DCOL = {'0.2496': 'var(--s1)', '0.6': 'var(--s2)', '1.2': 'var(--crit)'};
+  var drs = [];
+  ['0.2496', '0.6', '1.2'].forEach(function (D) {
+    var rows = NS.map(function (n) { return DATA.drift.filter(function (r) { return r.N === n && String(r.D) === D; })[0]; });
+    drs.push({name: '이동 ' + (D === '0.2496' ? '0.25' : D) + '탭, 탐색 없음', color: DCOL[D], dash: '5 4', v: rows.map(function (r) { return r.fix0; })});
+    drs.push({name: '이동 ' + (D === '0.2496' ? '0.25' : D) + '탭, 탐색 후', color: DCOL[D], v: rows.map(function (r) { return r.fix; })});
+  });
+  legend($('lg-dr'), drs.map(function (s) { return {name: s.name, color: s.color, dash: s.dash}; }));
+  chart($('c-dr'), {yMin: 0, yMax: 1.05, ticks: [0, 0.2, 0.4, 0.6, 0.8, 1.0], yLab: '패킷 Pd (고정 칩)', fmtY: function (v) { return v.toFixed(1); }, hl: [{y: 0.85, label: '판정 하한 0.85', color: 'var(--good)'}], series: drs});
+
+  /* ---------------- section 3: comparison bars */
+  function bars(svg, rows, total) {
+    var W = 960, L = 170, R = 20, s = '', cols = {same: 'var(--good)', diff: 'var(--warn)', miss: 'var(--crit)', extra: 'var(--muted)'}, nm = {same: '같음', diff: '다름', miss: 'missing', extra: 'extra'};
+    rows.forEach(function (r, k) {
+      var y = 14 + k * 54, x = L;
+      s += '<text class="lblb" x="' + (L - 10) + '" y="' + (y + 19) + '" text-anchor="end">' + r.name + '</text>';
+      s += '<rect x="' + L + '" y="' + y + '" width="' + (W - L - R) + '" height="28" fill="var(--grid)"/>';
+      ['same', 'diff', 'miss', 'extra'].forEach(function (key) {
+        var v = r[key] || 0; if (!v) return;
+        var w = v / total * (W - L - R);
+        s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="28" fill="' + cols[key] + '"/>';
+        s += '<text x="' + (x + 8) + '" y="' + (y + 19) + '" class="lblb" style="fill:#fff">' + nm[key] + ' ' + v.toLocaleString('en-US') + '</text>';
+        x += w;
+      });
+    });
+    svg.innerHTML = s;
+  }
+  bars($('c-f1'), [{name: '5열 (8,100개)', extra: 8100}, {name: '2열 (7,680개)', extra: 7680}], 8100);
+  bars($('c-f2'), [{name: '"예전 2열" 폴더', diff: 7680, miss: 420}, {name: '5열 비교 (참고)', same: 8100}], 8100);
+
+  /* ---------------- section 4: sample sizes and quick ranges */
+  (function () {
+    var rows = [['조건당 패킷', 124, 24], ['상관 쌍', 496, 96], ['꼬리 경로 기대값', 70, 13.5]];
+    var W = 520, L = 120, s = '';
+    rows.forEach(function (r, k) {
+      var y = 18 + k * 74, mx = r[1];
+      s += '<text class="lblb" x="' + (L - 10) + '" y="' + (y + 22) + '" text-anchor="end">' + r[0] + '</text>';
+      [[r[1], '전체 세트', 'var(--s1)'], [r[2], '빠른 세트 (0.2)', 'var(--s2)']].forEach(function (b, j) {
+        var w = b[0] / mx * (W - L - 70), yy = y + j * 24;
+        s += '<rect x="' + L + '" y="' + yy + '" width="' + w + '" height="18" fill="' + b[2] + '"/>';
+        s += '<text class="lbl" x="' + (L + w + 6) + '" y="' + (yy + 14) + '">' + b[0] + ' · ' + b[1] + '</text>';
+      });
+    });
+    $('c-q1').innerHTML = s;
+  })();
+  (function () {
+    var items = [{name: 'pkt new: largest |correlation|', lo0: 0, hi0: 0.364, lo1: 0, hi1: 0.502, v: 0.4089, max: 0.6},
+                 {name: 'pkt fixed soft: smallest tail ratio', lo0: 0.397, hi0: 4.9, lo1: 0, hi1: 4.9, v: 0, max: 1.0}];
+    var W = 520, L = 20, R = 20, s = '';
+    items.forEach(function (it, k) {
+      var y = 26 + k * 110, sc = function (x) { return L + Math.min(x, it.max) / it.max * (W - L - R); };
+      s += '<text class="lblb" x="' + L + '" y="' + (y - 8) + '">' + esc(it.name) + '</text>';
+      s += '<rect x="' + sc(it.lo0) + '" y="' + y + '" width="' + (sc(it.hi0) - sc(it.lo0)) + '" height="16" fill="var(--band)" stroke="var(--s1)"/>';
+      s += '<text class="lbl" x="' + (W - R) + '" y="' + (y + 12) + '" text-anchor="end">예전 규칙</text>';
+      s += '<rect x="' + sc(it.lo1) + '" y="' + (y + 24) + '" width="' + (sc(it.hi1) - sc(it.lo1)) + '" height="16" fill="var(--band2)" stroke="var(--good)"/>';
+      s += '<text class="lbl" x="' + (W - R) + '" y="' + (y + 36) + '" text-anchor="end">새 규칙</text>';
+      var x = sc(it.v);
+      s += '<path d="M' + x + ',' + (y + 46) + ' L' + (x + 7) + ',' + (y + 53) + ' L' + x + ',' + (y + 60) + ' L' + (x - 7) + ',' + (y + 53) + ' Z" fill="var(--crit)"/>';
+      s += '<text class="lblb" x="' + (x + 11) + '" y="' + (y + 57) + '">MATLAB ' + it.v + '</text>';
+      [0, it.max / 2, it.max].forEach(function (t) { s += '<text class="tick" x="' + sc(t) + '" y="' + (y + 78) + '" text-anchor="middle">' + t + (t === it.max && it.max < 1 ? '' : '') + '</text>'; });
+    });
+    $('c-q2').innerHTML = s;
+    legend($('lg-q2'), [{name: '예전 규칙 범위', color: 'var(--band)', band: true}, {name: '새 규칙 범위', color: 'var(--band2)', band: true}, {name: 'MATLAB 빠른 세트 값', color: 'var(--crit)', diamond: true}]);
+  })();
+
+  /* ---------------- section 5 */
+  var TC = {40: [0.776, 1.028, 1.101, 1.021], 82: [0.995, 0.87, 0.888, 1.036], 88: [1.015, 1.047, 0.984, 1.008], 120: [0.924, 1.055, 0.969, 0.974]};
+  var TS = {40: [0.111, 0.132, 0.139, 0.143], 82: [0.059, 0.057, 0.056, 0.065], 88: [0.061, 0.065, 0.066, 0.058], 120: [0.059, 0.063, 0.058, 0.055]};
+  var tcs = [['120', '−120 dBm', 'var(--muted)'], ['88', '−88 dBm', 'var(--s3)'], ['82', '−82 dBm', 'var(--s2)'], ['40', '−40 dBm', 'var(--crit)']].map(function (c) { return {name: c[1], color: c[2], v: TC[c[0]], err: TS[c[0]]}; });
+  legend($('lg-t'), tcs.map(function (s) { return {name: s.name, color: s.color}; }).concat([{name: '32심볼 범위 0.7–1.3', color: 'var(--band)', band: true}, {name: 'MATLAB 64심볼 최댓값', color: 'var(--crit)', diamond: true}]));
+  chart($('c-t'), {yMin: 0.5, yMax: 1.5, ticks: [0.5, 0.7, 0.9, 1.1, 1.3, 1.5], yLab: 'Λ̂ 꼬리 비율 t=10', fmtY: function (v) { return v.toFixed(1); }, bands: [{lo: 0.7, hi: 1.3, fill: 'var(--band)'}], series: tcs, pts: [{x: 1, y: 1.307, color: 'var(--crit)', label: '1.307'}]});
+  (function () {
+    var P = [0.000, 0.030, 0.088, 0.028], W = 520, H = 300, L = 58, B = 44, T = 16, s = '';
+    var xs = function (i) { return L + 24 + i * (W - L - 18 - 48) / 3; }, ys = function (v) { return T + (0.1 - v) / 0.1 * (H - T - B); };
+    [0, 0.02, 0.04, 0.06, 0.08, 0.1].forEach(function (v) { s += '<line class="gl" x1="' + L + '" x2="' + (W - 18) + '" y1="' + ys(v) + '" y2="' + ys(v) + '"/><text class="tick" x="' + (L - 8) + '" y="' + (ys(v) + 4) + '" text-anchor="end">' + Math.round(v * 100) + '%</text>'; });
+    P.forEach(function (p, i) {
+      s += '<rect x="' + (xs(i) - 22) + '" y="' + ys(p) + '" width="44" height="' + (ys(0) - ys(p)) + '" fill="' + NC[i] + '"/>';
+      s += '<text class="lblb" x="' + xs(i) + '" y="' + (ys(p) - 6) + '" text-anchor="middle">' + (p * 100).toFixed(1) + '%</text>';
+      s += '<text class="tick" x="' + xs(i) + '" y="' + (H - B + 18) + '" text-anchor="middle">' + NS[i] + '</text>';
+    });
+    s += '<line class="axl" x1="' + L + '" x2="' + (W - 18) + '" y1="' + ys(0) + '" y2="' + ys(0) + '"/>';
+    s += '<text class="axt" x="' + ((L + W - 18) / 2) + '" y="' + (H - 8) + '" text-anchor="middle">RIF 길이 [심볼]</text>';
+    s += '<text class="axt" transform="translate(14 ' + ((T + H - B) / 2) + ') rotate(-90)" text-anchor="middle">P(최댓값 > 1.3)</text>';
+    $('c-p').innerHTML = s;
+  })();
+
+  /* range strips: per length, band 32 range (light) + range used (dark) + Python value ±4σ + MATLAB */
+  function strips(svg, it, matlab) {
+    var W = 960, H = 220, L = 70, R = 20, s = '';
+    var all = [it.lo[0], it.hi[0]].concat(it.lo, it.hi, it.v.map(function (v, i) { return v - 4 * it.sd[i]; }), it.v.map(function (v, i) { return v + 4 * it.sd[i]; }));
+    if (matlab) all.push(matlab.v);
+    var mn = Math.max(0, Math.min.apply(null, all) - 0.05), mx = Math.max.apply(null, all) + 0.05;
+    var sc = function (x) { return L + (x - mn) / (mx - mn) * (W - L - R); };
+    NS.forEach(function (n, i) {
+      var y = 14 + i * 46;
+      s += '<text class="lblb" x="' + (L - 10) + '" y="' + (y + 17) + '" text-anchor="end">' + n + '</text>';
+      s += '<rect x="' + sc(it.lo[0]) + '" y="' + y + '" width="' + (sc(it.hi[0]) - sc(it.lo[0])) + '" height="24" fill="var(--band)"/>';
+      s += '<rect x="' + sc(it.lo[i]) + '" y="' + (y + 7) + '" width="' + (sc(it.hi[i]) - sc(it.lo[i])) + '" height="10" fill="' + NC[i] + '" opacity=".55"/>';
+      var a = sc(Math.max(mn, it.v[i] - 4 * it.sd[i])), b = sc(it.v[i] + 4 * it.sd[i]);
+      s += '<line x1="' + a + '" x2="' + b + '" y1="' + (y + 12) + '" y2="' + (y + 12) + '" stroke="var(--ink)" stroke-width="1.4"/>';
+      s += '<circle cx="' + sc(it.v[i]) + '" cy="' + (y + 12) + '" r="4.2" fill="var(--ink)"/>';
+      if (matlab && matlab.x === i) {
+        var x = sc(matlab.v);
+        s += '<path d="M' + x + ',' + (y + 4) + ' L' + (x + 7) + ',' + (y + 12) + ' L' + x + ',' + (y + 20) + ' L' + (x - 7) + ',' + (y + 12) + ' Z" fill="var(--crit)"/>';
+        s += '<text class="lblb" x="' + (x + 10) + '" y="' + (y + 34) + '">MATLAB ' + matlab.v + '</text>';
+      }
+      s += '<text class="tick" x="' + (W - R) + '" y="' + (y + 36) + '" text-anchor="end">범위 ' + it.lo[i] + ' .. ' + it.hi[i] + '</text>';
+    });
+    var step = (mx - mn) > 1.2 ? 0.5 : (mx - mn) > 0.5 ? 0.2 : 0.1, t0 = Math.ceil(mn / step) * step;
+    for (var t = t0; t <= mx + 1e-9; t += step) s += '<text class="tick" x="' + sc(t) + '" y="' + (H - 4) + '" text-anchor="middle">' + (+t.toFixed(2)) + '</text>';
+    svg.innerHTML = s;
+  }
+  var cirIt = DATA.spread.filter(function (x) { return x.id === 'cir h0: largest tail ratio t=10'; })[0];
+  strips($('c-r'), cirIt, {x: 1, v: 1.307});
+  legend($('lg-r'), [{name: '32심볼 범위', color: 'var(--band)', band: true}, {name: '그 길이에서 쓰는 범위', color: 'var(--n64)', band: true}, {name: 'Python 값 ± 4σ', color: 'var(--ink)'}, {name: 'MATLAB 64심볼', color: 'var(--crit)', diamond: true}]);
+
+  /* ---------------- section 6: explorer */
+  var sel = $('sel-x');
+  sel.innerHTML = DATA.spread.map(function (x, i) { return '<option value="' + i + '">' + esc(x.id) + '</option>'; }).join('');
+  sel.value = String(DATA.spread.indexOf(cirIt));
+  function showX() {
+    var it = DATA.spread[+sel.value];
+    strips($('c-x'), it, it.id === 'cir h0: largest tail ratio t=10' ? {x: 1, v: 1.307} : null);
+    var widened = NS.slice(1).some(function (n, k) { return it.lo[k + 1] < it.lo[0] - 1e-9 || it.hi[k + 1] > it.hi[0] + 1e-9; });
+    var maxsd = Math.max.apply(null, it.sd), half = (it.hi[0] - it.lo[0]) / 2;
+    $('x-read').innerHTML = '<b>읽는 법</b><span>Python 값 ' + it.v.map(function (v) { return v.toFixed(3); }).join(' / ') + ', σ ' + it.sd.map(function (v) { return v.toFixed(3); }).join(' / ') + ' (32 / 64 / 128 / 256심볼). ' +
+      (widened ? '64–256심볼 범위가 32심볼보다 넓어졌습니다(' + it.lo[1] + ' .. ' + it.hi[1] + '). 평균 ± 4σ가 32심볼 범위 밖으로 나가기 때문입니다.' : '평균 ± 4σ가 32심볼 범위 안이라 모든 길이에서 32심볼 범위를 그대로 씁니다.') +
+      (maxsd * 4 > half ? ' 표본 퍼짐(4σ ' + (4 * maxsd).toFixed(2) + ')이 32심볼 범위의 반폭(' + half.toFixed(2) + ')보다 커서, 같은 범위로는 실행마다 가끔 CHECK가 날 수 있는 판정입니다.' : '') + '</span>';
+  }
+  sel.addEventListener('change', showX);
+  showX();
+})();
+</script>
+<script>
+(function () {
+  /* theme toggle: system -> light -> dark */
+  var themeBtn = document.getElementById('theme-btn');
+  function themeLabel() {
+    var t = document.documentElement.getAttribute('data-theme');
+    themeBtn.textContent = '테마: ' + (t === 'light' ? '라이트' : t === 'dark' ? '다크' : '시스템');
+  }
+  themeBtn.addEventListener('click', function () {
+    var t = document.documentElement.getAttribute('data-theme');
+    var next = t === null ? 'light' : t === 'light' ? 'dark' : null;
+    if (next) document.documentElement.setAttribute('data-theme', next); else document.documentElement.removeAttribute('data-theme');
+    try { if (next) localStorage.setItem('rif-theme', next); else localStorage.removeItem('rif-theme'); } catch (e) {}
+    themeLabel();
+  });
+  themeLabel();
+})();
+</script>
+</body>
+</html>
