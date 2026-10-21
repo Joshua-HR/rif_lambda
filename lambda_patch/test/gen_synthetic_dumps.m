@@ -25,12 +25,16 @@ function gen_synthetic_dumps(root, varargin)
 %   gen_synthetic_dumps(outDir, 'Preset', 'none', Name, Value, ...)    one folder, for example
 %       gen_synthetic_dumps('D:/rif/h0x/c64_m85_j1/bin', 'Preset', 'none', 'N', 64, ...
 %                           'Power', -85, 'Key', 'wrong', 'Count', 1000, 'Seed', 11);
+%   gen_synthetic_dumps(root, 'Preset', 'h1wide')   wider H1 sweep root/h1_wide/ beside a test set, for the soft
+%                                              packet L90 (below the h1/ sweep); N, Cols and Ppm come from
+%                                              root/synthetic_set.txt (else from the options); see below
 %   One test set per root: the root gets synthetic_set.txt with the conditions of the set (length, format,
 %   residual CFO, drift, power shift, Scale), which run_synthetic_test reads. A root that holds another set
 %   (another length or format, or other conditions) is refused, also with 'Overwrite'.
 %
 %   Name-Value options
-%       'Preset'      'test'   'test' = folder tree under root (see below), 'none' = one folder
+%       'Preset'      'test'   'test' = folder tree under root (see below), 'none' = one folder,
+%                              'h1wide' = root/h1_wide/ only (see below)
 %       'N'           32       RIF length in symbols (32/64/128/256), also AccNum in the file name
 %       'Ppm'         0.25     residual carrier frequency offset [ppm] at 7987.2 MHz
 %       'Cols'        5        5 = "re im Q PiRe PiIm", 2 = "re im" (old format)
@@ -59,6 +63,11 @@ function gen_synthetic_dumps(root, varargin)
 %       'AgcStep'     0        AGC step [dB]: every fragment gets a random gain index -1, 0 or +1 (x AgcStep)
 %                              applied to signal and noise; Lambda is scale-invariant, the CIR level is not
 %       'PacketChannel' false  multipath: one channel realization per frame, shared by its 8 fragments
+%     for 'Preset','h1wide' (the conditions of h1/: drift 0, no AGC; 'Scale' is not used):
+%       'WidePower'   -104:-1:-126  powers [dBm] at 32 symbols (integers); moved by S like the test set
+%       'WideCount'   []       fragments per power, multiples of 8 (whole packets): [] = 800 (100 packets) for
+%                              -114 ... -122 dBm at 32 symbols (the soft packet Pd transition), 200 elsewhere;
+%                              or one count for all powers, or one per power
 %
 %   'test' preset layout (N symbols; h0_2col, scale_test, mixed_test only with 'Cols', 5). H1 and drift-folder
 %   powers move by S = round(-[g(N, Ppm) - g(32, 0.25)]) dB, g = coherent gain of the accumulation under the
@@ -72,6 +81,12 @@ function gen_synthetic_dumps(root, varargin)
 %       mixed_test/c<N>_m82_j1/bin          first file 2-column, 20 fragments
 %       h1_drift/c<N>_m{114 - S, 90}_j1/bin H1, peak drift, AgcStep 3 dB, 400 / 80 fragments
 %   Before the drift option the drift folders used 0.3 taps; gen_synthetic_dumps(root, 'Drift', 0.3) makes that set.
+%
+%   'h1wide' layout (a separate call; the test folders and synthetic_set.txt are not touched, run_synthetic_test
+%   does not read h1_wide/). The soft packet L90 (about -117.5 / -116.7 dBm for Lambda / Lambda-hat at 32 symbols)
+%   lies below the h1/ sweep, so h1_pd_analyze(root/h1, ...) gives NaN for it; h1_pd_analyze(root/h1_wide, ...)
+%   crosses it.
+%       h1_wide/c<N>_m{104..126 - S}_j1/bin H1, 800 fragments for m = 114..122 - S, 200 elsewhere
 
 p = inputParser;
 p.addRequired('root', @ischar);
@@ -95,6 +110,8 @@ p.addParameter('Sco', NaN, @(x) isnumeric(x) && isscalar(x));
 p.addParameter('FragInterval', 1e-3, @(x) isnumeric(x) && isscalar(x) && x > 0);
 p.addParameter('AgcStep', 0, @(x) isnumeric(x) && isscalar(x));
 p.addParameter('PacketChannel', false, @(x) islogical(x) || isnumeric(x));
+p.addParameter('WidePower', -(104:126), @(x) isnumeric(x) && isvector(x));
+p.addParameter('WideCount', [], @isnumeric);
 p.parse(root, varargin{:});
 o = p.Results;
 FS = 998.4e6;                                       % CIR tap rate: one tap = 1 / FS
@@ -113,7 +130,7 @@ elseif strcmpi(o.Preset, 'test')
 else
     driftSrc = 'Drift'; drift = 0; sco = 0;
 end
-base = rmfield(o, {'root', 'Preset', 'Scale', 'Sco', 'FragInterval'});
+base = rmfield(o, {'root', 'Preset', 'Scale', 'Sco', 'FragInterval', 'WidePower', 'WideCount'});
 base.Drift = drift;
 base.Overwrite = logical(o.Overwrite);
 base.FirstTwoCol = logical(o.FirstTwoCol);
@@ -180,8 +197,22 @@ switch lower(o.Preset)
                     'run_synthetic_test reports the CFO-dependent checks of this set as [INFO].'], o.Ppm, N, a);
         end
         check_root(o.root, info, N);
+    case 'h1wide'
+        % wider H1 sweep beside a test set (soft packet L90 below the h1/ sweep), with the conditions of h1/
+        [N, cols, ppm, src] = wide_set(o.root, o, p.UsingDefaults);
+        S = power_shift(N, ppm);                    % the power shift of the test set
+        [mag, cnt] = wide_sweep(o.WidePower, o.WideCount, S);
+        base.Ppm = ppm;
+        for i = 1:numel(mag)
+            % seed = 200000 + 1000 * N + |dBm|: apart from the test seeds (below 27000), the same for both formats
+            list(end + 1, :) = {fullfile(o.root, 'h1_wide', sprintf('c%d_m%d_j1', N, mag(i)), 'bin'), ...
+                                mk(base, N, -mag(i), 'right', cnt(i), 200000 + 1000 * N + mag(i), 0, 0, cols, 1, false)}; %#ok<AGROW>
+        end
+        info = {};                                  % root/synthetic_set.txt is left as it is
+        fprintf('h1_wide: N %d, %d columns, Ppm %g (%s), power shift %+d dB, %d powers -%d ... -%d dBm, %d dumps\n', ...
+                N, cols, ppm, src, S, numel(mag), min(mag), max(mag), sum(cnt));
     otherwise
-        error('gen_synthetic_dumps:preset', 'Unknown preset "%s" (use ''test'' or ''none'').', o.Preset);
+        error('gen_synthetic_dumps:preset', 'Unknown preset "%s" (use ''test'', ''h1wide'' or ''none'').', o.Preset);
 end
 
 % check every target folder before writing anything: a root that already holds a set (for example an
@@ -354,6 +385,76 @@ function a = amp_factor(N, ppm)
 % peak amplitude factor sin(x)/x, x = half the CFO phase turned over the N-1 accumulated symbols
 x = 2 * pi * 1e-6 * 7987.2e6 * 1024 / 998.4e6 * ppm * (N - 1) / 2;
 if x == 0, a = 1; else a = sin(x) / x; end
+end
+
+
+% ======================================================================
+function [N, cols, ppm, src] = wide_set(root, o, defaults)
+% conditions of the h1_wide sweep: root/synthetic_set.txt, else the options. An option that is given must agree
+% with the file; without the file, the h1/ dumps of the root (an older set) must agree with the options.
+given = @(k) ~any(strcmp(defaults, k));
+N = o.N; cols = o.Cols; ppm = o.Ppm; src = 'options';
+fn = fullfile(root, 'synthetic_set.txt');
+if exist(fn, 'file') == 2
+    m = read_manifest(fn);
+    k = {'N', 'Cols', 'Ppm'};
+    if ~all(isfield(m, k))
+        error('gen_synthetic_dumps:wide', '%s lacks N, Cols or Ppm; regenerate the set.', fn);
+    end
+    v = [str2double(m.N) str2double(m.Cols) str2double(m.Ppm)];
+    w = [N cols ppm];
+    for i = 1:numel(k)
+        if given(k{i}) && abs(w(i) - v(i)) > 1e-9
+            error('gen_synthetic_dumps:wide', '%s says %s = %g, but ''%s'', %g was given; nothing was written.', ...
+                  fn, k{i}, v(i), k{i}, w(i));
+        end
+    end
+    N = v(1); cols = v(2); ppm = v(3); src = 'synthetic_set.txt';
+    if isfield(m, 'PowerShift') && str2double(m.PowerShift) ~= power_shift(N, ppm)
+        error('gen_synthetic_dumps:wide', '%s: PowerShift %s does not match N = %d, Ppm %g.', fn, m.PowerShift, N, ppm);
+    end
+else
+    d = dir(fullfile(root, 'h1', 'c*_m*_j*'));
+    for i = 1:numel(d)
+        t = regexp(d(i).name, '^c(\d+)_m\d+_j\d+$', 'tokens', 'once');
+        if ~d(i).isdir || isempty(t), continue; end
+        f = dir(fullfile(root, 'h1', d(i).name, 'bin', '*_RifCir_AccNum_*.txt'));
+        if isempty(f), continue; end
+        nh = str2double(t{1}); nc = file_cols(fullfile(root, 'h1', d(i).name, 'bin', f(1).name));
+        if nh ~= N || nc ~= cols
+            error('gen_synthetic_dumps:wide', ['%s has no synthetic_set.txt and h1/%s holds %d-symbol, %g-column ' ...
+                  'dumps; pass ''N'', %d, ''Cols'', %g to match them. Nothing was written.'], root, d(i).name, nh, nc, nh, nc);
+        end
+        break;
+    end
+end
+if ~any(N == [32 64 128 256])
+    error('gen_synthetic_dumps:length', 'RIF length %g is not supported by the test set (32, 64, 128 or 256).', N);
+end
+end
+
+
+% ======================================================================
+function [mag, cnt] = wide_sweep(pw32, cnt, S)
+% |dBm| of the h1_wide folders (32-symbol powers moved by S, as in the test set) and the fragments per power
+pw32 = pw32(:).';
+if isempty(pw32) || any(~isfinite(pw32) | pw32 >= 0 | pw32 ~= round(pw32)) || numel(unique(pw32)) < numel(pw32)
+    error('gen_synthetic_dumps:wide', '''WidePower'' must hold distinct negative integer powers [dBm].');
+end
+if isempty(cnt)
+    cnt = 200 + 600 * (pw32 <= -114 & pw32 >= -122);   % soft packet Pd transition at 32 symbols: 100 packets
+elseif isscalar(cnt)
+    cnt = repmat(cnt, size(pw32));
+else
+    cnt = cnt(:).';
+end
+if numel(cnt) ~= numel(pw32) || any(cnt < 8 | mod(cnt, 8) ~= 0)
+    error('gen_synthetic_dumps:wide', '''WideCount'' must be multiples of 8 (whole packets): one, or one per power.');
+end
+mag = -pw32 - S;
+if any(mag < 1 | mag > 999)
+    error('gen_synthetic_dumps:wide', 'The powers after the shift S = %+d dB must lie between -1 and -999 dBm.', S);
+end
 end
 
 

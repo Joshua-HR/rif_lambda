@@ -204,7 +204,7 @@ details[open] > summary{margin-bottom:8px}
   <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾸고, 합성 시험이 RIF 길이 32·64·128·256을 지원하게 된 지금의 master로 직접 돌려 볼 시험입니다. 바로 아래 "할 일 순서"를 위에서부터 따라가세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남고, 순서표의 상태와 "다음" 표시도 따라 바뀝니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
   <div class="summary" id="summary">
-    <a class="stage-sum" href="#sA" data-stage="A"><div class="top"><span class="nm">A · 합성 덤프</span><span class="ct">0 / 10 통과</span></div><div class="bar"></div><span class="sub">LLS 불필요, 가장 먼저</span></a>
+    <a class="stage-sum" href="#sA" data-stage="A"><div class="top"><span class="nm">A · 합성 덤프</span><span class="ct">0 / 11 통과</span></div><div class="bar"></div><span class="sub">LLS 불필요, 가장 먼저</span></a>
     <a class="stage-sum" href="#sB" data-stage="B"><div class="top"><span class="nm">B · 현재 LLS</span><span class="ct">0 / 11 통과</span></div><div class="bar"></div><span class="sub">2열 덤프, C++ 수정 없음</span></a>
     <a class="stage-sum" href="#sC" data-stage="C"><div class="top"><span class="nm">C · bring-up</span><span class="ct">0 / 1 통과</span></div><div class="bar"></div><span class="sub">C++ 5열 덤프 구현 후</span></a>
     <a class="stage-sum" href="#sD" data-stage="D"><div class="top"><span class="nm">D · 최종 검증</span><span class="ct">0 / 2 통과</span></div><div class="bar"></div><span class="sub">5열 덤프 전체</span></a>
@@ -243,21 +243,22 @@ details[open] > summary{margin-bottom:8px}
     <li data-ids="A-P"><span class="sn">5</span><div class="sb"><a href="#A-P"><code>'Profile'</code> 옵션 동작</a><span class="sd">패킷 판정 설정이 한 번에 걸리는지. 수 분</span><span class="ids">A-P</span><span class="snd">보내기: A-3·A-P 결과 (단계 A 마무리)</span></div><span class="st"></span></li>
     <li data-ids="A-W" data-opt><span class="sn">6</span><div class="sb"><a href="#A-W">결과 JSON을 해설 페이지에서 비교</a><span class="sd">권장. 그림 타일로 한눈에 확인</span><span class="ids">A-W</span></div><span class="st"></span></li>
     <li data-ids="A-4" data-opt><span class="sn">7</span><div class="sb"><a href="#A-4">단계 B 리허설</a><span class="sd">선택. LLS를 돌리기 전에 B의 명령을 합성 2열로 연습</span><span class="ids">A-4</span></div><span class="st"></span></li>
+    <li data-ids="A-5" data-opt><span class="sn">8</span><div class="sb"><a href="#A-5">넓힌 H1 스윕: 소프트 패킷 L90</a><span class="sd">선택. 기본 세트의 H1 스윕 아래에 있는 소프트 결합 L90을 직접 잽니다. 32심볼 수 분</span><span class="ids">A-5</span></div><span class="st"></span></li>
   </ol>
 
   <div class="phase">B · 현재 LLS (2열 덤프, C++ 수정 없음)</div>
   <ol class="steps">
-    <li data-ids="B-P"><span class="sn">8</span><div class="sb"><a href="#B-P">LLS 덤프 준비</a><span class="sd">공통 설정, 폴더 규칙, 만들 순서. B-0·B-H0-4 덤프부터</span><span class="ids">B-P</span></div><span class="st"></span></li>
-    <li data-ids="B-0"><span class="sn">9</span><div class="sb"><a href="#B-0">패킷 전제: 프레임 구성, 피크 이동, AGC</a><span class="sd">이후 명령의 <code>'Drift', A.suggest.Drift</code>가 이 결과를 씁니다.</span><span class="ids">B-0</span><span class="snd">보내기: A.drift, A.suggest.Drift → 결정 5 (이동 후보 확정)</span></div><span class="st"></span></li>
-    <li data-ids="B-CH B-H0-4"><span class="sn">10</span><div class="sb"><a href="#B-CH">같은 채널 확인과 멀티패스 소프트 합 꼬리</a><span class="sd">첫 검증 항목. 5,000개로 먼저 보고 30,000개로 늘립니다.</span><span class="ids">B-CH · B-H0-4</span><span class="snd">보내기: 꼬리 비율과 수락 수 → 결정 1 (패킷 10⁻⁶ 유지)</span></div><span class="st"></span></li>
-    <li data-ids="B-H0 B-H1"><span class="sn">11</span><div class="sb"><a href="#B-H0">AWGN H0 패킷 근거와 패킷 감도</a><span class="sd">패킷 꼬리·수락 수, 패킷 L90</span><span class="ids">B-H0 · B-H1</span><span class="snd">보내기: "Packet decision" 표와 패킷 L90</span></div><span class="st"></span></li>
-    <li data-ids="B-F B-S B-MD B-1R B-R" data-opt><span class="sn">12</span><div class="sb"><a href="#B-F">나머지 권장 시험</a><span class="sd">권장. 하한 비용, 바꿔치기 폐기율(결정 6 기준선), MD 패킷 평가, RIF 1개 설정, 나머지 세트</span><span class="ids">B-F · B-S · B-MD · B-1R · B-R</span></div><span class="st"></span></li>
+    <li data-ids="B-P"><span class="sn">9</span><div class="sb"><a href="#B-P">LLS 덤프 준비</a><span class="sd">공통 설정, 폴더 규칙, 만들 순서. B-0·B-H0-4 덤프부터</span><span class="ids">B-P</span></div><span class="st"></span></li>
+    <li data-ids="B-0"><span class="sn">10</span><div class="sb"><a href="#B-0">패킷 전제: 프레임 구성, 피크 이동, AGC</a><span class="sd">이후 명령의 <code>'Drift', A.suggest.Drift</code>가 이 결과를 씁니다.</span><span class="ids">B-0</span><span class="snd">보내기: A.drift, A.suggest.Drift → 결정 5 (이동 후보 확정)</span></div><span class="st"></span></li>
+    <li data-ids="B-CH B-H0-4"><span class="sn">11</span><div class="sb"><a href="#B-CH">같은 채널 확인과 멀티패스 소프트 합 꼬리</a><span class="sd">첫 검증 항목. 5,000개로 먼저 보고 30,000개로 늘립니다.</span><span class="ids">B-CH · B-H0-4</span><span class="snd">보내기: 꼬리 비율과 수락 수 → 결정 1 (패킷 10⁻⁶ 유지)</span></div><span class="st"></span></li>
+    <li data-ids="B-H0 B-H1"><span class="sn">12</span><div class="sb"><a href="#B-H0">AWGN H0 패킷 근거와 패킷 감도</a><span class="sd">패킷 꼬리·수락 수, 패킷 L90</span><span class="ids">B-H0 · B-H1</span><span class="snd">보내기: "Packet decision" 표와 패킷 L90</span></div><span class="st"></span></li>
+    <li data-ids="B-F B-S B-MD B-1R B-R" data-opt><span class="sn">13</span><div class="sb"><a href="#B-F">나머지 권장 시험</a><span class="sd">권장. 하한 비용, 바꿔치기 폐기율(결정 6 기준선), MD 패킷 평가, RIF 1개 설정, 나머지 세트</span><span class="ids">B-F · B-S · B-MD · B-1R · B-R</span></div><span class="st"></span></li>
   </ol>
 
   <div class="phase">C·D · C++ 5열 덤프 구현 후</div>
   <ol class="steps">
-    <li data-ids="C-1"><span class="sn">13</span><div class="sb"><a href="#C-1">Q·Π 구현 확인 (bring-up)</a><span class="sd">조건당 200~500개로 구현만 확인</span><span class="ids">C-1~4</span><span class="snd">보내기: C-1 표의 값</span></div><span class="st"></span></li>
-    <li data-ids="D-H0 D-H1"><span class="sn">14</span><div class="sb"><a href="#D-H0">5열 최종 검증: 새 칩 패킷 판정</a><span class="sd">원시 샘플 Λ의 H0 30,000개와 패킷 감도</span><span class="ids">D-H0 · D-H1</span></div><span class="st"></span></li>
+    <li data-ids="C-1"><span class="sn">14</span><div class="sb"><a href="#C-1">Q·Π 구현 확인 (bring-up)</a><span class="sd">조건당 200~500개로 구현만 확인</span><span class="ids">C-1~4</span><span class="snd">보내기: C-1 표의 값</span></div><span class="st"></span></li>
+    <li data-ids="D-H0 D-H1"><span class="sn">15</span><div class="sb"><a href="#D-H0">5열 최종 검증: 새 칩 패킷 판정</a><span class="sd">원시 샘플 Λ의 H0 30,000개와 패킷 감도</span><span class="ids">D-H0 · D-H1</span></div><span class="st"></span></li>
   </ol>
 </section>
 
@@ -491,6 +492,33 @@ end</code></pre></div>
     <div class="rec"><label for="st-A-4">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-4"></select><span class="meta" id="mt-A-4"></span></div><textarea id="nt-A-4" placeholder="메모"></textarea></div></div>
   </article>
 
+  <article class="item" id="A-5" data-id="A-5" data-stage="A">
+    <div class="item-head"><span class="iid">A-5</span><h3>넓힌 H1 스윕: 소프트 패킷 L90</h3><span class="tags"><span class="tag">선택</span><span class="tag dec">결정 1</span></span></div>
+    <p class="why">기본 세트의 <code>h1/</code>은 32심볼 −106 ~ −116 dBm이라 프래그먼트 L90과 AND·kofn L90은 덮지만, 소프트 결합 패킷 L90(Λ −117.6, Λ̂ −116.7 dBm)은 그 아래에 있습니다. −116 dBm에서 이미 Pd가 0.9 이상이라 <code>pkt.L90</code>이 NaN이고, <code>run_synthetic_test</code>는 −116 dBm의 패킷 Pd로만 판정합니다. 같은 루트에 <code>h1_wide/</code>를 따로 만들어 이 L90을 직접 잽니다. <code>h1/</code>과 94/49개 판정은 그대로입니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>gen_synthetic_dumps('D:/rif_test5', 'Preset', 'h1wide');              % &lt;root&gt;/h1_wide/, 10,000개
+gen_synthetic_dumps('D:/rif_test2', 'Preset', 'h1wide', 'Cols', 2);   % 2열 세트 루트
+res5 = run_synthetic_test('D:/rif_test5');                            % 그대로 94 / 94
+res2 = run_synthetic_test('D:/rif_test2');                            % 그대로 49 / 49
+Rx = h1_pd_analyze('D:/rif_test5/h1_wide', 'Chip', 'new',   'Profile', 'fira-medium');   % Λ (5열만)
+Rc = h1_pd_analyze('D:/rif_test5/h1_wide', 'Chip', 'fixed', 'Profile', 'fira-medium');   % Λ̂
+R2 = h1_pd_analyze('D:/rif_test2/h1_wide', 'Chip', 'fixed', 'Profile', 'fira-medium');   % Λ̂, 2열
+[Rx.pkt.L90, Rc.pkt.L90, R2.pkt.L90]</code></pre></div>
+    <dl class="expect"><dt>세트</dt><dd>32심볼 기준 −104 ~ −126 dBm, 1 dB 간격. −114 ~ −122 dBm은 세기당 800개(100패킷), 나머지 200개. 다른 길이는 S만큼 옮기고, 길이·형식·CFO는 루트의 <code>synthetic_set.txt</code>에서 읽습니다(파일이 없는 예전 2열 세트는 <code>'Cols', 2</code>).</dd><dt>기대</dt><dd>32심볼 Λ −117.6, Λ̂ −116.7 dBm 근처, ±1.5 dB 안이면 정상. 2열의 Λ̂ L90은 5열과 정확히 같아야 합니다. <code>run_synthetic_test</code>는 <code>h1_wide</code>를 읽지 않아 94/94, 49/49가 그대로여야 합니다.</dd><dt>시간</dt><dd>생성은 32심볼 세트 하나(8,100개)와 비슷한 규모로 수 분. 64·128·256심볼은 약 2·4·8배</dd></dl>
+    <details class="guide">
+      <summary>길이별 기대값 (모델)</summary>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>소프트 패킷 L90 [dBm]</th><th class="num">32</th><th class="num">64</th><th class="num">128</th><th class="num">256</th></tr></thead>
+        <tbody>
+          <tr><td>Λ (새 칩, 5열)</td><td class="num">−117.6</td><td class="num">−120.5</td><td class="num">−122.8</td><td class="num">−122.5</td></tr>
+          <tr><td>Λ̂ (고정 칩)</td><td class="num">−116.7</td><td class="num">−119.5</td><td class="num">−121.9</td><td class="num">−121.5</td></tr>
+          <tr><td><code>h1_wide</code> 세기 범위</td><td class="num">−104 … −126</td><td class="num">−107 … −129</td><td class="num">−109 … −131</td><td class="num">−109 … −131</td></tr>
+        </tbody>
+      </table></div>
+      <p class="hint">32심볼은 설계 문서 9.3절, 64·128·256심볼은 <code>model/length_l90.py</code>의 결과입니다. 이동 탐색 없음, 잔여 CFO 0.25 ppm. MATLAB으로는 아직 재지 않았습니다.</p>
+    </details>
+    <div class="rec"><label for="st-A-5">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-5"></select><span class="meta" id="mt-A-5"></span></div><textarea id="nt-A-5" placeholder="예: N32 Λ −117.4, Λ̂ −116.5 (2열 같음), 94/94·49/49 그대로"></textarea></div></div>
+  </article>
+
   <details>
     <summary>단계 A 기대값 (미리 만든 합성 세트 기준)</summary>
     <div class="tbl-wrap"><table>
@@ -501,7 +529,7 @@ end</code></pre></div>
         <tr><td>Λ̂ Pfa</td><td class="num">0~0.2%</td><td>같음</td></tr>
         <tr><td>H1 L90</td><td>MD −111.2, Λ −112.3, Λ̂ −109.7 dBm</td><td>MD, Λ̂만</td></tr>
         <tr><td>패킷 H0 (소프트, 8개)</td><td>수락 0, χ²₁₆ 꼬리 비율 0.86~1.33, 쌍 상관 ≤ 0.06</td><td>같음</td></tr>
-        <tr><td>패킷 H1</td><td>소프트 Pd(−116 dBm) 1.0, AND L90 Λ −112.8 / Λ̂ −111.4 dBm</td><td>Λ̂만</td></tr>
+        <tr><td>패킷 H1</td><td>소프트 Pd(−116 dBm) 1.0, AND L90 Λ −112.8 / Λ̂ −111.4 dBm. 소프트 L90은 스윕 아래라 A-5에서 잼</td><td>Λ̂만</td></tr>
         <tr><td>피크 이동 (<code>h1_drift</code>)</td><td>새 기본값(0.2496탭): 기울기 0.26, 후보 5개, −114 dBm Pd 0.90 → 0.98 · 예전 세트(0.3탭): 0.32, 후보 7개, 0.86 → 0.98</td><td>같음</td></tr>
       </tbody>
     </table></div>

@@ -62,6 +62,7 @@ RIFStsLen=0..3 (32/64/128/256심볼), SemiSyncAcclen = 심볼 수
 ```
 
 - **합성 시험 세트:** `gen_synthetic_dumps`의 `'test'` 세트는 루트에 생성 조건 파일 `synthetic_set.txt`(RIF 길이 N, 형식, 잔여 CFO, 이동량, 세기 이동 S, Scale)를 남기고, 한 루트에는 세트 하나만 둡니다. `run_synthetic_test`는 이 파일을 폴더 이름(`c<N>_`), 파일 이름(`AccNum_<N>`), 열 수와 대조합니다(A-L).
+- **넓힌 H1 세트 (A-5):** `gen_synthetic_dumps(root, 'Preset', 'h1wide')`는 같은 루트에 `<root>/h1_wide/c<N>_m<세기 절댓값>_j1/bin`을 만듭니다. 덤프 형식과 파일 이름은 `h1/`과 같고, `synthetic_set.txt`는 고치지 않으며, `run_synthetic_test`와 회귀 스크립트는 이 폴더를 읽지 않습니다.
 - **덤프 켜기 (LLS):** `semisync_only()`의 `if (0 && iSemiSyncNextState_ == RX_STS)`를 `1`로 바꿉니다.
 - **실행 위치:** job마다 실행 폴더를 따로 둡니다. `uwb/bin`은 피하세요(덤프가 git 추적 대상으로 잡힘).
 - **root 분리:** H0와 H1, 채널, CFO 조건은 root를 따로 둡니다.
@@ -170,6 +171,43 @@ end
 
 - 다른 조건은 `'N', 64|128|256`, `'Ppm', 0`, `'Trms', 20, 'KdB', -6`으로 만듭니다.
 - 이 결과는 단계 B의 "모델 기대값"과 같은 출처이므로, 나중에 LLS 결과와 나란히 놓고 비교하면 모델과 LLS의 차이가 바로 보입니다.
+
+### A-5. 넓힌 H1 스윕: 소프트 패킷 L90 (선택)
+
+기본 `'test'` 세트의 `h1/`은 32심볼 −106 ~ −116 dBm(길이마다 S만큼 옮김)입니다. 프래그먼트 L90과 AND·kofn L90은 이 안에 있지만, 소프트 결합 패킷 L90(Λ −117.6, Λ̂ −116.7 dBm, 설계 문서 9.3절)은 그 아래에 있습니다. 가장 약한 −116 dBm에서 이미 소프트 Pd가 0.9 이상이라 `h1_pd_analyze(<root>/h1, ...)`의 `pkt.L90`은 NaN입니다(스윕 안에서 0.9를 가로지르지 않음). 그래서 `run_synthetic_test`는 소프트 결합을 L90 대신 `packet Pd at -116 dBm`(0.8~1)으로만 판정합니다. A-5는 같은 루트에 넓힌 H1 세트 `h1_wide/`를 따로 만들어 소프트 L90을 직접 잽니다. `h1/`과 94/49개 판정은 그대로입니다.
+
+```matlab
+gen_synthetic_dumps('D:/rif_test5', 'Preset', 'h1wide');              % <root>/h1_wide/, 10,000개
+gen_synthetic_dumps('D:/rif_test2', 'Preset', 'h1wide', 'Cols', 2);   % 2열 세트 루트
+res5 = run_synthetic_test('D:/rif_test5');                            % 그대로 94 / 94 (h1_wide는 읽지 않음)
+res2 = run_synthetic_test('D:/rif_test2');                            % 그대로 49 / 49
+Rx = h1_pd_analyze('D:/rif_test5/h1_wide', 'Chip', 'new',   'Profile', 'fira-medium');   % Λ (5열만)
+Rc = h1_pd_analyze('D:/rif_test5/h1_wide', 'Chip', 'fixed', 'Profile', 'fira-medium');   % Λ̂
+R2 = h1_pd_analyze('D:/rif_test2/h1_wide', 'Chip', 'fixed', 'Profile', 'fira-medium');   % Λ̂, 2열 (Rc와 같아야 함)
+[Rx.pkt.L90, Rc.pkt.L90, R2.pkt.L90]
+```
+
+| 항목 | 내용 |
+|---|---|
+| 세기 | 32심볼 기준 −104 ~ −126 dBm, 1 dB 간격(23점). 다른 길이는 `'test'` 세트처럼 S만큼 옮김(64심볼 −107 ~ −129, 128·256심볼 −109 ~ −131 dBm) |
+| 개수 | 전이 구간(32심볼 기준 −114 ~ −122 dBm)은 세기당 800개(100패킷), 나머지는 200개(25패킷). 합계 10,000개 |
+| 조건 | `h1/`과 같음: 맞는 키, AWGN, 피크 이동 0, AGC 없음, 잔여 CFO = 세트의 `Ppm` |
+| 길이·형식·CFO | 루트의 `synthetic_set.txt`에서 N, Cols, Ppm을 읽고, S는 `'test'` 세트와 같은 식(`power_shift`)으로 계산. 파일이 없으면 옵션(`'N'`, `'Cols'`, `'Ppm'`)을 쓰며, 이때 루트의 `h1/` 덤프와 길이·열 수가 다르면 멈춤(파일이 없는 예전 2열 세트는 `'Cols', 2`). 파일과 다른 옵션을 주면 멈춤 |
+| 시드 | 200000 + 1000·N + 세기 절댓값. `'test'` 세트의 시드(27000 미만)와 겹치지 않고 열 수와 무관해서, 2열과 5열의 CIR이 같음 |
+| 옵션 | `'WidePower'`(32심볼 기준 세기 [dBm], 정수), `'WideCount'`(8의 배수, 값 하나 또는 세기마다). `'Scale'`은 쓰지 않음 |
+| 보호 | 이미 덤프가 있는 폴더에는 아무것도 쓰지 않고 멈춤(`gen_synthetic_dumps:exists`). 바꾸려면 `'Overwrite', true` |
+| 시간 | 생성은 32심볼 `'test'` 세트(8,100개, 수 분)와 비슷한 규모이고, 64·128·256심볼은 약 2·4·8배. 분석은 실행마다 10,000개를 읽음. MATLAB에서 잰 시간은 아직 없음 |
+
+기대값 (소프트 결합, 8개 RIF, 패킷 10⁻⁶, 이동 탐색 없음, 잔여 CFO 0.25 ppm):
+
+| 길이 | 32 | 64 | 128 | 256 |
+|---|---|---|---|---|
+| 패킷 L90 Λ (새 칩, 5열) [dBm] | −117.6 | −120.5 | −122.8 | −122.5 |
+| 패킷 L90 Λ̂ (고정 칩) [dBm] | −116.7 | −119.5 | −121.9 | −121.5 |
+
+- 출처: 32심볼은 설계 문서 9.3절(통계 모델, 세기당 4,000패킷)입니다. 64·128·256심볼은 `model/length_l90.py`의 길이별 결과(`model/results/length_l90.json`, 세기당 1,800패킷)이고, 같은 결과의 32심볼 값은 −117.5 / −116.7 dBm입니다. `synthetic_expect.m`의 `soft_x`·`soft_c` 행과 같은 값입니다.
+- 합격: 모델 값 ±1.5 dB 안(세기당 100패킷 표본의 신뢰구간 때문). 2열 세트의 Λ̂ L90은 같은 시드의 5열 세트와 정확히 같아야 합니다.
+- MATLAB에서는 아직 재지 않았습니다.
 
 ### A-L. RIF 길이 지원 (64·128·256심볼)
 
@@ -408,6 +446,7 @@ R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 
 |---|---|
 | 단계 A 요약 (94/94, 49/49), A-3 교차 확인 결과 | `run_synthetic_test` 출력, `isequal` 결과, `export_web_results` JSON과 웹 10장 그림 |
 | RIF 길이 지원 (A-L) | `regress_length32`·`regress_lengths`의 요약 표와 로그 |
+| 소프트 패킷 L90 (A-5) | `h1_pd_analyze(<root>/h1_wide, ...)`의 "Packet decision" 표와 `pkt.L90` |
 | H0 MD 표 (Pfa, 상한, kappa, Dmed) | `h0_pfa_analyze` "current thresholds" 표, `h0_pfa.png` |
 | H0 Λ 표 (raw / cir) | "Lambda detector" 표, `h0_lambda.png` |
 | H1 표 (Pd [95% CI], 위치 정확도, L90/L99, L90loc) | `h1_pd_analyze` 출력과 그림 |
@@ -425,11 +464,12 @@ R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 
 3. [ ] A-3 교차 확인: 모두 `true`
 4. [x] A-L RIF 길이 지원: `regress_length32` 모두 PASS, `regress_lengths` 64·128·256 모두 PASS (2026-10-21)
 5. [ ] (선택) A-4 단계 B 리허설
-6. [ ] B 필수 세트(B-0, B-H0-1, B-H0-2, **B-H0-4 같은 채널 멀티패스**, B-H1-1) → **패킷 판정 결론**(첫 항목: 같은 채널 꼬리), Λ̂ 전제, MD 실패 재현과 κ(진단)
-7. [ ] B 권장 세트(CFO 0, Tx off, 나머지 길이, RIF 1개 설정)
-8. [ ] C: C++ 5열 구현, bring-up 4항목
-9. [ ] D: 5열 전체, 핵심 H0 30,000개
-10. [ ] (선택) E
+6. [ ] (선택) A-5 넓힌 H1 스윕: 소프트 패킷 L90이 모델 값 ±1.5 dB 안
+7. [ ] B 필수 세트(B-0, B-H0-1, B-H0-2, **B-H0-4 같은 채널 멀티패스**, B-H1-1) → **패킷 판정 결론**(첫 항목: 같은 채널 꼬리), Λ̂ 전제, MD 실패 재현과 κ(진단)
+8. [ ] B 권장 세트(CFO 0, Tx off, 나머지 길이, RIF 1개 설정)
+9. [ ] C: C++ 5열 구현, bring-up 4항목
+10. [ ] D: 5열 전체, 핵심 H0 30,000개
+11. [ ] (선택) E
 
 ## 9. 보류 항목
 
