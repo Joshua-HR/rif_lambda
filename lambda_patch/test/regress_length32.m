@@ -5,7 +5,8 @@ function R = regress_length32(old5, old2, work, varargin)
 %   R = regress_length32(old5, old2, work)
 %   R = regress_length32('D:/rif_test', 'D:/rif_test2', 'D:/rif_reg32')
 %       old5, old2  32-symbol sets made before the length support (5-column and 2-column), e.g. the sets of
-%                   checklist A-1 / A-2; '' skips the parts that need it
+%                   checklist A-1 / A-2, or new ones made with gen_synthetic_dumps of commit 87ef016 (master
+%                   before the length support was merged); '' skips the parts that need it
 %       work        folder for the new sets (made here, see below); a sub-folder that already holds a set
 %                   with synthetic_set.txt is reused, so a second run only repeats the tests (delete the
 %                   sub-folder of a generation that was interrupted)

@@ -1,12 +1,12 @@
 # RIF Λ 판정기 패치 설계 (lambda_patch)
 
-- 작성일: 2026-10-07 / 개정: 2026-10-15 (판정 기준을 패킷 오수락 10⁻⁶으로 전환, `DECISIONS.md` 결정 1)
+- 작성일: 2026-10-07 / 개정: 2026-10-15 (판정 기준을 패킷 오수락 10⁻⁶으로 전환, `DECISIONS.md` 결정 1), 2026-10-21 (합성 시험의 RIF 길이 32·64·128·256 지원, 결정 8, 7.4절)
 - 상태: MATLAB 분석 패치(프래그먼트·패킷 판정, 고정 칩·새 칩 모드)와 합성 덤프 검증 도구 완료 / **C++ 덤프 확장 전, 실제 시뮬레이터 검증 전**
 - 대상: `RIF_CIR_Validity_Detector.md`(이하 MD 방식)의 RIF 프래그먼트 유효성 판정기
 - 판정 기준: **패킷(거리 측정 1회) 오수락 ≤ 10⁻⁶ (FiRa medium)**. 프래그먼트 1e-3은 구성 요소이자 진단 기준 (1.1절)
 - 관련 파일
   - 분석 패치: `lambda_patch/rif_cir_analyze.m`, `lambda_patch/h0_pfa_analyze.m`, `lambda_patch/h1_pd_analyze.m`, `lambda_patch/rif_packet.m`, `lambda_patch/check_packet_assumptions.m`
-  - 시험 도구: `lambda_patch/test/gen_synthetic_dumps.m`, `lambda_patch/test/run_synthetic_test.m`, `synthetic_dumps/`
+  - 시험 도구: `lambda_patch/test/gen_synthetic_dumps.m`, `lambda_patch/test/run_synthetic_test.m`, `lambda_patch/test/synthetic_expect.m`(길이별 판정 범위, 생성 파일), `lambda_patch/test/regress_length32.m`, `lambda_patch/test/regress_lengths.m`, `synthetic_dumps/`
   - 모델 스크립트: `lambda_patch/model/` (이 문서의 수치를 다시 만드는 Python 스크립트)
   - 해설 웹 페이지: `docs/index.html` (GitHub Pages용)
   - 결정 기록: `lambda_patch/DECISIONS.md` (판정 기준·정책 결정, 근거 페이지, 다시 볼 조건)
@@ -175,11 +175,13 @@ momPi[k] += z * z;           // z^2 (복소)
 | `rif_cir_analyze.m` | 원본 수정판 | 2/5열 자동 인식, κ·Λ·ρ·qRatio 계산, 출력 표와 상세 그림 확장 |
 | `h0_pfa_analyze.m` | 원본 수정판 | MD 표에 κ 열, Λ 표(공식 문턱, 탭 꼬리 비율), Λ 그림, 캐시 키 버전 |
 | `h1_pd_analyze.m` | 신규 | H1 Pd와 95% 신뢰구간, 검출 위치 정확도, MD 대 Λ의 L90/L99 |
-| `test/gen_synthetic_dumps.m` | 신규 | 파형 모델로 5열(또는 2열) 합성 덤프 생성 |
+| `test/gen_synthetic_dumps.m` | 신규 | 파형 모델로 5열(또는 2열) 합성 덤프 생성. RIF 길이 `'N'`(32·64·128·256), 잔여 CFO `'Ppm'`, 이동량 `'Drift'` 또는 `'Sco'` + `'FragInterval'`(기본은 잔여 CFO와 연동), 루트에 생성 조건 파일 `synthetic_set.txt` (7.4절) |
 | `rif_packet.m` | 신규 | 패킷 판정 (FiRa medium, 9장) |
 | `check_packet_assumptions.m` | 신규 | LLS 덤프로 패킷 전제 확인 (9.5절) |
 | `rif_series_style.m` | 신규 | 그림 계열의 색·선 모양. 색은 세기마다 하나(10개까지 구분색, 그 이상은 순서 있는 색), 선 모양은 RIF 길이마다 하나라 모든 조건이 구분됨. 원본 `h0_pfa_analyze`의 주 그림은 길이마다 색 하나라 같은 길이의 세기들이 같은 색이었고, MATLAB `lines()`는 8번째 계열부터 색이 반복됨 |
-| `test/run_synthetic_test.m` | 신규 | 합성 덤프로 자동 확인 (5열: 10단계 94개 항목, 2열: 6단계 49개 항목) |
+| `test/run_synthetic_test.m` | 신규 | 합성 덤프로 자동 확인 (5열: 10단계 94개 항목, 2열: 6단계 49개 항목). 생성 조건 파일에서 길이·CFO·이동량·Scale을 읽고, 범위는 `synthetic_expect(N)`에서 가져와 조건에 맞게 옮기거나 `[INFO]`로 둠 (7.4절) |
+| `test/synthetic_expect.m` | 생성 | 판정 143개 × 길이 4개의 범위, 중심값, 분류. `model/build_expect.py`가 만들며 손으로 고치지 않음 |
+| `test/regress_length32.m`, `test/regress_lengths.m` | 신규 | 32심볼 회귀(예전 세트와 파일 비교 포함)와 64·128·256심볼 시험을 한 번에 돌리고 PASS/FAIL 표를 냄 |
 | `test/export_web_results.m` | 신규 | 5열·2열 세트의 분석 결과를 웹 페이지용 JSON으로 저장 (웹 페이지 10장 "1단계 결과" 그림) |
 
 원본(`../rif_cir_analyze.m`, `../h0_pfa_analyze.m`)은 수정하지 않았습니다.
@@ -334,15 +336,17 @@ addpath('<...>/lambda_patch/test');
 gen_synthetic_dumps('D:/rif_test');          % 5열 8,100개, 수 분 (또는 미리 만든 synthetic_dumps/ 사용)
 res = run_synthetic_test('D:/rif_test');     % 10단계, 94개 항목 [OK]/[CHECK] (10단계 = 패킷 판정)
 
-gen_synthetic_dumps('D:/rif_test2', 'Cols', 2);   % 같은 시드의 2열 세트 (현재 LLS 형식), h0 / h0_mp20 / h1만
+gen_synthetic_dumps('D:/rif_test2', 'Cols', 2);   % 같은 시드의 2열 세트 (현재 LLS 형식), h0 / h0_mp20 / h1 / h1_drift
 res2 = run_synthetic_test('D:/rif_test2');        % 형식 자동 인식: 2열 6단계, 49개 항목 (MD 규칙, kappa, CIR 추정 Λ̂, 패킷 판정)
+
+gen_synthetic_dumps('D:/rif_t64', 'N', 64);       % 다른 RIF 길이 (32·64·128·256, 7.4절)
 ```
 
 같은 프리셋과 시드로 만든 2열과 5열 세트는 CIR이 비트 단위로 같습니다. 따라서 두 실행의 MD 규칙 Pfa, kappa, CIR 추정 Λ̂ 결과는 정확히 같아야 합니다. 2열 세트에서는 원시 샘플 Λ, PerClass, 스케일 검사, 형식 혼합 검사가 빠집니다.
 
 두 세트의 결과는 `export_web_results(root5, root2, 'rif_results.json', 'Res5', res, 'Res2', res2)`로 JSON에 담아, 웹 페이지 10장 "1단계 결과: 5열 덤프 대 2열 덤프" 그림에서 불러와 나란히 볼 수 있습니다(H0 오검출률, H1 Pd와 신뢰구간, 탭 꼬리, 교차 확인). 페이지의 기본 데이터는 `model/web_results.py`가 `synthetic_dumps/`와 그 2열 판 `synthetic_dumps_2col/`(`model/make_2col.py`)에서 계산한 Python 미러 값입니다. MATLAB에서도 이 두 폴더로 JSON을 만들면 페이지가 Python 미러와의 일치 여부를 함께 표시합니다.
 
-미리 만든 `synthetic_dumps/`에 대해 같은 계산을 Python으로 따라 한 결과(`model/verify_dumps.py`), 43개 항목(MATLAB 1~9단계 60개 항목 중 일부)이 모두 기대 범위 안에 들었습니다.
+미리 만든 `synthetic_dumps/`에 대해 같은 계산을 Python으로 따라 한 결과(`model/verify_dumps.py`), 43개 항목(MATLAB 1~9단계 60개 항목 중 일부)이 모두 기대 범위 안에 들었습니다. 지금은 `model/expect_synthetic.py`가 94/49개 판정을 모두 같은 이름으로 따라 하며, 네 길이의 기준 세트에서 모두 범위 안입니다(7.4절).
 
 | 단계 | 내용 | 이 데이터셋의 값 |
 |---|---|---|
@@ -387,6 +391,45 @@ MATLAB에서 새로 만든 덤프는 난수가 달라 값이 조금 다르지만
 | 60,000 | 47건 | 100% | 48% |
 
 조건당 5,000개로는 정상인 검출기도 자주 FAIL이 나옵니다. 프래그먼트 단위는 탭 꼬리 비율(표본 n × 57개)과 점추정으로 진단하고, 상한은 참고로만 봅니다(`TEST_PLAN.md` 1.4절). MD 문서 7.1장의 상한은 양측 95%(단측 97.5%) 기준이라 이 표보다 약간 큽니다.
+
+### 7.4 합성 시험의 RIF 길이 지원 (2026-10-21, 결정 8)
+
+합성 시험(`gen_synthetic_dumps`의 `'test'` 세트와 `run_synthetic_test`)은 처음에 32심볼 한 길이만 다뤘습니다. 판정 범위가 32심볼 세트 하나에 맞춘 숫자였기 때문입니다. 지금은 32·64·128·256심볼을 모두 다룹니다. 분석 함수(`rif_cir_analyze` 등)는 원래 폴더·파일 이름에서 길이를 읽으므로 바꾸지 않았습니다.
+
+**정답(판정 범위)을 만드는 방법:** 시험할 MATLAB 코드가 아닌 독립 구현(Python 모델)으로 정답을 만들었습니다.
+
+| 구성 요소 | 내용 |
+|---|---|
+| 기준 세트 | `model/gen_dumps.py --N <N>`(5열)와 `make_2col.py`(2열). 32심볼 `--drift 0.3`은 `synthetic_dumps/`와 바이트 단위로 같음 |
+| 판정 값 | `model/expect_synthetic.py`: `run_synthetic_test`의 94/49개 판정을 같은 이름으로 계산. 32심볼 기존 세트에서 94/94, 49/49가 기존 범위 안 |
+| 모델 | `length_l90.py`(규칙 10개의 길이별 L90과 다른 잔여 CFO에서의 공식 확인), `length_h0md.py`(MD 규칙 H0 오검출률), `drift_check.py`(이동량 0.25·0.6·1.2탭), `expect_spread.py`(H0 꼬리·상관 판정 19종의 bootstrap 퍼짐) |
+| 범위 표 | `model/build_expect.py` → `test/synthetic_expect.m`. 32심볼은 기존 범위 그대로 |
+
+**범위 규칙 (64·128·256심볼):**
+
+| 판정 분류 (5열 / 2열 개수) | 범위 |
+|---|---|
+| 동작 확인 (21 / 10) | 32심볼과 같음 |
+| H0 Λ 통계 (35 / 12) | 32심볼과 같음. 그중 꼬리 비율·쌍 상관 판정은 32심볼 범위 ∪ (64~256심볼 평균 ± 4σ, bootstrap) |
+| H0 MD 규칙 통계 (7 / 7) | 오검출률은 길이별 모델 값을 중심으로 32심볼 범위의 폭을 √p 비율로 옮김. −120 dBm(열잡음만)은 그대로 |
+| κ (6 / 5) | 같은 CIR의 Python 값 차이만큼 옮김. 넓은 쪽 폭을 양쪽에 씀 |
+| H1 dBm 값 (12 / 7) | L90은 규칙별 모델 이동량만큼 옮김. 세기가 박힌 판정은 세트의 세기(32심볼 세기 + S)로 재고 범위는 그대로 |
+| H1 차이·정확도 (13 / 8) | 32심볼과 같음. 이동 판정은 이동량에서 계산 |
+
+세트의 H1·이동 폴더 세기는 S = round(−[g(N, Ppm) − g(32, 0.25)]) dB만큼 옮깁니다. g = 10·log10((N − 1)·a²)이고, a = sin(x)/x, x = 잔여 CFO가 누적 구간(N − 1 심볼)에서 돌리는 위상의 절반입니다. 0.25 ppm에서 S = 0 / −3 / −5 / −5 dB이고, 통계 모델의 L90 이동(규칙 10개 모두)과 0.2 dB 안에서 맞습니다. 0 ppm과 손해 상한의 95%에서도 공식과 모델의 차이는 0.24 dB 이하였습니다.
+
+**길이에 따라 실제로 움직이는 것:**
+- **L90:** 64심볼 −2.9 dB, 128심볼 −5.2 dB, 256심볼 −4.9 dB입니다. 256심볼이 덜 움직이는 것은 CFO 손해(0.25 ppm에서 4.3 dB) 때문입니다.
+- **MD 규칙 H0 오검출률:** 틀린 키 신호가 섞인 조건에서 길이가 길수록 줄어듭니다(−82 dBm: 0.053 / 0.046 / 0.027 / 0.011).
+- **κ:** 비원형성이 CFO 비원형 계수를 따라 내려갑니다(−40 dBm: 0.98 / 0.91 / 0.67 / 0.38).
+- **−40 dBm의 Λ̂ 꼬리 비율:** 32심볼에서는 비원형성 상한(ρ ≤ 0.98)에 걸려 0.78로 눌려 있습니다(6.2절의 "클램프로 보수적"). 64심볼 이상에서는 1.02~1.10으로 올라오고, 표준편차가 0.11~0.14로 다른 조건의 두 배입니다.
+
+**MATLAB 실행에서 얻은 교훈 (검증 기록 페이지 `docs/length-verify.html`):**
+- **표본 수가 적은 축소 세트:** 개수 기반 통계(꼬리 비율, 쌍 상관)는 1/√Scale로 넓히는 것이 부족했습니다. 조건당 패킷 24개에서 꼬리 비율 0, 상관 0.41이 나왔습니다. 그래서 꼬리 비율은 하한 0·상한 ÷Scale, 쌍 상관은 5/√(쌍 수 × Scale) 이상으로 바꿨습니다.
+- **참·거짓 판정:** 조건마다 비율의 95% 상한을 예산과 비교하는 AND 예산 판정은 넓힐 범위가 없고, 프래그먼트 192개에서는 실제 비율 0.10에서도 25%가 실패합니다. 그래서 축소 세트에서는 `[INFO]`로 둡니다.
+- **32심볼에서 물려받은 범위:** 64심볼 이상에서는 위의 −40 dBm 효과 때문에 Λ̂ 꼬리 최댓값이 1.3을 넘을 확률이 3~9%였습니다. 32심볼 범위는 그대로 두고 64심볼 이상만 퍼짐으로 넓혔습니다(결정 8의 다시 볼 조건 참고).
+
+**결과 (2026-10-21):** Python 기준 세트는 네 길이 모두 94/94, 49/49입니다. MATLAB에서는 32심볼 회귀가 PASS였습니다(새 생성기의 `'Drift', 0.3` 세트가 예전 세트와 5열 8,100개·2열 7,680개 바이트 일치, 예전 세트 판정 94/94·49/49). 64·128·256심볼도 빠른 세트·전체 세트·5열과 2열 대조 모두 PASS였습니다. 명령은 `TEST_PLAN.md` A-L에 있습니다.
 
 ## 8. 고정 칩 대안: CIR 추정 Λ̂ (`'Moments', 'cir'`)
 
@@ -542,8 +585,8 @@ RIF 1개 설정, 프래그먼트 목표 1e-3 → 10⁻⁶ (길이·세기당 3,0
 | `h0_pfa_analyze.m` | `'Profile'`(5.3절), `'Chip'`, `'Combine'`, `'FragPerPacket'`, `'PfaTarget'`, `'KofN'`, `'Floor'`, `'Drift'`. 조건별 패킷 표(수락 수, 프래그먼트 예산과 상한, 쌍 상관, 꼬리 비율, 하한 탈락), `h0_packet.png`. 캐시에 프래그먼트별 Λ 벡터 저장(형식 버전 4) |
 | `h1_pd_analyze.m` | 같은 옵션. 패킷 Pd와 95% 신뢰구간, 위치 정확도, 선택된 이동 중앙값, 패킷 L90/L99, 프래그먼트 L90 대비 이득, 그림 |
 | `check_packet_assumptions.m` (신규) | LLS 덤프로 프레임 구성, 피크 이동 기울기와 `Drift` 후보 제안, AGC 레벨 변화, 라운딩 몫, 독립성 확인 |
-| `test/gen_synthetic_dumps.m` | `'Drift'`, `'AgcStep'`, `'PacketChannel'`. `test` 프리셋에 `h1_drift/`(−114 / −90 dBm, 0.3탭/프래그먼트, AGC 3 dB) |
-| `test/run_synthetic_test.m` | 패킷 단계: 5열 10단계(새 칩·고정 칩, 34개), 2열 6단계(고정 칩, 20개) |
+| `test/gen_synthetic_dumps.m` | `'Drift'`(또는 `'Sco'` + `'FragInterval'`), `'AgcStep'`, `'PacketChannel'`. `test` 프리셋에 `h1_drift/`(약한 세기 −114 + S dBm, 강한 세기 −90 dBm, AGC 3 dB). 이동량 기본은 잔여 CFO와 연동(0.2496탭/프래그먼트), 예전 세트는 0.3탭 |
+| `test/run_synthetic_test.m` | 패킷 단계: 5열 10단계(새 칩·고정 칩, 34개), 2열 6단계(고정 칩, 20개). 이동 탐색 후보는 (−n:n)/7, n = max(3, round(\|D\| × 7) + 1) |
 
 ### 9.6 검증 방법
 
