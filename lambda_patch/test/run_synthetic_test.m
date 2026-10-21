@@ -50,7 +50,8 @@ function res = run_synthetic_test(root, show)
 %     drift D       drift slope, selected drift and suggested hypotheses come from D; the drift search uses
 %                   (-n:n)/7, n = max(3, round(|D| * 7) + 1); the drift Pd checks are [INFO] outside the
 %                   verified drift span (synthetic_expect: driftSpan)
-%     Scale < 1     rates: widened to the 0.1 % / 99.9 % binomial interval of the smaller count; other
+%     Scale < 1     rates: widened to the 0.1 % / 99.9 % binomial interval of the smaller count; tail ratios:
+%                   down to 0, upper half-width / Scale; pair correlations: at least 5 / sqrt(pairs); other
 %                   statistics: half-width / sqrt(Scale); frames with 8 fragments from the counts;
 %                   Scale < 0.1: every statistical check is [INFO]
 %
@@ -562,6 +563,13 @@ if s < 1 - 1e-9 && ~strcmp(kind, 'fixed')
             lo = min(lo, binq(0.001, n, c) / n);
             hi = max(hi, binq(0.999, n, c) / n);
             if lo == 0, hi = max(hi, 1 / n); end            % one event always allowed
+        case 'tail'                                         % tail ratio: few, clustered tail counts
+            lo = 0;
+            if ~isnan(c), hi = c + (hi - c) / s; end
+        case 'corr'                                         % pair correlation of heavy-tailed Lmax
+            w = 5 / sqrt(max(T.n(i) * s, 1));
+            hi = max(hi, w);
+            if lo < 0, lo = min(lo, -w); end
         otherwise
             if ~isnan(c)
                 lo = c - (c - lo) / sqrt(s); hi = c + (hi - c) / sqrt(s);
