@@ -52,8 +52,8 @@ function res = run_synthetic_test(root, show)
 %                   verified drift span (synthetic_expect: driftSpan)
 %     Scale < 1     rates: widened to the 0.1 % / 99.9 % binomial interval of the smaller count; tail ratios:
 %                   down to 0, upper half-width / Scale; pair correlations: at least 5 / sqrt(pairs); other
-%                   statistics: half-width / sqrt(Scale); frames with 8 fragments from the counts;
-%                   Scale < 0.1: every statistical check is [INFO]
+%                   statistics: half-width / sqrt(Scale); frames with 8 fragments from the counts; the AND
+%                   budget check (95 % upper bound) is [INFO]; Scale < 0.1: every statistical check is [INFO]
 %
 %   Every check prints [OK], [CHECK] or [INFO] (value only, not judged) with the expected range. The ranges
 %   are wide enough for the statistical spread of these sample sizes; a single CHECK slightly outside is not
@@ -552,6 +552,10 @@ s = X.scale;
 if s < 1 - 1e-9 && ~strcmp(kind, 'fixed')
     if s < 0.1
         info = true; note = sprintf('Scale %g < 0.1: too few fragments to judge', s); return;
+    end
+    if strcmp(kind, 'budget')                               % 95 % upper bound vs budget: needs the full set
+        info = true; note = sprintf('Scale %g: too few fragments for the upper-bound check (judged on the full set)', s);
+        return;
     end
     c = T.center(i);
     switch kind

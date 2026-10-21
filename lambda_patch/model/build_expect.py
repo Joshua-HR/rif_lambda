@@ -171,7 +171,7 @@ L90RULE = {'h1: L90 MD rule [dBm]': 'md1', '2col h1: L90 MD rule [dBm]': 'md1', 
 
 
 def meta(i, cat):
-    """kind ('fixed' | 'rate' | 'count' | 'tail' | 'corr' | 'cont'), trials at Scale 1 (rates, pairs), CFO rule, drift rule"""
+    """kind ('fixed' | 'budget' | 'rate' | 'count' | 'tail' | 'corr' | 'cont'), trials at Scale 1 (rates, pairs), CFO rule, drift rule"""
     drift = ''
     if 'drift slope median' in i: drift = 'slope'
     elif 'median selected drift' in i: drift = 'dmed'
@@ -189,6 +189,7 @@ def meta(i, cat):
     elif '|correlation| of fragment pairs' in i: n = 496          # Lmax pairs per H0 condition (2 jobs x 62 packets x 4)
     elif 'fragment-pair correlation (H0)' in i: n = 1984          # all H0 folders
     if 'share of frames' in i: kind = 'count'
+    elif 'every condition within the budget' in i: kind = 'budget'   # true/false of a 95 % upper bound
     elif 'tail ratio' in i: kind = 'tail'
     elif 'correlation' in i: kind = 'corr'
     elif drift in ('nhyp',) or (cat == 'A' and 'qRatio' not in i) or 'every condition within' in i or 'packets accepted' in i:
@@ -356,7 +357,8 @@ def write_m(rows, L, Dc, out):
 %%   T.set       5 or 2: the run the check belongs to
 %%   T.cat       'A' behaviour, 'B' H0 Lambda statistics, 'M' H0 MD-rule statistics, 'C' kappa,
 %%               'D' H1 dBm values, 'E' H1 differences
-%%   T.kind      'fixed' | 'rate' | 'count' | 'tail' | 'corr' | 'cont': how a reduced set ('Scale' < 1) widens the range
+%%   T.kind      'fixed' | 'budget' | 'rate' | 'count' | 'tail' | 'corr' | 'cont': how a reduced set ('Scale' < 1)
+%%               widens the range ('budget': [INFO] on a reduced set)
 %%   T.n         trials of a rate, or pairs of a correlation, at Scale 1 (0 otherwise)
 %%   T.cfo       'shift': L90, moves with the residual CFO; 'info': no verified range when Ppm ~= 0.25; 'none'
 %%   T.drift     'slope' | 'dmed' | 'nhyp' | 'pd' | 'gain' | '': range computed from the drift of the set

@@ -21,7 +21,8 @@ function R = regress_lengths(work, varargin)
 %                                  checks become [INFO] or move with the CFO formula (see run_synthetic_test)
 %       'Show'      false          figures of run_synthetic_test
 %
-%   PASS of a test run: every judged check OK, and no [INFO] at Ppm 0.25 (94 checks 5-column, 49 2-column).
+%   PASS of a test run: every judged check OK (94 checks 5-column, 49 2-column), and no [INFO] at Ppm 0.25 except,
+%   on a quick set, the AND budget checks (95 % upper bound) that run_synthetic_test leaves to the full set.
 %   A quick set has one fifth of the fragments: run_synthetic_test widens its statistical ranges, a CHECK
 %   there is a first warning, the full set decides. The final table lists every part with PASS / FAIL and
 %   its time; the whole output is also written to work/regress_lengths.log.
@@ -66,7 +67,7 @@ for N = o.Lengths(:).'
                 R.rows(end + 1, :) = {sprintf('N%d', N), ['make ' what], 'FAIL', msg, toc(t1) / 60};
                 continue;
             end
-            [R, r_] = run_part(R, sprintf('N%d', N), what, root, nExp.(sprintf('c%d', cols)), o.Ppm, o.Show, t1);
+            [R, r_] = run_part(R, sprintf('N%d', N), what, root, nExp.(sprintf('c%d', cols)), o.Ppm, o.Show, t1, ~full);
             R.res.(sprintf('t%d_c%d_%s', N, cols, kind)) = r_;
         end
     end
@@ -94,15 +95,18 @@ end
 
 
 % ======================================================================
-function [R, res] = run_part(R, part, what, root, nExp, ppm, show, t1)
-% run_synthetic_test on one set: every judged check OK; at Ppm 0.25 all nExp checks judged (no [INFO])
+function [R, res] = run_part(R, part, what, root, nExp, ppm, show, t1, quick)
+% run_synthetic_test on one set: every judged check OK; at Ppm 0.25 no [INFO] except, on a quick set, the
+% checks run_synthetic_test does not judge on a reduced set (their note starts with 'Scale')
 res = [];
 fprintf('\n################ %s: run_synthetic_test(''%s'')\n', part, root);
 try
     res = run_synthetic_test(root, logical(show));
     nInfo = sum([res.info]); nOk = sum([res.ok]); n = numel(res) - nInfo;
     detail = sprintf('%d / %d checks OK, %d INFO', nOk, n, nInfo);
-    pass = nOk == n && numel(res) == nExp && (nInfo == 0 || abs(ppm - 0.25) > 1e-9);
+    infoOk = nInfo == 0 || abs(ppm - 0.25) > 1e-9 || ...
+             (quick && all(strncmp({res([res.info]).note}, 'Scale', 5)));
+    pass = nOk == n && numel(res) == nExp && infoOk;
     bad = find(~[res.ok] & ~[res.info]);
     for k = bad(1:min(3, end))
         detail = sprintf('%s; CHECK %s = %.4g', detail, res(k).name, res(k).value);
