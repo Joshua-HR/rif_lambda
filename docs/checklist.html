@@ -199,7 +199,7 @@ details[open] > summary{margin-bottom:8px}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">lambda_patch · master d000694 기준 · 2026-10-21 갱신</span>
+  <span class="eyebrow">lambda_patch · master 기준 · 2026-10-22 갱신 (H1 스윕 범위)</span>
   <h1>RIF 검증 체크리스트</h1>
   <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾸고, 합성 시험이 RIF 길이 32·64·128·256을 지원하게 된 지금의 master로 직접 돌려 볼 시험입니다. 바로 아래 "할 일 순서"를 위에서부터 따라가세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남고, 순서표의 상태와 "다음" 표시도 따라 바뀝니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
@@ -483,7 +483,7 @@ for p = [120 100 95 90 88 86 84 82 80 78 76 72 60 40]            % B-H0-1
                             'Cols', 2, 'Power', -p, 'Key', 'wrong', 'Count', 500, 'Seed', sd);
     end
 end
-for p = 100:120                                                  % B-H1-1
+for p = 100:122                                                  % B-H1-1 (32심볼)
     sd = sd + 1;
     gen_synthetic_dumps(fullfile(root, 'h1_awgn', sprintf('c32_m%d_j1', p), 'bin'), 'Preset', 'none', ...
                         'Cols', 2, 'Power', -p, 'Key', 'right', 'Count', 500, 'Seed', sd);
@@ -557,7 +557,7 @@ RIFStsLen=0..3 (32/64/128/256심볼), SemiSyncAcclen = 심볼 수</code></pre></
         <tr><td class="num">1</td><td><code>h1_strong</code></td><td>H1 32심볼 −60 / −75 / −90 dBm, 각 400개(50패킷). 0.25 ppm, 그리고 예상되는 최대 잔여 오프셋(같은 루트에 job 번호를 바꿔 넣으면 함께 분석)</td><td>B-0</td></tr>
         <tr><td class="num">2</td><td><code>h0_mp</code></td><td>H0 32심볼 −82 / −40 dBm, LLS 실내 멀티패스(패킷 안에서 같은 채널). 5,000개 먼저, 이상이 없으면 30,000개까지</td><td>B-CH, B-H0-4, B-MD</td></tr>
         <tr><td class="num">3</td><td><code>h0_awgn</code></td><td>H0 32심볼 14개 세기, 64·128·256심볼 −120 / −82 / −40 dBm, 각 5,000개</td><td>B-0(H0 쪽), B-H0, B-S</td></tr>
-        <tr><td class="num">4</td><td><code>h1_awgn</code></td><td>H1 32·256심볼 −120 ~ −100 dBm, 1 dB 간격, 세기당 4,000개(500패킷)</td><td>B-H1, B-F, B-S</td></tr>
+        <tr><td class="num">4</td><td><code>h1_awgn</code></td><td>H1 32심볼 −122 ~ −100 dBm, 256심볼 −127 ~ −105 dBm, 1 dB 간격, 세기당 4,000개(500패킷). 소프트 패킷 L90 아래까지 덮는 범위</td><td>B-H1, B-F, B-S</td></tr>
         <tr><td class="num">5</td><td><code>h0_1rif</code>, <code>h1_1rif</code> 외</td><td>권장 세트: RIF 1개 설정, CFO 0, Tx off, 64·128심볼 H1, 멀티패스 H1</td><td>B-1R, B-R</td></tr>
       </tbody>
     </table></div>
@@ -616,13 +616,14 @@ R0p = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Chip', 'fixed', 'Profi
 
   <article class="item" id="B-H1" data-id="B-H1" data-stage="B">
     <div class="item-head"><span class="iid">B-H1</span><h3>패킷 감도 (B-H1-1)</h3><span class="tags"><span class="tag req">필수</span></span></div>
-    <p class="data"><b>덤프</b> H1 32·256심볼, −120 ~ −100 dBm, 1 dB 간격, 세기당 4,000개(500패킷)</p>
+    <p class="data"><b>덤프</b> H1 32심볼 −122 ~ −100 dBm, 256심볼 −127 ~ −105 dBm, 1 dB 간격, 세기당 4,000개(500패킷)</p>
+    <p class="why">길이마다 소프트 패킷 L90 아래까지 내려가는 범위입니다. 256심볼을 −120 dBm에서 끊으면 L90(약 −121.5 dBm)이 스윕 아래라 <code>pkt.L90</code>이 NaN이 됩니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>R1  = h1_pd_analyze('D:/rif/h1_awgn');                          % MD 프래그먼트 Pd·CI·위치·L90
 R1c = h1_pd_analyze('D:/rif/h1_awgn', 'Moments', 'cir');        % Λ̂ 프래그먼트
 R1p = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
 R1a = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Combine', 'kofn', 'KofN', 6);
 R1p.pkt.L90, R1a.pkt.L90, R1c.L90</code></pre></div>
-    <dl class="expect"><dt>기준</dt><dd>Λ̂ 소프트 패킷 L90 약 −116.7 dBm(이동 탐색 시 약 0.3 dB 덜함). 프래그먼트 Λ̂ L90(−109.6)보다 6 dB 이상 좋을 것. 패킷 위치 정확도 ≥ 98%</dd><dt>참고</dt><dd>6-of-8 약 −112.5 dBm. 프래그먼트: MD −111.3(실측 −111.9), Λ̂ −109.6(LLS 약 −110.1 예상), MD 대비 손해 ≤ 2.5 dB</dd></dl>
+    <dl class="expect"><dt>기준</dt><dd>Λ̂ 소프트 패킷 L90 32심볼 약 −116.7, 256심볼 약 −121.5 dBm(이동 탐색 시 약 0.3 dB 덜함). 32심볼은 프래그먼트 Λ̂ L90(−109.6)보다 6 dB 이상 좋을 것. 패킷 위치 정확도 ≥ 98%</dd><dt>참고</dt><dd>6-of-8 약 −112.5 dBm. 프래그먼트: MD −111.3(실측 −111.9), Λ̂ −109.6(LLS 약 −110.1 예상), MD 대비 손해 ≤ 2.5 dB</dd></dl>
     <div class="rec"><label for="st-B-H1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-H1"></select><span class="meta" id="mt-B-H1"></span></div><textarea id="nt-B-H1" placeholder="예: 소프트 −116.4, 6-of-8 −112.3, Λ̂ 프래그먼트 −110.0, 위치 99%"></textarea></div></div>
   </article>
 
@@ -675,7 +676,7 @@ R1one.pkt.L90</code></pre></div>
       <tbody>
         <tr><td class="num">B-H0-3</td><td>H0 32·256심볼, −82 / −40 dBm, FreqOffset = 0, ClkOffset = 0</td><td>256심볼도 κ ≈ 1, MD Pfa ≈ 2.7e-3</td></tr>
         <tr><td class="num">B-H0-5</td><td>H0 32심볼, Tx off (안 되면 −150 dBm)</td><td>열잡음 기준선</td></tr>
-        <tr><td class="num">B-H1-2</td><td>H1 64·128심볼, −120 ~ −100 dBm</td><td>길이별 L90</td></tr>
+        <tr><td class="num">B-H1-2</td><td>H1 64심볼 −125 ~ −103, 128심볼 −127 ~ −105 dBm, 세기당 4,000개</td><td>소프트 Λ̂ L90 약 −119.5 / −121.9 dBm</td></tr>
         <tr><td class="num">B-H1-3</td><td>H1 32심볼, B-H0-4의 멀티패스, 2 dB 간격</td><td>위치 정확도 τrms 10 ns 약 97%, 20 ns 약 61%</td></tr>
       </tbody>
     </table></div>
