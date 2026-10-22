@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Λ̂ 모멘트 모으기</title>
+<meta name="description" content="고정 칩 Λ̂의 Q̂·Π̂를 패킷의 1·2·4·8개 프래그먼트에서 모아 추정할 때, RIF 길이 32~256심볼에서의 Pfa와 소프트 패킷 감도를 통계 모델로 확인한 결과">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<script>
+  (function () {  /* 저장된 테마를 첫 렌더링 전에 적용 */
+    try { var t = localStorage.getItem('rif-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  })();
+</script>
+<style>
+/* Layout: RIF 페이지들과 같은 체계(68ch 본문 + 1080px 도판). 답 → 무엇을 모으나 → 그냥 모으면 → 위상을 맞춰 모으면 → 감도 16조합 → 왜 → 결론.
+   Color: 페이지들과 같은 중립색. 세 방식은 고정 3색(원시 샘플 Λ 보라, 지금의 Λ̂ 주황, 모은 Λ̂ 파랑, 이상적인 모으기는 파랑 파선),
+   통과·실패는 상태 전용 초록·빨강. 길이는 색 대신 패널과 모양으로 나눈다. */
+:root{
+  --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
+  --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.11);
+  --v-raw:#8a5cc2; --v-own:#eb6834; --v-pool:#2a78d6;
+  --crit:#d03b3b; --good:#0c9a3e; --warn:#b7791f;
+  --band:rgba(42,120,214,.10); --band-bad:rgba(208,59,59,.08);
+  --wash:#e6eef9; --code-bg:#e9eae6;
+  --f-sans:"IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+    --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+    --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+    --v-raw:#9b72d0; --v-own:#d95926; --v-pool:#3987e5;
+    --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
+    --band:rgba(57,135,229,.14); --band-bad:rgba(224,82,82,.12);
+    --wash:#1b2636; --code-bg:#242422;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+  --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+  --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+  --v-raw:#9b72d0; --v-own:#d95926; --v-pool:#3987e5;
+  --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
+  --band:rgba(57,135,229,.14); --band-bad:rgba(224,82,82,.12);
+  --wash:#1b2636; --code-bg:#242422;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:36px 80px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:clamp(28px,4.6vw,40px);font-weight:700;letter-spacing:-0.02em}
+h2{font-size:clamp(21px,2.8vw,26px);font-weight:700;letter-spacing:-0.01em}
+h3{font-size:16.5px;font-weight:600}
+p,ul,ol,dl{margin:0}
+ul,ol{padding-left:1.3em}
+li + li{margin-top:6px}
+a{color:var(--v-pool)}
+code,.mono{font-family:var(--f-mono);font-size:.9em}
+code{background:var(--code-bg);padding:1px 5px;border-radius:4px}
+strong{font-weight:600}
+:focus-visible{outline:2px solid var(--v-pool);outline-offset:2px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.prose{max-width:68ch}
+.small{font-size:14px;color:var(--ink-2)}
+.eyebrow{font:500 12.5px/1.5 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:18px;line-height:1.7;color:var(--ink-2);max-width:66ch}
+.hero{display:flex;flex-direction:column;gap:20px}
+.toc{display:flex;flex-wrap:wrap;gap:6px 8px;padding:0;list-style:none}
+.toc li{margin:0}
+.toc a{display:inline-flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink-2);font-size:14px;padding:5px 10px;border-radius:999px;border:1px solid var(--hair);background:var(--surface)}
+.toc a:hover{color:var(--ink);border-color:var(--axis)}
+.toc .n{font:500 12px var(--f-mono);color:var(--muted)}
+.answer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ans{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ans .k{font:600 12px var(--f-mono);letter-spacing:.05em;color:var(--muted)}
+.ans .v{font:600 26px/1.15 var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+.ans .v.bad{color:var(--crit)} .ans .v.ok{color:var(--good)}
+.ans .d{font-size:13.5px;color:var(--ink-2);line-height:1.55}
+@media (max-width:760px){.answer{grid-template-columns:1fr}}
+section{display:flex;flex-direction:column;gap:18px;scroll-margin-top:16px}
+.sec-head{display:flex;flex-direction:column;gap:6px}
+.sec-head .no{font:600 12.5px var(--f-mono);color:var(--muted);letter-spacing:.05em}
+.plate{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0;position:relative}
+.plate h3{font-size:15px}
+.plate figcaption,.plate .cap{font-size:13.5px;color:var(--ink-2);line-height:1.65;max-width:86ch}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+@media (max-width:480px){.four{grid-template-columns:1fr}}
+svg.ch{width:100%;height:auto;display:block;overflow:visible;touch-action:pan-y}
+.ch text{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+.ch .lab{fill:var(--ink-2);font-family:var(--f-sans);font-size:12px}
+.ch .ttl{fill:var(--ink);font-family:var(--f-sans);font-size:13px;font-weight:600}
+.ch .grid{stroke:var(--grid);stroke-width:1}
+.ch .axis{stroke:var(--axis);stroke-width:1}
+.ch .ref{stroke:var(--ink-2);stroke-width:1;stroke-dasharray:3 3}
+.keys{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink-2)}
+.key{display:inline-flex;align-items:center;gap:6px}
+.key svg{width:24px;height:12px;flex:none}
+.controls{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:13.5px;color:var(--ink-2)}
+.seg{display:inline-flex;border:1px solid var(--axis);border-radius:8px;overflow:hidden}
+.seg button{font:500 13px var(--f-mono);padding:4px 11px;border:0;background:var(--raised);color:var(--ink-2);cursor:pointer}
+.seg button + button{border-left:1px solid var(--axis)}
+.seg button[aria-pressed="true"]{background:var(--v-pool);color:#fff}
+.tip{position:absolute;pointer-events:none;background:var(--raised);border:1px solid var(--axis);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.5;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.12);min-width:150px;z-index:5}
+.tip .h{font:600 12px var(--f-mono);color:var(--muted);margin-bottom:2px}
+.tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+.tip .r i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+.tbl-wrap{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;font-size:13.5px;min-width:100%}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--grid);vertical-align:top;white-space:nowrap}
+th{font-weight:600;color:var(--ink-2);font-size:12.5px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-size:13px}
+td.bad{color:var(--crit);font-weight:600} td.ok{color:var(--good)}
+tr.grp td{border-top:2px solid var(--axis)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:1px 9px;border-radius:999px;font:600 12px var(--f-mono);border:1px solid var(--hair);background:var(--raised);white-space:nowrap}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.chip.pass i{background:var(--good)} .chip.fail i{background:var(--crit)}
+.note{border-left:3px solid var(--axis);padding:2px 0 2px 14px;color:var(--ink-2);font-size:14.5px;max-width:72ch}
+.eq{font-family:var(--f-mono);font-size:14px;background:var(--code-bg);border-radius:8px;padding:10px 14px;overflow-x:auto;white-space:pre;max-width:100%}
+.foot{border-top:1px solid var(--hair);padding-top:20px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:8px}
+.scroll-x{overflow-x:auto;max-width:100%}
+.scroll-x svg.dg{min-width:720px}
+/* hand-drawn diagrams of section 5 */
+.dg text{font-family:var(--f-sans);font-size:12.5px;fill:var(--ink-2)}
+.dg .t{fill:var(--ink);font-size:13.5px;font-weight:600}
+.dg .rl{fill:var(--muted);font-size:12px}
+.dg .m{font-family:var(--f-mono);font-size:12px}
+.dg .node{fill:var(--raised);stroke:var(--axis);stroke-width:1.2}
+.dg .node.own{stroke:var(--v-own);stroke-width:1.8}
+.dg .node.pool{stroke:var(--v-pool);stroke-width:1.8}
+.dg .ln{stroke:var(--axis);stroke-width:1.2;fill:none}
+.dg .ln.pool{stroke:var(--v-pool)}
+.dg .ln.own{stroke:var(--v-own)}
+.dg .plane{fill:none;stroke:var(--grid);stroke-width:1.2;stroke-dasharray:3 3}
+.dg .ax{stroke:var(--grid);stroke-width:1}
+.dg .vec{stroke:var(--muted);stroke-width:1.6;fill:none}
+.dg .sum{stroke-width:3;fill:none}
+.dg .chipbg.good{fill:color-mix(in srgb, var(--good) 15%, transparent);stroke:var(--good)}
+.dg .chipbg.warn{fill:color-mix(in srgb, var(--warn) 15%, transparent);stroke:var(--warn)}
+.dg .chipbg.crit{fill:color-mix(in srgb, var(--crit) 15%, transparent);stroke:var(--crit)}
+.dg .chiptx{font-size:12px;font-weight:600;fill:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto !important;transition:none !important}}
+.theme-btn{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);right:12px;z-index:40;font:500 12.5px var(--f-sans);padding:6px 11px;border-radius:999px;border:1px solid var(--hair);background:var(--raised);color:var(--ink-2);cursor:pointer}
+.theme-btn:hover{color:var(--ink);border-color:var(--axis)}
+</style>
+</head>
+<body>
+<button type="button" class="theme-btn" id="theme-btn" aria-label="테마 바꾸기">테마: 시스템</button>
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">lambda_patch · 통계 모델 · 2026-10-22</span>
+  <h1>프래그먼트를 모아 Λ̂의 잡음 통계를 추정하면</h1>
+  <p class="lede">고정 칩의 Λ̂는 신호 창 밖 탭으로 빗 위상마다 Q̂·Π̂를 추정합니다. 한 프래그먼트에는 위상당 25개뿐이라, 패킷의 K개 프래그먼트에서 모으면 문턱 손해가 줄어들 것으로 기대했습니다. 모델로 확인한 결과는 반대입니다. Pfa를 지키는 문턱으로 모으면 지금처럼 프래그먼트마다 추정하는 방식보다 0.4~1.4 dB 나쁘고, 추정 편향이 전혀 없는 이상적인 경우에도 이득은 0.4~0.6 dB입니다. 지금 방식을 유지하는 것을 권합니다.</p>
+  <div class="answer" id="answer">
+    <div class="ans"><span class="k">모은 Λ̂, Pfa를 지키는 문턱</span><span class="v bad" id="a1">−0.4 ~ −1.4 dB</span><span class="d">16조합(프래그먼트 1·2·4·8개 × 32·64·128·256심볼) 모두 지금 방식보다 나쁨. 1개는 모을 것이 없어 같음</span></div>
+    <div class="ans"><span class="k">이상적으로 모았을 때의 최대 이득</span><span class="v" id="a2">+0.4 ~ +0.6 dB</span><span class="d">위상 맞춤에서 생기는 편향이 없다고 칠 때(φ = 1). 원시 샘플 Λ와의 남은 차이는 2개 1.7~1.9, 8개 0.3~0.5 dB</span></div>
+    <div class="ans"><span class="k">Pfa, 독립 H0 패킷으로 확인</span><span class="v ok" id="a3">꼬리 비율 ≤ 1.1</span><span class="d">7조건 × 4길이에서 수락 0. AGC 이득을 보정하지 않으면 꼬리 비율 최대 3.2로 깨짐</span></div>
+  </div>
+  <ol class="toc">
+    <li><a href="#s1"><span class="n">1</span>무엇을 모으나</a></li>
+    <li><a href="#s2"><span class="n">2</span>그냥 모으면</a></li>
+    <li><a href="#s3"><span class="n">3</span>위상을 맞춰 모으면</a></li>
+    <li><a href="#s4"><span class="n">4</span>감도 16조합</a></li>
+    <li><a href="#s5"><span class="n">5</span>왜 더 나빠지나</a></li>
+    <li><a href="#s6"><span class="n">6</span>결론과 남은 일</a></li>
+  </ol>
+</header>
+
+<!-- 1 -->
+<section id="s1">
+  <div class="sec-head"><span class="no">1 · 무엇을 모으나</span><h2>위상당 25개 탭의 추정 손해</h2></div>
+  <div class="prose stack">
+    <p>Λ̂는 탭마다 Q(잡음 세기)와 Π(비원형 성분)로 정규화한 통계입니다. 고정 칩에는 Q·Π 누산기가 없어, 신호 창 W<sub>s</sub>(119~175) 밖의 199개 탭을 빗 위상(8개)별로 나눠 Q̂·Π̂를 추정합니다. 위상마다 표본이 24~25개라 추정 잡음이 크고, 같은 Pfa를 지키려면 문턱이 원시 샘플 Λ보다 높아집니다(Hotelling T², 설계 문서 8.2절).</p>
+    <p>한 패킷에는 RIF 프래그먼트가 K개(1·2·4·8) 있습니다. 같은 채널과 같은 세기를 겪는다면, K개의 바깥 탭을 모아 위상당 25·K개로 추정할 수 있습니다. 아래 곡선은 프래그먼트 하나의 판정(Pfa 1e-3)에서 표본 수가 늘 때 문턱 손해가 어떻게 줄어드는지 보여 줍니다.</p>
+  </div>
+  <figure class="plate" style="margin:0">
+    <h3>위상당 표본 수와 문턱 손해 (프래그먼트 1개, Pfa 1e-3)</h3>
+    <svg class="ch" id="c-pen" viewBox="0 0 960 300" role="img" aria-label="위상당 표본 수에 따른 Hotelling 문턱 상승. 25개에서 2.4 dB, 200개에서 0.3 dB"></svg>
+    <figcaption>문턱 상승 = 10·log10(t<sub>hot</sub>(n) / 22.71), P(T² ≥ t) = (1 + t/n)<sup>−(n−1)/2</sup>. 지금은 n = 25(주황)이고, 2·4·8개를 모으면 50·100·200(파랑)입니다. 이 곡선만 보면 8개를 모을 때 2.1 dB가 돌아올 것 같지만, 패킷 판정은 소프트 합이라 사정이 다릅니다(4·5장).</figcaption>
+  </figure>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+  <div class="sec-head"><span class="no">2 · 그냥 모으면</span><h2>그대로 더하면 Pfa가 깨집니다</h2></div>
+  <div class="prose stack">
+    <p>Q̂와 Π̂를 K개 프래그먼트에서 그대로 더하면, 틀린 키 신호가 강한 H0에서 소프트 합의 꼬리가 이론보다 훨씬 두꺼워집니다. 프래그먼트마다 반송파 위상이 달라서 비원형 성분 Π가 프래그먼트마다 다른 방향으로 돌아가 있기 때문입니다. 그대로 더하면 서로 상쇄되어 Π̂가 작아지고, 판정기는 실제로 한쪽으로 치우친 잡음을 원형으로 잘못 봅니다. AGC 이득이 프래그먼트마다 다르면 Q̂도 섞입니다.</p>
+  </div>
+  <figure class="plate" style="margin:0">
+    <h3>소프트 합의 꼬리 비율, 그대로 더했을 때 (8개, 32심볼, 독립 H0 6,000패킷)</h3>
+    <svg class="ch" id="c-naive" viewBox="0 0 960 330" role="img" aria-label="H0 조건별 꼬리 비율. 그대로 더하면 틀린 키 −42.5 dBm에서 40배, 위상을 맞추면 모두 1 이하"></svg>
+    <div class="keys" id="k-naive"></div>
+    <figcaption>꼬리 비율 = 관측 P(S ≥ t) / 이론. 가로선은 P = 1e-2 ~ 1e-4 깊이의 범위이고, 점이 1e-4 깊이입니다(가로축은 로그). 이론은 같은 수의 표본으로 공분산을 정확히 모았을 때의 분포입니다(5장의 식). 열잡음만 있으면 Π ≈ 0이라 그대로 더해도 맞지만, 틀린 키 신호가 셀수록 깨집니다.</figcaption>
+  </figure>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+  <div class="sec-head"><span class="no">3 · 위상을 맞춰 모으면</span><h2>위상 맞춤은 Pfa를 살리지만 표본의 일부만 남깁니다</h2></div>
+  <div class="prose stack">
+    <p>프래그먼트마다 바깥 탭의 Π̂(8개 위상)로 공통 방향에 대한 회전을 추정하고, 돌려서 더합니다. AGC 이득은 수신기가 아는 값으로 보정했다고 둡니다. 다른 두 방식은 32심볼·8개의 짧은 시험에서 이 방식보다 나빠 뺐습니다. 이득을 덤프에서 추정하면 유효 표본이 더 줄었고, Q̂만 모으고 Π̂는 프래그먼트마다 두면 25개짜리 Π̂의 잡음을 진짜 비원형성으로 오인해 유효 표본이 지금 방식(25)보다도 적었습니다.</p>
+    <p>회전을 같은 데이터로 정하므로 편향이 남습니다. 잡음뿐인 Π̂도 맞춰 더하면 같은 방향으로 쌓이기 때문입니다. 그래서 모은 추정은 표본 25·K개만큼 정확하지 않고, 유효 표본 수 φ·25·K개처럼 행동합니다. φ는 H0 세트 A(조건·길이마다 6,000패킷)에서 꼬리가 이론을 넘지 않는 가장 큰 값으로 정했고, 조건 중 최솟값을 설계값으로 썼습니다.</p>
+  </div>
+  <figure class="plate" style="margin:0">
+    <h3>조건별 유효 표본 비율 φ (H0 세트 A, 소프트 합)</h3>
+    <div class="keys" id="k-phi"></div>
+    <svg class="ch" id="c-phi" viewBox="0 0 960 380" role="img" aria-label="프래그먼트 2·4·8개에서 H0 조건별 phi. 설계값 0.54, 0.39, 0.34는 모두 손익분기 0.5~0.8보다 작음"></svg>
+    <figcaption>점의 모양이 RIF 길이입니다. 파란 세로선은 설계 φ(AGC 미보정을 뺀 조건과 길이 중 최솟값), 띠는 모은 방식이 지금 방식과 같아지는 손익분기 φ의 길이별 범위입니다. 최솟값은 모두 틀린 키 −42.5 dBm(가장 비원형인 조건)에서 나왔습니다. AGC를 보정하지 않으면(빨강) φ가 더 작아지고, 설계 φ로도 Pfa가 깨집니다(아래 표).</figcaption>
+  </figure>
+  <div class="plate">
+    <h3>설계 φ로 정한 문턱의 확인 (독립 H0 세트 B, 6,000패킷, 시드가 다름)</h3>
+    <div class="tbl-wrap"><table id="t-check"></table></div>
+    <p class="cap">모은 Λ̂의 칸은 네 길이와 세 깊이(P = 1e-2, 1e-3, 1e-4) 중 가장 큰 꼬리 비율이고, 1 이하면 문턱이 보수적입니다. "수락"은 1e-6 문턱을 넘은 패킷 수(네 길이 합, 24,000패킷 중)입니다. 비교 두 열은 χ²₁₆에 대한 꼬리 비율로, 표본이 충분한 1e-2·1e-3 깊이의 최댓값입니다. 1e-4 깊이는 넘는 탭이 같은 패킷 안에 몰려 흔들림이 큽니다. 예를 들어 256심볼 틀린 키 −42.5 dBm에서 지금의 Λ̂가 세트 B에서 2.10, 세트 A에서 1.13이었고, 원시 샘플 Λ도 이 깊이에서 1.3까지 나왔습니다.</p>
+  </div>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+  <div class="sec-head"><span class="no">4 · 감도 16조합</span><h2>모은 Λ̂는 모든 조합에서 지금 방식보다 나쁩니다</h2></div>
+  <div class="prose stack">
+    <p>H1(맞는 키, AWGN, 잔여 CFO 0.25 ppm, 이동 0)을 세기당 1,500패킷으로 1 dB 간격 스윕했습니다. 소프트 결합 패킷 판정(10⁻⁶)의 L90을 네 방식으로 비교합니다. 원시 샘플 Λ(5열 덤프의 Q·Π, 추정 손해 없음), 지금의 Λ̂(프래그먼트마다 추정), 모은 Λ̂(설계 φ의 문턱), 이상적인 모으기(φ = 1, 편향 없음)입니다.</p>
+  </div>
+  <figure class="plate" style="margin:0">
+    <h3>소프트 패킷 L90, 프래그먼트 수와 RIF 길이별 (아래로 갈수록 좋음)</h3>
+    <div class="keys" id="k-l90"></div>
+    <div class="four" id="c-l90"></div>
+    <figcaption>프래그먼트 1개에서는 모을 것이 없어 지금 방식과 같습니다. 2개 이상에서 모은 Λ̂(파란 실선)는 지금의 Λ̂(주황)보다 위에 있어 감도가 나쁩니다. 편향이 없어도(파란 파선) 지금 방식보다 0.4~0.6 dB 좋아지는 데 그칩니다.</figcaption>
+  </figure>
+  <div class="two">
+    <figure class="plate" style="margin:0">
+      <h3>φ에 따른 이득 (지금 방식 대비)</h3>
+      <div class="controls"><span>길이</span><div class="seg" id="g-n"></div><span>프래그먼트</span><div class="seg" id="g-k"></div></div>
+      <svg class="ch" id="c-gain" viewBox="0 0 520 320" role="img" aria-label="phi에 따른 모은 Lambda-hat의 L90 이득"></svg>
+      <figcaption>0 위가 지금 방식보다 좋은 구간입니다. 설계 φ(●)는 0 아래에 있고, φ = 1(○)이어야 0 위로 올라옵니다. φ가 1보다 크면 패킷에 없는 표본을 쓰는 셈이고, 공분산을 안다고 칠 때의 한계(보라 점선, 원시 샘플 Λ)로 다가갑니다.</figcaption>
+    </figure>
+    <figure class="plate" style="margin:0">
+      <h3>패킷 Pd 곡선</h3>
+      <div class="controls"><span>길이</span><div class="seg" id="p-n"></div><span>프래그먼트</span><div class="seg" id="p-k"></div></div>
+      <svg class="ch" id="c-pd" viewBox="0 0 520 320" role="img" aria-label="선택한 길이와 프래그먼트 수의 패킷 Pd 곡선"></svg>
+      <figcaption>세기당 1,500패킷. 0.9 점선과 만나는 세기가 L90입니다. 곡선 위에 손가락이나 마우스를 올리면 그 세기의 값이 나옵니다.</figcaption>
+    </figure>
+  </div>
+  <div class="plate">
+    <h3>L90 [dBm]과 지금 방식 대비 차이 [dB]</h3>
+    <div class="tbl-wrap"><table id="t-l90"></table></div>
+    <p class="cap">차이 = 지금의 Λ̂ L90 − 비교 방식 L90이고, 양수면 비교 방식이 좋습니다. 손익분기 φ는 모은 방식의 L90이 지금 방식과 같아지는 φ입니다(로그 보간).</p>
+  </div>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+  <div class="sec-head"><span class="no">5 · 왜 더 나빠지나</span><h2>보정을 못 하게 되고, 쓸 수 있는 표본도 줄어듭니다</h2></div>
+  <div class="prose stack">
+    <p>원인은 두 가지가 겹친 것입니다. 첫째, 모으면 K개 항이 공분산 추정 하나를 함께 써서, 지금 방식처럼 항마다 보정할 수 없습니다. 둘째, 그 추정을 만들려면 프래그먼트마다 위상을 맞춰야 하는데, 맞추는 과정의 편향 때문에 모은 표본의 일부만 쓸모가 있습니다.</p>
+  </div>
+  <figure class="plate" style="margin:0">
+    <h3>① 추정 오차가 합에 실리는 길</h3>
+    <div class="scroll-x"><!--D1-->
+<svg class="ch dg" viewBox="0 0 960 352" role="img" aria-label="지금 방식은 프래그먼트마다 공분산을 추정하고 항마다 chi2로 보정해 합이 정확히 chi2_16, 모으면 공분산 추정 하나를 8개 항이 함께 써서 보정할 수 없고 합의 꼬리가 두꺼워져 문턱이 오른다">
+<defs><marker id="d1a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--axis)"/></marker><marker id="d1p" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--v-pool)"/></marker><marker id="d1o" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--v-own)"/></marker></defs>
+<text class="rl" x="0" y="52">프래그먼트 (K = 8)</text>
+<text class="rl" x="0" y="107">공분산 추정</text>
+<text class="rl" x="0" y="163">탭 하나의 항</text>
+<text class="rl" x="0" y="216">합 S</text>
+<text class="rl" x="0" y="262">H0 분포와 문턱</text>
+<text class="rl" x="0" y="318">H1에서 치르는 값</text>
+<text class="t" x="170" y="20">지금: 프래그먼트마다 추정</text>
+<text class="t" x="580" y="20">모으기: 위상을 맞춰 패킷 전체로 추정</text>
+<rect class="node" x="170" y="36" width="36" height="24" rx="4"/><text class="m" x="188" y="52" text-anchor="middle">1</text>
+<line class="ln" x1="188" y1="60" x2="188" y2="91" marker-end="url(#d1a)"/>
+<rect class="node" x="170" y="93" width="36" height="22" rx="4"/><text class="m" x="188" y="108" text-anchor="middle">Σ̂1</text>
+<line class="ln own" x1="188" y1="115" x2="188" y2="147" marker-end="url(#d1o)"/>
+<rect class="node own" x="170" y="149" width="36" height="22" rx="4"/><text class="m" x="188" y="164" text-anchor="middle">χ²₂</text>
+<line class="ln" x1="188" y1="171" x2="339.4" y2="203"/>
+<rect class="node" x="219" y="36" width="36" height="24" rx="4"/><text class="m" x="237" y="52" text-anchor="middle">2</text>
+<line class="ln" x1="237" y1="60" x2="237" y2="91" marker-end="url(#d1a)"/>
+<rect class="node" x="219" y="93" width="36" height="22" rx="4"/><text class="m" x="237" y="108" text-anchor="middle">Σ̂2</text>
+<line class="ln own" x1="237" y1="115" x2="237" y2="147" marker-end="url(#d1o)"/>
+<rect class="node own" x="219" y="149" width="36" height="22" rx="4"/><text class="m" x="237" y="164" text-anchor="middle">χ²₂</text>
+<line class="ln" x1="237" y1="171" x2="345.2" y2="203"/>
+<rect class="node" x="268" y="36" width="36" height="24" rx="4"/><text class="m" x="286" y="52" text-anchor="middle">3</text>
+<line class="ln" x1="286" y1="60" x2="286" y2="91" marker-end="url(#d1a)"/>
+<rect class="node" x="268" y="93" width="36" height="22" rx="4"/><text class="m" x="286" y="108" text-anchor="middle">Σ̂3</text>
+<line class="ln own" x1="286" y1="115" x2="286" y2="147" marker-end="url(#d1o)"/>
+<rect class="node own" x="268" y="149" width="36" height="22" rx="4"/><text class="m" x="286" y="164" text-anchor="middle">χ²₂</text>
+<line class="ln" x1="286" y1="171" x2="351.1" y2="203"/>
+<rect class="node" x="317" y="36" width="36" height="24" rx="4"/><text class="m" x="335" y="52" text-anchor="middle">4</text>
+<line class="ln" x1="335" y1="60" x2="335" y2="91" marker-end="url(#d1a)"/>
+<rect class="node" x="317" y="93" width="36" height="22" rx="4"/><text class="m" x="335" y="108" text-anchor="middle">Σ̂4</text>
+<line class="ln own" x1="335" y1="115" x2="335" y2="147" marker-end="url(#d1o)"/>
+<rect class="node own" x="317" y="149" width="36" height="22" rx="4"/><text class="m" x="335" y="164" text-anchor="middle">χ²₂</text>
+<line class="ln" x1="335" y1="171" x2="357" y2="203"/>
+<rect class="node" x="366" y="36" width="36" height="24" rx="4"/><text class="m" x="384" y="52" text-anchor="middle">5</text>
+<line class="ln" x1="384" y1="60" x2="384" y2="91" marker-end="url(#d1a)"/>
+<rect class="node" x="366" y="93" width="36" height="22" rx="4"/><text class="m" x="384" y="108" text-anchor="middle">Σ̂5</text>
+<line class="ln own" x1="384" y1="115" x2="384" y2="147" marker-end="url(#d1o)"/>
+<rect class="node own" x="366" y="149" width="36" height="22" rx="4"/><text class="m" x="384" y="164" text-anchor="middle">χ²₂</text>
+<line class="ln" x1="384" y1="171" x2="362.9" y2="203"/>
+<rect class="node" x="415" y="36" width="36" height="24" rx="4"/><text class="m" x="433" y="52" text-anchor="middle">6</text>
+<line class="ln" x1="433" y1="60" x2="433" y2="91" marker-end="url(#d1a)"/>
+<rect class="node" x="415" y="93" width="36" height="22" rx="4"/><text class="m" x="433" y="108" text-anchor="middle">Σ̂6</text>
+<line class="ln own" x1="433" y1="115" x2="433" y2="147" marker-end="url(#d1o)"/>
+<rect class="node own" x="415" y="149" width="36" height="22" rx="4"/><text class="m" x="433" y="164" text-anchor="middle">χ²₂</text>
+<line class="ln" x1="433" y1="171" x2="368.8" y2="203"/>
+<rect class="node" x="464" y="36" width="36" height="24" rx="4"/><text class="m" x="482" y="52" text-anchor="middle">7</text>
+<line class="ln" x1="482" y1="60" x2="482" y2="91" marker-end="url(#d1a)"/>
+<rect class="node" x="464" y="93" width="36" height="22" rx="4"/><text class="m" x="482" y="108" text-anchor="middle">Σ̂7</text>
+<line class="ln own" x1="482" y1="115" x2="482" y2="147" marker-end="url(#d1o)"/>
+<rect class="node own" x="464" y="149" width="36" height="22" rx="4"/><text class="m" x="482" y="164" text-anchor="middle">χ²₂</text>
+<line class="ln" x1="482" y1="171" x2="374.6" y2="203"/>
+<rect class="node" x="513" y="36" width="36" height="24" rx="4"/><text class="m" x="531" y="52" text-anchor="middle">8</text>
+<line class="ln" x1="531" y1="60" x2="531" y2="91" marker-end="url(#d1a)"/>
+<rect class="node" x="513" y="93" width="36" height="22" rx="4"/><text class="m" x="531" y="108" text-anchor="middle">Σ̂8</text>
+<line class="ln own" x1="531" y1="115" x2="531" y2="147" marker-end="url(#d1o)"/>
+<rect class="node own" x="513" y="149" width="36" height="22" rx="4"/><text class="m" x="531" y="164" text-anchor="middle">χ²₂</text>
+<line class="ln" x1="531" y1="171" x2="380.5" y2="203"/>
+<circle class="node" cx="360" cy="216" r="13"/><text class="m" x="360" y="221" text-anchor="middle">Σ</text>
+<line class="ln" x1="360" y1="229" x2="360" y2="241" marker-end="url(#d1a)"/>
+<rect class="node own" x="190" y="243" width="340" height="42" rx="6"/>
+<text x="360" y="260" text-anchor="middle">항마다 보정해서 합이 정확히 χ²₁₆</text>
+<text class="m" x="360" y="277" text-anchor="middle">문턱 69.6</text>
+<text x="360" y="312" text-anchor="middle" style="fill:var(--v-own)">보정이 강한 신호도 눌러 감도 손해</text>
+<text class="m" x="360" y="330" text-anchor="middle">원시 Λ 대비 0.9 dB</text>
+<rect class="node" x="580" y="36" width="36" height="24" rx="4"/><text class="m" x="598" y="52" text-anchor="middle">1</text>
+<line class="ln" x1="598" y1="60" x2="598" y2="91" marker-end="url(#d1a)"/>
+<line class="ln pool" x1="770" y1="115" x2="598" y2="147" marker-end="url(#d1p)"/>
+<rect class="node" x="580" y="149" width="36" height="22" rx="4"/><text class="m" x="598" y="164" text-anchor="middle">T²1</text>
+<line class="ln" x1="598" y1="171" x2="749.4" y2="203"/>
+<rect class="node" x="629" y="36" width="36" height="24" rx="4"/><text class="m" x="647" y="52" text-anchor="middle">2</text>
+<line class="ln" x1="647" y1="60" x2="647" y2="91" marker-end="url(#d1a)"/>
+<line class="ln pool" x1="770" y1="115" x2="647" y2="147" marker-end="url(#d1p)"/>
+<rect class="node" x="629" y="149" width="36" height="22" rx="4"/><text class="m" x="647" y="164" text-anchor="middle">T²2</text>
+<line class="ln" x1="647" y1="171" x2="755.2" y2="203"/>
+<rect class="node" x="678" y="36" width="36" height="24" rx="4"/><text class="m" x="696" y="52" text-anchor="middle">3</text>
+<line class="ln" x1="696" y1="60" x2="696" y2="91" marker-end="url(#d1a)"/>
+<line class="ln pool" x1="770" y1="115" x2="696" y2="147" marker-end="url(#d1p)"/>
+<rect class="node" x="678" y="149" width="36" height="22" rx="4"/><text class="m" x="696" y="164" text-anchor="middle">T²3</text>
+<line class="ln" x1="696" y1="171" x2="761.1" y2="203"/>
+<rect class="node" x="727" y="36" width="36" height="24" rx="4"/><text class="m" x="745" y="52" text-anchor="middle">4</text>
+<line class="ln" x1="745" y1="60" x2="745" y2="91" marker-end="url(#d1a)"/>
+<line class="ln pool" x1="770" y1="115" x2="745" y2="147" marker-end="url(#d1p)"/>
+<rect class="node" x="727" y="149" width="36" height="22" rx="4"/><text class="m" x="745" y="164" text-anchor="middle">T²4</text>
+<line class="ln" x1="745" y1="171" x2="767" y2="203"/>
+<rect class="node" x="776" y="36" width="36" height="24" rx="4"/><text class="m" x="794" y="52" text-anchor="middle">5</text>
+<line class="ln" x1="794" y1="60" x2="794" y2="91" marker-end="url(#d1a)"/>
+<line class="ln pool" x1="770" y1="115" x2="794" y2="147" marker-end="url(#d1p)"/>
+<rect class="node" x="776" y="149" width="36" height="22" rx="4"/><text class="m" x="794" y="164" text-anchor="middle">T²5</text>
+<line class="ln" x1="794" y1="171" x2="772.9" y2="203"/>
+<rect class="node" x="825" y="36" width="36" height="24" rx="4"/><text class="m" x="843" y="52" text-anchor="middle">6</text>
+<line class="ln" x1="843" y1="60" x2="843" y2="91" marker-end="url(#d1a)"/>
+<line class="ln pool" x1="770" y1="115" x2="843" y2="147" marker-end="url(#d1p)"/>
+<rect class="node" x="825" y="149" width="36" height="22" rx="4"/><text class="m" x="843" y="164" text-anchor="middle">T²6</text>
+<line class="ln" x1="843" y1="171" x2="778.8" y2="203"/>
+<rect class="node" x="874" y="36" width="36" height="24" rx="4"/><text class="m" x="892" y="52" text-anchor="middle">7</text>
+<line class="ln" x1="892" y1="60" x2="892" y2="91" marker-end="url(#d1a)"/>
+<line class="ln pool" x1="770" y1="115" x2="892" y2="147" marker-end="url(#d1p)"/>
+<rect class="node" x="874" y="149" width="36" height="22" rx="4"/><text class="m" x="892" y="164" text-anchor="middle">T²7</text>
+<line class="ln" x1="892" y1="171" x2="784.6" y2="203"/>
+<rect class="node" x="923" y="36" width="36" height="24" rx="4"/><text class="m" x="941" y="52" text-anchor="middle">8</text>
+<line class="ln" x1="941" y1="60" x2="941" y2="91" marker-end="url(#d1a)"/>
+<line class="ln pool" x1="770" y1="115" x2="941" y2="147" marker-end="url(#d1p)"/>
+<rect class="node" x="923" y="149" width="36" height="22" rx="4"/><text class="m" x="941" y="164" text-anchor="middle">T²8</text>
+<line class="ln" x1="941" y1="171" x2="790.5" y2="203"/>
+<rect class="node pool" x="580" y="93" width="379" height="22" rx="4"/>
+<text class="m" x="770" y="108" text-anchor="middle">Σ̂ 하나 · 위상당 25 × 8개</text>
+<circle class="node" cx="770" cy="216" r="13"/><text class="m" x="770" y="221" text-anchor="middle">Σ</text>
+<line class="ln" x1="770" y1="229" x2="770" y2="241" marker-end="url(#d1a)"/>
+<rect class="node pool" x="600" y="243" width="340" height="42" rx="6"/>
+<text x="770" y="260" text-anchor="middle">오차 하나가 8개 항에 함께 실려 꼬리가 두꺼움</text>
+<text class="m" x="770" y="277" text-anchor="middle">문턱 76.8 (φ = 1) · 95.7 (설계 φ 0.34)</text>
+<text x="770" y="312" text-anchor="middle" style="fill:var(--v-pool)">문턱이 오른 만큼 감도 손해</text>
+<text class="m" x="770" y="330" text-anchor="middle">원시 Λ 대비 0.4 dB (φ = 1) → 1.4 dB (설계 φ)</text>
+</svg>
+<!--/D1--></div>
+    <figcaption><b>지금(왼쪽):</b> 프래그먼트마다 자기 바깥 탭으로 Σ̂ⱼ를 추정합니다. Λ_eq = (n−1)·ln(1 + T²/n)로 항마다 정확한 χ²₂로 바꾼 뒤 더하므로 합은 정확히 χ²₁₆이고, 문턱도 χ²₁₆의 69.6 그대로입니다. 대신 큰 T²를 눌러 담는 이 보정 때문에, 강한 신호에서도 값이 덜 커져 감도를 잃습니다.<br><b>모으기(오른쪽):</b> 8개 항이 Σ̂ 하나를 함께 씁니다. 그 추정이 작게 나온 패킷에서는 8개 항이 한꺼번에 커지고, 항끼리 독립이 아니라 항마다 보정할 수도 없습니다. 그래서 합의 꼬리가 χ²₁₆보다 두껍고 문턱을 올려야 합니다. 표본이 정말 25 × 8개 있으면(φ = 1) 올리는 폭이 작아 지금 방식보다 낫지만, 실제로는 ②의 편향 때문에 표본이 φ배로 줄어 폭이 커집니다. 숫자는 32심볼 8개 기준입니다.</figcaption>
+  </figure>
+  <figure class="plate" style="margin:0">
+    <h3>② 위상 맞춤이 Π̂에 하는 일 (Π̂ 복소평면, 프래그먼트 4개로 그림)</h3>
+    <div class="scroll-x"><!--D2-->
+<svg class="ch dg" viewBox="0 0 960 384" role="img" aria-label="그대로 더하면 열잡음에서는 맞지만 강한 틀린 키에서 방향이 다른 Pi가 상쇄되어 Pfa가 깨지고, 위상을 맞추면 강한 틀린 키는 대체로 맞지만 열잡음에서 잡음끼리 한 방향으로 쌓여 가짜 비원형성이 생겨 유효 표본이 줄어든다">
+<defs><marker id="d2v" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--muted)"/></marker><marker id="d2p" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--v-pool)"/></marker><marker id="d2n" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--ink-2)"/></marker></defs>
+<text class="t" x="170" y="20">그대로 더함</text><text class="t" x="580" y="20">위상을 맞춰 더함</text>
+<line class="ax" x1="0" y1="204" x2="960" y2="204"/>
+<text class="t" x="0" y="98">열잡음</text>
+<text class="rl" x="0" y="118">참 Π = 0</text>
+<text class="t" x="0" y="274">틀린 키 −42.5 dBm</text>
+<text class="rl" x="0" y="294">참 |Π|가 크고 방향은</text>
+<text class="rl" x="0" y="314">프래그먼트마다 다름</text>
+<line class="ax" x1="178" y1="116" x2="310" y2="116"/><line class="ax" x1="244" y1="50" x2="244" y2="182"/>
+<circle cx="244" cy="116" r="5" style="fill:none;stroke:var(--ink);stroke-width:1.5"/>
+<text class="rl" x="186" y="106">참값 0</text>
+<line class="vec" x1="244" y1="116" x2="280.3" y2="132.9" marker-end="url(#d2v)"/>
+<line class="vec" x1="244" y1="116" x2="216.3" y2="132" marker-end="url(#d2v)"/>
+<line class="vec" x1="244" y1="116" x2="232.9" y2="74.5" marker-end="url(#d2v)"/>
+<line class="vec" x1="244" y1="116" x2="267.4" y2="102.5" marker-end="url(#d2v)"/>
+<line class="sum" x1="244" y1="116" x2="249.2" y2="110.5" style="stroke:var(--ink-2)" marker-end="url(#d2n)"/>
+<rect class="chipbg good" x="330" y="64" width="48" height="22" rx="11"/><text class="chiptx" x="341" y="80">맞음</text>
+<text x="330" y="110">제각각인 잡음이 상쇄</text>
+<text x="330" y="131">평균 ≈ 0</text>
+<text x="330" y="152" class="m">꼬리 비율 1.0</text>
+<line class="ax" x1="588" y1="116" x2="720" y2="116"/><line class="ax" x1="654" y1="50" x2="654" y2="182"/>
+<circle cx="654" cy="116" r="5" style="fill:none;stroke:var(--ink);stroke-width:1.5"/>
+<text class="rl" x="596" y="106">참값 0</text>
+<line class="vec" x1="654" y1="116" x2="694" y2="116" marker-end="url(#d2v)"/>
+<line class="vec" x1="654" y1="116" x2="686" y2="116" marker-end="url(#d2v)"/>
+<line class="vec" x1="654" y1="116" x2="697" y2="116" marker-end="url(#d2v)"/>
+<line class="vec" x1="654" y1="116" x2="681" y2="116" marker-end="url(#d2v)"/>
+<line class="sum" x1="654" y1="123" x2="689.5" y2="123" style="stroke:var(--v-pool)" marker-end="url(#d2p)"/>
+<rect class="chipbg warn" x="740" y="64" width="48" height="22" rx="11"/><text class="chiptx" x="751" y="80">편향</text>
+<text x="740" y="110">잡음끼리 한 방향으로 쌓임</text>
+<text x="740" y="131">가짜 비원형성</text>
+<text x="740" y="152" class="m">φ 0.55 ~ 0.60 (8개)</text>
+<line class="ax" x1="178" y1="292" x2="310" y2="292"/><line class="ax" x1="244" y1="226" x2="244" y2="358"/>
+<circle class="plane" cx="244" cy="292" r="50"/>
+<text class="rl" x="282" y="248">참 |Π|</text>
+<line class="vec" x1="244" y1="292" x2="291" y2="309.1" marker-end="url(#d2v)"/>
+<line class="vec" x1="244" y1="292" x2="205.7" y2="324.1" marker-end="url(#d2v)"/>
+<line class="vec" x1="244" y1="292" x2="226.9" y2="245" marker-end="url(#d2v)"/>
+<line class="vec" x1="244" y1="292" x2="282.3" y2="259.9" marker-end="url(#d2v)"/>
+<line class="sum" x1="244" y1="292" x2="251.5" y2="284.5" style="stroke:var(--ink-2)" marker-end="url(#d2n)"/>
+<rect class="chipbg crit" x="330" y="240" width="100" height="22" rx="11"/><text class="chiptx" x="341" y="256">Pfa 깨짐</text>
+<text x="330" y="286">방향이 다른 Π가 상쇄</text>
+<text x="330" y="307">Π를 작게 봄</text>
+<text x="330" y="328" class="m">꼬리 비율 40배</text>
+<line class="ax" x1="588" y1="292" x2="720" y2="292"/><line class="ax" x1="654" y1="226" x2="654" y2="358"/>
+<circle class="plane" cx="654" cy="292" r="50"/>
+<text class="rl" x="692" y="248">참 |Π|</text>
+<line class="vec" x1="654" y1="292" x2="703.8" y2="296.4" marker-end="url(#d2v)"/>
+<line class="vec" x1="654" y1="292" x2="703.6" y2="285.9" marker-end="url(#d2v)"/>
+<line class="vec" x1="654" y1="292" x2="703.9" y2="294.6" marker-end="url(#d2v)"/>
+<line class="vec" x1="654" y1="292" x2="703.9" y2="288.5" marker-end="url(#d2v)"/>
+<line class="sum" x1="654" y1="299" x2="703.8" y2="298.3" style="stroke:var(--v-pool)" marker-end="url(#d2p)"/>
+<rect class="chipbg good" x="740" y="240" width="100" height="22" rx="11"/><text class="chiptx" x="751" y="256">대체로 맞음</text>
+<text x="740" y="286">각도 추정 오차가 남음</text>
+<text x="740" y="307">비원형성이 커서 민감</text>
+<text x="740" y="328" class="m">φ 0.34 ~ 0.46 (설계값)</text>
+</svg>
+<!--/D2--></div>
+    <figcaption>회색 화살표는 프래그먼트마다의 Π̂(같은 원점에서), 굵은 화살표는 그것을 모은 Π̂(평균)입니다. 위 행의 작은 동그라미와 아래 행의 점선 원이 참값입니다. 판정기는 지금 패킷이 어느 조건인지 모르므로 두 행에서 모두 맞는 방법이 필요합니다. 그대로 더하면 아래 행에서 Pfa가 깨지므로 위상을 맞춰야 하고, 맞추면 위 행에서는 가짜 비원형성이, 아래 행에서는 각도 추정 오차가 남습니다. 이 두 오차를 감당하려면 모은 표본을 실제보다 적게(φ배) 쳐서 문턱을 정해야 하고, 가장 나쁜 조건인 아래 행이 설계 φ를 정합니다. 화살표 길이의 축척은 행마다 다릅니다.</figcaption>
+  </figure>
+  <figure class="plate" style="margin:0">
+    <h3>③ 원시 샘플 Λ 대비 손해를 원인별로 나누면</h3>
+    <div class="controls"><span>길이</span><div class="seg" id="d-n"></div></div>
+    <div class="keys" id="k-cost"></div>
+    <svg class="ch" id="c-cost" viewBox="0 0 960 260" role="img" aria-label="프래그먼트 2·4·8개에서 지금 방식의 손해와, 모은 방식의 공유 오차 손해와 위상 맞춤 편향 손해"></svg>
+    <figcaption>소프트 패킷 L90 차이입니다. 모은 방식의 손해를 둘로 나눴습니다. 공유 오차는 편향이 없을 때(φ = 1)의 손해이고, 위상 맞춤 편향은 그 상태에서 설계 φ로 내려가며 더해지는 손해입니다. 공유 오차만이면 세 경우 모두 주황 막대(지금 방식)보다 짧지만, 편향 몫까지 더하면 길어집니다.</figcaption>
+  </figure>
+  <pre class="eq">P(S ≥ t),  S = Σⱼ xⱼᵀ Σ̂⁻¹ xⱼ  (j = 1..K),  Σ̂ = W/N,  W ~ Wishart₂(N, Σ)
+s = l₁ + l₂ ~ χ²₂N 와 r = l₂/l₁ 이 독립이므로  S = N(1 + r)/s · (A + B/r),  A, B ~ χ²_K</pre>
+  <div class="plate">
+    <h3>패킷 문턱 (탭당 1e-6 / 1.5 / 57)</h3>
+    <div class="tbl-wrap"><table id="t-thr"></table></div>
+    <p class="cap">원시 샘플 Λ와 지금의 Λ̂는 χ²₂ₖ 문턱을 같이 씁니다. 모은 Λ̂는 위 분포로 문턱을 정하며, 편향이 없어도(φ = 1) 문턱이 χ²₂ₖ보다 높습니다. 설계 φ에서는 그 차이가 1.4~3.7 dB로 커져, 프래그먼트마다 추정하는 손해보다 커집니다. 분포 계산은 K = 1의 닫힌 식(1e-8 깊이에서 0.03% 이내), 큰 N에서의 χ²₂ₖ 극한, 직접 모의실험(2.4백만 표본)으로 확인했습니다.</p>
+  </div>
+</section>
+
+<!-- 6 -->
+<section id="s6">
+  <div class="sec-head"><span class="no">6 · 결론과 남은 일</span><h2>프래그먼트마다 추정하는 지금 방식을 유지</h2></div>
+  <div class="prose stack">
+    <ul>
+      <li><strong>결론:</strong> Pfa를 지키며 모으면 16조합 모두 지금 방식보다 0.4~1.4 dB 나쁩니다. 고정 칩 Λ̂는 지금처럼 프래그먼트마다 추정하고 Λ_eq로 바꿔 소프트 결합합니다.</li>
+      <li><strong>다시 볼 조건:</strong> 회전을 편향 없이 정하는 방법을 찾아 모든 H0 조건에서 φ를 손익분기(2개 약 0.8, 4개 약 0.65, 8개 약 0.5) 위로 올린다면, 최대 0.4~0.6 dB를 얻을 수 있습니다. 회전 추정에 쓰는 위상과 모으는 위상을 나누는 방식은 32심볼·8개 시험에서 열잡음은 좋아졌지만 중간 세기(틀린 키 −82.5, −76.5 dBm)에서 φ가 더 작았습니다.</li>
+      <li><strong>모으기의 전제:</strong> 패킷의 프래그먼트가 같은 채널과 같은 세기를 겪어야 하고, AGC 이득을 알아야 합니다. 이득을 보정하지 않으면 설계 φ로도 Pfa가 깨집니다.</li>
+      <li><strong>모델의 범위:</strong> 통계 모델(<code>medium_level.py</code>와 같은 탭 모델)이고 MATLAB 패치에는 넣지 않았습니다. H1은 AWGN과 이동 0만 봤습니다. 원시 샘플 Λ(새 칩)와의 남은 차이는 2개 2.2~2.4 dB, 4개 1.2~1.5 dB, 8개 0.9 dB입니다.</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>재현: <code>lambda_patch/model/pooled_moments.py</code> (<code>h0 6000 11</code>, <code>h0 6000 22</code>, <code>h1 1500</code>, <code>post</code>, <code>phi</code>, 6코어 약 30분). 결과: <code>model/results/pooled_moments.json</code>. 프래그먼트 수와 길이마다 같은 8프래그먼트 패킷의 앞 K개를 씁니다.</p>
+  <p>관련 페이지: <a href="index.html#s8">RIF Λ 판정기 8장</a>(고정 칩 Λ̂), <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶), <a href="checklist.html">RIF 검증 체크리스트</a>.</p>
+</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var D = {"phiDesign":{"1":1.0,"2":0.54,"4":0.389,"8":0.342},"thr":{"1":{"chi2":36.53,"pool":89.53},"2":{"chi2":42.74,"pool":99.95},"4":{"chi2":52.82,"pool":94.18},"8":{"chi2":69.61,"pool":95.66}},"L90":{"32":{"1":{"raw":-110.15,"own":-106.22,"pool":-106.22},"2":{"raw":-112.87,"own":-110.5,"pool":-109.19},"4":{"raw":-115.28,"own":-114.04,"pool":-112.83},"8":{"raw":-117.59,"own":-116.69,"pool":-116.18}},"64":{"1":{"raw":-113.14,"own":-109.13,"pool":-109.13},"2":{"raw":-115.76,"own":-113.44,"pool":-112.07},"4":{"raw":-118.22,"own":-116.75,"pool":-115.69},"8":{"raw":-120.47,"own":-119.54,"pool":-119.11}},"128":{"1":{"raw":-115.35,"own":-111.43,"pool":-111.43},"2":{"raw":-118.09,"own":-115.75,"pool":-114.35},"4":{"raw":-120.47,"own":-119.16,"pool":-118.05},"8":{"raw":-122.83,"own":-121.91,"pool":-121.3}},"256":{"1":{"raw":-115.2,"own":-111.16,"pool":-111.16},"2":{"raw":-117.72,"own":-115.51,"pool":-114.12},"4":{"raw":-120.17,"own":-118.87,"pool":-117.63},"8":{"raw":-122.44,"own":-121.49,"pool":-121.11}}},"phis":[0.2,0.34,0.5,0.7,1.0,2.0,4.0,8.0],"phiThr":{"2":[732.4,187.1,108.3,80.3,65.2,52.1,47.0,44.8],"4":[189.7,103.9,81.4,71.0,64.5,58.1,55.3,54.0],"8":[125.9,95.9,85.7,80.4,76.8,73.0,71.3,70.4]},"phiL90":{"32":{"2":[null,-106.28,-108.78,-110.13,-111.03,-112.05,-112.34,-112.51],"4":[-109.6,-112.33,-113.4,-114.08,-114.41,-115.02,-115.17,-115.25],"8":[-114.97,-116.17,-116.62,-117.05,-117.23,-117.47,-117.57,-117.62]},"64":{"2":[null,-109.29,-111.62,-113.08,-114.0,-114.95,-115.32,-115.48],"4":[-112.47,-115.26,-116.26,-116.95,-117.34,-117.85,-118.13,-118.18],"8":[-117.8,-119.1,-119.51,-120.01,-120.14,-120.3,-120.39,-120.46]},"128":{"2":[null,-111.56,-114.08,-115.26,-116.18,-117.13,-117.5,-117.73],"4":[-115.0,-117.47,-118.56,-119.23,-119.56,-120.14,-120.28,-120.38],"8":[-120.1,-121.3,-121.86,-122.18,-122.34,-122.59,-122.72,-122.82]},"256":{"2":[null,-111.26,-113.78,-115.08,-116.03,-116.82,-117.24,-117.47],"4":[-114.47,-117.22,-118.28,-119.02,-119.3,-119.68,-119.99,-120.11],"8":[-119.7,-121.11,-121.5,-121.83,-122.09,-122.29,-122.4,-122.45]}},"fit":{"2":{"32":{"thermal":0.866,"wrong -88.5":0.898,"wrong -82.5":0.888,"wrong -76.5":0.934,"wrong -42.5":0.842,"-82.5 tau20 shared":0.895,"-42.5 tau20 shared":0.932,"thermal AGC +-3 dB, gain not compensated":0.527},"64":{"thermal":0.84,"wrong -88.5":0.885,"wrong -82.5":0.861,"wrong -76.5":0.85,"wrong -42.5":0.54,"-82.5 tau20 shared":0.794,"-42.5 tau20 shared":0.932,"thermal AGC +-3 dB, gain not compensated":0.555},"128":{"thermal":0.857,"wrong -88.5":0.753,"wrong -82.5":0.783,"wrong -76.5":0.802,"wrong -42.5":0.746,"-82.5 tau20 shared":0.847,"-42.5 tau20 shared":0.814,"thermal AGC +-3 dB, gain not compensated":0.529},"256":{"thermal":0.804,"wrong -88.5":0.787,"wrong -82.5":0.848,"wrong -76.5":0.802,"wrong -42.5":0.704,"-82.5 tau20 shared":0.803,"-42.5 tau20 shared":0.837,"thermal AGC +-3 dB, gain not compensated":0.495}},"4":{"32":{"thermal":0.705,"wrong -88.5":0.776,"wrong -82.5":0.811,"wrong -76.5":0.775,"wrong -42.5":0.646,"-82.5 tau20 shared":0.727,"-42.5 tau20 shared":0.797,"thermal AGC +-3 dB, gain not compensated":0.326},"64":{"thermal":0.678,"wrong -88.5":0.711,"wrong -82.5":0.76,"wrong -76.5":0.72,"wrong -42.5":0.506,"-82.5 tau20 shared":0.721,"-42.5 tau20 shared":0.771,"thermal AGC +-3 dB, gain not compensated":0.314},"128":{"thermal":0.724,"wrong -88.5":0.685,"wrong -82.5":0.671,"wrong -76.5":0.682,"wrong -42.5":0.389,"-82.5 tau20 shared":0.704,"-42.5 tau20 shared":0.705,"thermal AGC +-3 dB, gain not compensated":0.321},"256":{"thermal":0.633,"wrong -88.5":0.636,"wrong -82.5":0.725,"wrong -76.5":0.631,"wrong -42.5":0.496,"-82.5 tau20 shared":0.64,"-42.5 tau20 shared":0.588,"thermal AGC +-3 dB, gain not compensated":0.324}},"8":{"32":{"thermal":0.55,"wrong -88.5":0.601,"wrong -82.5":0.692,"wrong -76.5":0.694,"wrong -42.5":0.459,"-82.5 tau20 shared":0.731,"-42.5 tau20 shared":0.702,"thermal AGC +-3 dB, gain not compensated":0.236},"64":{"thermal":0.55,"wrong -88.5":0.526,"wrong -82.5":0.643,"wrong -76.5":0.629,"wrong -42.5":0.383,"-82.5 tau20 shared":0.656,"-42.5 tau20 shared":0.565,"thermal AGC +-3 dB, gain not compensated":0.211},"128":{"thermal":0.602,"wrong -88.5":0.557,"wrong -82.5":0.613,"wrong -76.5":0.476,"wrong -42.5":0.402,"-82.5 tau20 shared":0.536,"-42.5 tau20 shared":0.564,"thermal AGC +-3 dB, gain not compensated":0.24},"256":{"thermal":0.57,"wrong -88.5":0.578,"wrong -82.5":0.532,"wrong -76.5":0.5,"wrong -42.5":0.342,"-82.5 tau20 shared":0.507,"-42.5 tau20 shared":0.482,"thermal AGC +-3 dB, gain not compensated":0.218}}},"npkt":{"h1":1500,"h0":[6000,6000]},"Pd":{"32":{"1":{"raw":[0.0,0.0,0.0,0.0007,0.0027,0.006,0.0147,0.042,0.1193,0.2707,0.5167,0.76,0.924,0.9927,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0,0.0,0.0,0.0,0.0,0.0013,0.0027,0.0027,0.0047,0.028,0.0627,0.1513,0.2933,0.53,0.7767,0.934,0.9873,0.9987,1.0],"pool":[0.0,0.0,0.0,0.0,0.0,0.0,0.0013,0.0027,0.0027,0.0047,0.028,0.0627,0.1513,0.294,0.53,0.7767,0.934,0.9873,0.9987,1.0],"dBm":[-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106,-105,-104,-103]},"2":{"raw":[0.0,0.0007,0.0047,0.0087,0.022,0.0593,0.1773,0.3733,0.6467,0.8887,0.9787,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0,0.0,0.0,0.0013,0.0053,0.0213,0.0507,0.14,0.3193,0.5973,0.838,0.9627,0.9967,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.002,0.008,0.0513,0.1547,0.418,0.73,0.9407,0.9947,1.0,1.0,1.0,1.0,1.0],"dBm":[-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106,-105,-104,-103],"ideal":[0.0,0.0,0.0,0.0013,0.0013,0.01,0.0313,0.0787,0.2047,0.4193,0.718,0.9053,0.9787,0.9987,1.0,1.0,1.0,1.0,1.0,1.0]},"4":{"raw":[0.004,0.006,0.0367,0.0933,0.244,0.484,0.7633,0.9527,0.9947,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0027,0.0033,0.0213,0.058,0.176,0.3567,0.6653,0.9093,0.992,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.0,0.0,0.0,0.004,0.0153,0.062,0.2413,0.5953,0.8827,0.982,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"dBm":[-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106,-105,-104,-103],"ideal":[0.0033,0.0047,0.0127,0.048,0.1073,0.2707,0.516,0.8107,0.9613,0.998,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]},"8":{"raw":[0.0287,0.0907,0.2793,0.5533,0.8447,0.9807,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0093,0.0247,0.112,0.2747,0.5993,0.8627,0.9813,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0007,0.0033,0.0353,0.1333,0.3847,0.71,0.9407,0.996,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"dBm":[-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106,-105,-104,-103],"ideal":[0.022,0.062,0.1927,0.4387,0.7507,0.944,0.998,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]}},"64":{"1":{"raw":[0.0,0.0,0.0,0.0013,0.0013,0.006,0.016,0.0427,0.094,0.2527,0.4813,0.7447,0.9253,0.9907,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0,0.0,0.0,0.0,0.0007,0.0013,0.0007,0.002,0.0067,0.0273,0.054,0.1513,0.2913,0.5207,0.77,0.9187,0.9893,0.9987,1.0],"pool":[0.0,0.0,0.0,0.0,0.0,0.0007,0.0013,0.0007,0.002,0.0067,0.0273,0.054,0.1513,0.292,0.5207,0.77,0.9187,0.9893,0.9987,1.0],"dBm":[-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106]},"2":{"raw":[0.0,0.0013,0.0007,0.01,0.0187,0.0587,0.152,0.3733,0.622,0.8727,0.9867,0.9987,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0,0.0,0.0007,0.0,0.0027,0.0167,0.062,0.124,0.3233,0.5813,0.822,0.9613,0.9967,0.9993,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.0,0.0,0.0,0.0,0.0,0.002,0.0013,0.0107,0.0453,0.1453,0.3947,0.6987,0.914,0.994,1.0,1.0,1.0,1.0,1.0],"dBm":[-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106],"ideal":[0.0,0.0,0.0,0.002,0.0,0.006,0.0253,0.084,0.1813,0.432,0.692,0.9,0.9827,0.9987,0.9993,1.0,1.0,1.0,1.0,1.0]},"4":{"raw":[0.002,0.006,0.0233,0.082,0.2107,0.4667,0.7353,0.9473,0.9947,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0007,0.0073,0.0153,0.04,0.1487,0.3513,0.6533,0.8707,0.986,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.0,0.0,0.0,0.0007,0.0147,0.07,0.234,0.5153,0.8587,0.99,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"dBm":[-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106],"ideal":[0.0,0.004,0.01,0.03,0.0907,0.242,0.4827,0.7953,0.954,0.9967,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]},"8":{"raw":[0.0307,0.0907,0.24,0.5247,0.8167,0.9733,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0047,0.022,0.086,0.2553,0.544,0.8407,0.97,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.004,0.0207,0.1087,0.3127,0.6747,0.928,0.994,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"dBm":[-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106],"ideal":[0.0173,0.0467,0.17,0.4073,0.7053,0.9307,0.996,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]}},"128":{"1":{"raw":[0.0,0.0,0.0,0.0007,0.0013,0.0007,0.0053,0.0227,0.054,0.142,0.2953,0.548,0.8,0.9547,0.996,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0033,0.014,0.028,0.066,0.1673,0.3393,0.594,0.8267,0.9547,0.9933,1.0,1.0],"pool":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0033,0.014,0.028,0.066,0.1673,0.3393,0.594,0.8267,0.9547,0.9933,1.0,1.0],"dBm":[-128,-127,-126,-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108]},"2":{"raw":[0.0,0.0,0.0007,0.0013,0.008,0.0333,0.0673,0.2053,0.4407,0.714,0.9193,0.9887,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0,0.0,0.0,0.0007,0.0047,0.0047,0.0247,0.0713,0.1967,0.3627,0.6407,0.874,0.976,0.9973,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0007,0.0033,0.016,0.0647,0.188,0.4507,0.7927,0.9567,0.994,1.0,1.0,1.0,1.0,1.0],"dBm":[-128,-127,-126,-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108],"ideal":[0.0,0.0,0.0,0.0,0.002,0.0053,0.0087,0.0387,0.102,0.264,0.4673,0.7433,0.9347,0.992,1.0,1.0,1.0,1.0,1.0,1.0,1.0]},"4":{"raw":[0.0,0.0027,0.012,0.0347,0.1213,0.27,0.534,0.828,0.9647,0.998,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0013,0.0,0.006,0.026,0.0747,0.184,0.4533,0.7207,0.9353,0.9947,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.0,0.0,0.0007,0.0013,0.0067,0.024,0.1107,0.3007,0.65,0.914,0.992,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"dBm":[-128,-127,-126,-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108],"ideal":[0.0,0.002,0.004,0.014,0.0493,0.122,0.286,0.594,0.842,0.9727,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]},"8":{"raw":[0.008,0.0373,0.122,0.318,0.6253,0.882,0.9873,0.9987,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0027,0.0107,0.036,0.124,0.3367,0.6367,0.8907,0.9933,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.0013,0.0113,0.0393,0.142,0.428,0.7467,0.966,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"dBm":[-128,-127,-126,-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108],"ideal":[0.0027,0.0227,0.0833,0.2267,0.5,0.792,0.9553,0.9973,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]}},"256":{"1":{"raw":[0.0,0.0,0.0,0.0007,0.0,0.0027,0.0033,0.0127,0.038,0.0987,0.2367,0.4687,0.7787,0.93,0.9933,0.9993,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0,0.0,0.0,0.0,0.0007,0.0007,0.0007,0.002,0.0013,0.0107,0.0207,0.058,0.138,0.3073,0.524,0.7473,0.93,0.982,0.9993,1.0],"pool":[0.0,0.0,0.0,0.0,0.0,0.0007,0.0007,0.0007,0.002,0.0013,0.0107,0.0207,0.058,0.138,0.3073,0.524,0.7473,0.93,0.982,0.9993,1.0],"dBm":[-128,-127,-126,-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108]},"2":{"raw":[0.0007,0.0,0.0,0.0047,0.0047,0.0207,0.0593,0.1587,0.344,0.6293,0.8667,0.9847,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0,0.0,0.0,0.0,0.0,0.0,0.0093,0.016,0.046,0.1467,0.3167,0.5627,0.8387,0.9627,0.9973,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.002,0.0127,0.0447,0.152,0.4,0.698,0.928,0.9913,0.9993,1.0,1.0,1.0,1.0],"dBm":[-128,-127,-126,-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108],"ideal":[0.0,0.0,0.0,0.0007,0.0,0.0027,0.012,0.0207,0.0693,0.202,0.4033,0.672,0.9073,0.982,0.9987,1.0,1.0,1.0,1.0,1.0,1.0]},"4":{"raw":[0.0007,0.0033,0.0067,0.0267,0.078,0.2207,0.4153,0.748,0.9313,0.996,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.0007,0.0,0.0013,0.0053,0.0173,0.0413,0.1393,0.348,0.6233,0.8873,0.9847,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.0,0.0,0.0,0.0,0.0007,0.0127,0.06,0.1973,0.528,0.85,0.984,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"dBm":[-128,-127,-126,-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108],"ideal":[0.0,0.0013,0.002,0.0107,0.0353,0.092,0.2393,0.5013,0.766,0.9587,0.996,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]},"8":{"raw":[0.0053,0.022,0.0827,0.266,0.534,0.818,0.9653,0.9987,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"own":[0.002,0.0047,0.026,0.096,0.2547,0.5447,0.8207,0.9773,0.9967,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"pool":[0.0,0.0007,0.0087,0.03,0.1073,0.3253,0.6473,0.932,0.9933,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"dBm":[-128,-127,-126,-125,-124,-123,-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108],"ideal":[0.004,0.016,0.0493,0.1873,0.3953,0.7,0.9207,0.9953,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]}}},"check":[{"N":32,"cond":"thermal","K":{"1":{"raw":[0.983,0.988,0.974],"own":[1.003,1.093,1.217],"pool":[1.008,1.073,1.213],"naive":[1.008,1.073,1.213],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.036,1.113,1.318],"own":[0.999,1.098,1.428],"pool":[0.597,0.435,0.335],"naive":[0.996,1.066,1.342],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.03,1.004,1.13],"own":[1.0,1.028,1.287],"pool":[0.553,0.367,0.154],"naive":[1.003,1.028,1.236],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.001,1.007,0.871],"own":[1.006,1.0,1.051],"pool":[0.647,0.41,0.174],"naive":[0.998,0.965,0.986],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":32,"cond":"wrong -88.5","K":{"1":{"raw":[1.032,1.042,1.46],"own":[1.01,1.01,0.943],"pool":[1.01,0.997,0.917],"naive":[1.01,0.997,0.917],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.982,1.131,0.988],"own":[1.002,1.048,0.879],"pool":[0.579,0.353,0.03],"naive":[1.085,1.193,1.83],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.994,1.038,0.722],"own":[1.003,0.977,0.816],"pool":[0.524,0.268,0.124],"naive":[1.137,1.418,1.603],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.007,0.962,0.841],"own":[1.001,0.969,1.021],"pool":[0.593,0.384,0.232],"naive":[1.191,1.432,2.004],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":32,"cond":"wrong -82.5","K":{"1":{"raw":[1.018,0.991,0.791],"own":[1.03,1.0,1.004],"pool":[1.034,1.02,0.976],"naive":[1.034,1.02,0.976],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.026,0.991,1.062],"own":[0.994,1.057,1.135],"pool":[0.572,0.353,0.122],"naive":[1.332,1.819,2.653],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.015,0.98,0.628],"own":[0.99,1.089,1.005],"pool":[0.493,0.231,0.031],"naive":[1.565,2.6,4.81],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.017,1.067,0.931],"own":[1.009,1.061,1.351],"pool":[0.592,0.393,0.116],"naive":[1.648,2.793,5.694],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":32,"cond":"wrong -76.5","K":{"1":{"raw":[0.995,1.039,1.308],"own":[1.032,1.084,1.034],"pool":[1.028,1.085,1.035],"naive":[1.028,1.085,1.035],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.037,1.071,1.062],"own":[1.065,1.128,0.879],"pool":[0.615,0.393,0.152],"naive":[1.69,2.929,5.459],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.024,1.109,1.005],"own":[1.035,1.065,1.099],"pool":[0.527,0.271,0.093],"naive":[2.041,4.737,12.693],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.052,1.124,1.141],"own":[1.03,1.102,1.111],"pool":[0.6,0.399,0.116],"naive":[2.274,5.139,13.901],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":32,"cond":"wrong -42.5","K":{"1":{"raw":[0.947,0.891,1.339],"own":[0.792,0.609,0.213],"pool":[0.797,0.626,0.237],"naive":[0.797,0.626,0.237],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.935,0.801,0.732],"own":[0.73,0.552,0.366],"pool":[0.546,0.256,0.152],"naive":[3.152,7.445,18.511],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.935,0.77,1.193],"own":[0.65,0.583,0.471],"pool":[0.544,0.312,0.185],"naive":[4.177,14.183,46.731],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.973,0.883,1.081],"own":[0.658,0.613,0.751],"pool":[0.782,0.631,0.581],"naive":[4.61,13.553,40.4],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":32,"cond":"-82.5 tau20 shared","K":{"1":{"raw":[1.061,1.058,1.004],"own":[1.049,0.984,1.065],"pool":[1.044,0.994,1.124],"naive":[1.044,0.994,1.124],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.05,0.938,1.428],"own":[1.013,0.985,0.732],"pool":[0.593,0.341,0.122],"naive":[1.366,1.816,2.684],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.047,1.001,0.91],"own":[1.041,0.956,0.722],"pool":[0.53,0.25,0.062],"naive":[1.664,2.755,4.61],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.039,1.01,0.961],"own":[1.006,0.959,0.991],"pool":[0.568,0.327,0.203],"naive":[1.716,2.95,5.44],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":32,"cond":"-42.5 tau20 shared","K":{"1":{"raw":[1.04,1.158,1.156],"own":[1.036,1.138,1.278],"pool":[1.033,1.14,1.302],"naive":[1.033,1.14,1.302],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.072,1.131,1.171],"own":[1.04,1.107,1.318],"pool":[0.596,0.396,0.304],"naive":[1.579,2.599,4.849],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.046,1.048,1.099],"own":[1.051,1.099,1.036],"pool":[0.513,0.256,0.062],"naive":[1.951,3.682,7.282],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.994,0.902,0.751],"own":[1.02,0.969,0.661],"pool":[0.571,0.297,0.058],"naive":[2.102,3.828,7.794],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":32,"cond":"thermal AGC +-3 dB, gain not compensated","K":{"1":{"raw":[1.028,1.065,1.247],"own":[1.033,1.087,1.521],"pool":[1.037,1.096,1.479],"naive":[1.037,1.096,1.479],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.035,1.045,0.952],"own":[1.015,1.003,0.952],"pool":[0.928,0.922,1.035],"naive":[1.473,2.173,3.598],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.992,0.987,1.036],"own":[1.004,0.977,1.13],"pool":[1.098,1.237,1.792],"naive":[1.795,3.118,5.478],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.01,0.991,1.021],"own":[1.027,0.975,1.111],"pool":[1.443,1.996,2.819],"naive":[2.038,3.764,7.603],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":64,"cond":"thermal","K":{"1":{"raw":[1.003,1.02,1.156],"own":[0.972,1.013,1.156],"pool":[0.975,1.038,1.154],"naive":[0.975,1.038,1.154],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.006,1.021,1.098],"own":[1.021,1.012,0.769],"pool":[0.612,0.344,0.183],"naive":[1.004,1.022,0.701],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.965,0.933,0.534],"own":[0.968,0.929,0.848],"pool":[0.537,0.259,0.031],"naive":[0.963,0.85,0.434],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.976,0.953,0.721],"own":[1.01,0.953,1.051],"pool":[0.632,0.384,0.203],"naive":[0.988,0.93,1.113],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":64,"cond":"wrong -88.5","K":{"1":{"raw":[1.008,0.907,1.126],"own":[1.02,0.965,0.913],"pool":[1.015,0.971,0.887],"naive":[1.015,0.971,0.887],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.983,1.012,1.062],"own":[1.01,0.941,0.988],"pool":[0.583,0.347,0.091],"naive":[1.092,1.249,1.22],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.997,0.973,0.848],"own":[1.009,0.98,0.91],"pool":[0.53,0.262,0.124],"naive":[1.119,1.3,1.303],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.959,0.851,0.751],"own":[0.968,1.032,0.991],"pool":[0.579,0.348,0.232],"naive":[1.105,1.208,1.272],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":64,"cond":"wrong -82.5","K":{"1":{"raw":[1.001,1.0,1.186],"own":[0.973,1.045,1.339],"pool":[0.977,1.044,1.361],"naive":[0.977,1.044,1.361],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.033,1.054,1.245],"own":[0.99,1.172,0.879],"pool":[0.562,0.414,0.304],"naive":[1.265,1.701,2.836],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.014,1.011,1.318],"own":[1.004,1.034,1.162],"pool":[0.508,0.256,0.278],"naive":[1.439,2.378,4.676],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.006,1.01,1.051],"own":[0.984,0.927,0.991],"pool":[0.553,0.387,0.262],"naive":[1.494,2.282,3.976],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":64,"cond":"wrong -76.5","K":{"1":{"raw":[1.052,1.132,1.247],"own":[1.059,1.042,1.034],"pool":[1.046,1.05,1.006],"naive":[1.046,1.05,1.006],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.032,1.098,1.062],"own":[1.022,1.012,1.062],"pool":[0.603,0.344,0.183],"naive":[1.547,2.56,4.361],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.028,1.099,1.162],"own":[1.024,1.004,1.13],"pool":[0.546,0.321,0.124],"naive":[1.846,3.961,9.186],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.051,1.029,1.021],"own":[1.02,1.045,0.781],"pool":[0.619,0.396,0.174],"naive":[2.09,4.554,11.134],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":64,"cond":"wrong -42.5","K":{"1":{"raw":[0.994,1.135,0.791],"own":[0.961,1.016,0.852],"pool":[0.958,1.006,0.828],"naive":[0.958,1.006,0.828],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.018,1.027,1.025],"own":[1.015,0.887,0.512],"pool":[0.641,0.45,0.0],"naive":[2.595,5.753,13.174],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.063,1.102,1.287],"own":[1.028,0.929,0.848],"pool":[0.683,0.497,0.124],"naive":[3.656,10.868,32.368],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.004,1.013,0.961],"own":[1.01,0.708,0.751],"pool":[0.835,0.455,0.203],"naive":[4.085,11.351,32.225],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":64,"cond":"-82.5 tau20 shared","K":{"1":{"raw":[1.013,1.026,1.217],"own":[0.99,0.923,1.065],"pool":[0.994,0.912,1.065],"naive":[0.994,0.912,1.065],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.034,1.116,1.318],"own":[1.024,1.012,0.476],"pool":[0.59,0.383,0.122],"naive":[1.287,1.728,2.745],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.042,1.228,1.57],"own":[1.046,1.034,1.036],"pool":[0.524,0.318,0.185],"naive":[1.503,2.489,4.209],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.989,1.007,0.811],"own":[1.016,1.013,0.751],"pool":[0.57,0.33,0.203],"naive":[1.612,2.416,4.04],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":64,"cond":"-42.5 tau20 shared","K":{"1":{"raw":[1.004,0.94,0.73],"own":[0.951,0.956,1.034],"pool":[0.949,0.941,1.035],"naive":[0.949,0.941,1.035],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.006,0.932,0.732],"own":[0.984,0.926,0.696],"pool":[0.548,0.292,0.091],"naive":[1.472,1.902,3.293],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.991,0.946,0.785],"own":[0.96,0.882,0.848],"pool":[0.475,0.222,0.154],"naive":[1.712,2.761,5.011],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.964,0.918,0.991],"own":[0.971,0.873,0.931],"pool":[0.547,0.3,0.174],"naive":[1.821,3.119,5.153],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":64,"cond":"thermal AGC +-3 dB, gain not compensated","K":{"1":{"raw":[1.019,1.013,1.095],"own":[1.001,0.984,1.095],"pool":[1.004,0.965,1.065],"naive":[1.004,0.965,1.065],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.0,0.988,1.537],"own":[1.001,1.009,1.135],"pool":[0.927,0.928,1.066],"naive":[1.458,2.2,3.781],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.997,1.004,0.848],"own":[0.983,1.045,1.162],"pool":[1.137,1.391,1.637],"naive":[1.84,3.296,7.482],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.997,1.007,0.961],"own":[0.997,1.023,1.051],"pool":[1.387,2.008,3.226],"naive":[1.997,3.525,8.207],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":128,"cond":"thermal","K":{"1":{"raw":[1.03,1.004,1.034],"own":[0.992,0.975,0.669],"pool":[0.997,0.95,0.651],"naive":[0.997,0.95,0.651],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.007,0.982,1.208],"own":[0.987,0.985,1.171],"pool":[0.589,0.389,0.274],"naive":[0.977,0.983,0.884],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.012,0.923,1.099],"own":[0.995,0.997,0.942],"pool":[0.539,0.324,0.247],"naive":[0.993,0.927,1.203],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.042,1.08,0.961],"own":[1.018,1.067,1.201],"pool":[0.656,0.461,0.436],"naive":[1.024,0.968,0.954],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":128,"cond":"wrong -88.5","K":{"1":{"raw":[1.018,0.872,0.578],"own":[1.01,0.927,0.943],"pool":[1.017,0.95,0.976],"naive":[1.017,0.95,0.976],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.988,0.938,0.586],"own":[0.99,0.979,0.988],"pool":[0.605,0.332,0.183],"naive":[1.031,1.066,0.976],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.006,1.045,1.005],"own":[0.997,1.072,0.942],"pool":[0.537,0.339,0.278],"naive":[1.059,1.115,1.436],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.021,0.997,0.901],"own":[1.031,1.083,1.021],"pool":[0.636,0.479,0.262],"naive":[1.099,1.16,1.4],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":128,"cond":"wrong -82.5","K":{"1":{"raw":[1.043,1.026,0.821],"own":[1.011,1.065,0.761],"pool":[1.016,1.073,0.799],"naive":[1.016,1.073,0.799],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.999,0.994,0.805],"own":[1.005,1.027,0.952],"pool":[0.584,0.399,0.183],"naive":[1.13,1.355,1.311],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.011,0.933,0.848],"own":[1.006,0.943,0.879],"pool":[0.533,0.256,0.124],"naive":[1.203,1.374,1.637],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.033,1.067,1.081],"own":[1.023,1.007,0.871],"pool":[0.608,0.419,0.262],"naive":[1.248,1.489,1.654],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":128,"cond":"wrong -76.5","K":{"1":{"raw":[0.949,0.923,0.882],"own":[0.932,0.766,1.034],"pool":[0.93,0.775,1.035],"naive":[0.93,0.775,1.035],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.955,0.867,0.622],"own":[0.973,0.834,0.696],"pool":[0.566,0.307,0.152],"naive":[1.178,1.394,1.952],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.979,1.028,1.067],"own":[0.973,0.96,1.099],"pool":[0.509,0.259,0.124],"naive":[1.334,1.908,2.605],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.009,0.962,1.051],"own":[0.98,1.045,0.991],"pool":[0.617,0.446,0.116],"naive":[1.423,2.087,3.69],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":128,"cond":"wrong -42.5","K":{"1":{"raw":[0.95,1.004,0.791],"own":[0.957,0.638,0.365],"pool":[0.956,0.643,0.355],"naive":[0.956,0.643,0.355],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.997,0.864,0.732],"own":[0.937,0.757,0.805],"pool":[0.591,0.45,0.426],"naive":[1.521,2.377,3.964],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.006,0.868,1.005],"own":[0.953,1.034,0.973],"pool":[0.689,0.568,0.618],"naive":[2.021,4.021,7.783],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.0,0.892,1.321],"own":[1.027,0.978,0.691],"pool":[0.902,0.8,0.523],"naive":[2.199,4.586,7.571],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":128,"cond":"-82.5 tau20 shared","K":{"1":{"raw":[1.0,1.055,1.156],"own":[1.008,0.997,1.126],"pool":[1.009,1.012,1.094],"naive":[1.009,1.012,1.094],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.015,1.086,0.988],"own":[1.029,1.063,0.952],"pool":[0.623,0.426,0.244],"naive":[1.148,1.311,1.403],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.996,0.99,0.879],"own":[1.03,1.102,1.005],"pool":[0.544,0.37,0.154],"naive":[1.186,1.529,2.104],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.014,1.035,1.261],"own":[1.038,1.089,1.231],"pool":[0.67,0.458,0.378],"naive":[1.269,1.636,2.354],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":128,"cond":"-42.5 tau20 shared","K":{"1":{"raw":[0.954,0.821,0.821],"own":[0.95,0.904,1.186],"pool":[0.949,0.918,1.183],"naive":[0.949,0.918,1.183],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.951,0.893,0.476],"own":[0.985,0.947,0.732],"pool":[0.587,0.359,0.183],"naive":[1.145,1.32,1.555],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.946,0.834,0.722],"own":[0.94,0.861,0.691],"pool":[0.5,0.197,0.154],"naive":[1.229,1.572,1.436],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.975,0.988,1.081],"own":[0.991,0.985,0.781],"pool":[0.605,0.446,0.174],"naive":[1.31,1.818,2.609],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":128,"cond":"thermal AGC +-3 dB, gain not compensated","K":{"1":{"raw":[1.026,0.952,1.034],"own":[0.98,0.991,1.034],"pool":[0.978,0.991,1.006],"naive":[0.978,0.991,1.006],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.013,0.932,0.915],"own":[0.992,0.994,0.805],"pool":[0.926,1.01,0.822],"naive":[1.463,2.197,3.598],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.992,1.007,1.256],"own":[0.994,1.004,1.193],"pool":[1.103,1.382,1.699],"naive":[1.766,3.225,6.848],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.968,0.927,0.871],"own":[1.004,0.902,1.141],"pool":[1.416,1.975,2.586],"naive":[2.005,3.72,6.776],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":256,"cond":"thermal","K":{"1":{"raw":[1.002,1.068,1.186],"own":[1.018,1.077,0.821],"pool":[1.014,1.076,0.828],"naive":[1.014,1.076,0.828],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.985,1.009,0.915],"own":[1.016,1.033,0.842],"pool":[0.604,0.371,0.183],"naive":[1.009,1.025,0.823],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.994,0.923,1.005],"own":[0.994,0.929,0.816],"pool":[0.543,0.287,0.093],"naive":[0.98,0.971,1.136],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.0,1.032,1.291],"own":[1.019,1.083,1.081],"pool":[0.645,0.485,0.291],"naive":[1.011,1.013,1.209],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":256,"cond":"wrong -88.5","K":{"1":{"raw":[0.985,1.023,0.852],"own":[1.001,1.0,1.034],"pool":[1.003,0.994,1.006],"naive":[1.003,0.994,1.006],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.978,0.965,0.659],"own":[0.985,1.083,0.988],"pool":[0.601,0.389,0.183],"naive":[0.983,0.992,0.762],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.029,0.95,0.753],"own":[0.997,1.051,1.256],"pool":[0.561,0.29,0.185],"naive":[1.006,0.934,1.036],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.019,0.975,0.901],"own":[1.019,1.019,1.051],"pool":[0.65,0.407,0.262],"naive":[1.017,1.023,0.763],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":256,"cond":"wrong -82.5","K":{"1":{"raw":[0.981,0.946,0.639],"own":[0.988,1.02,1.186],"pool":[0.982,0.991,1.154],"naive":[0.982,0.991,1.154],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.989,0.997,1.062],"own":[0.992,0.956,0.696],"pool":[0.575,0.371,0.183],"naive":[0.978,1.007,0.823],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.032,1.106,0.753],"own":[1.023,1.001,1.005],"pool":[0.553,0.305,0.154],"naive":[1.019,1.072,1.069],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.011,1.105,0.811],"own":[0.997,0.994,1.261],"pool":[0.621,0.467,0.349],"naive":[0.989,1.099,1.018],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":256,"cond":"wrong -76.5","K":{"1":{"raw":[1.032,1.026,0.669],"own":[1.013,0.923,1.004],"pool":[1.017,0.895,0.976],"naive":[1.017,0.895,0.976],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.034,0.974,0.952],"own":[0.987,0.92,0.732],"pool":[0.608,0.332,0.183],"naive":[1.002,0.91,0.945],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[0.987,0.912,1.067],"own":[0.986,0.902,1.256],"pool":[0.564,0.342,0.216],"naive":[1.01,0.934,1.136],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.009,0.931,0.841],"own":[1.009,0.921,0.961],"pool":[0.698,0.446,0.262],"naive":[1.008,0.853,0.763],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":256,"cond":"wrong -42.5","K":{"1":{"raw":[1.006,0.923,0.943],"own":[0.939,1.174,2.312],"pool":[0.939,1.161,2.278],"naive":[0.939,1.161,2.278],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.008,0.997,0.805],"own":[0.965,1.258,1.647],"pool":[0.721,0.645,1.005],"naive":[0.971,1.178,1.281],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.025,0.984,0.659],"own":[0.999,1.211,0.753],"pool":[0.762,0.528,0.154],"naive":[1.025,0.984,1.303],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.96,1.267,1.111],"own":[1.004,1.112,2.102],"pool":[0.954,0.934,1.075],"naive":[0.961,1.246,1.145],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":256,"cond":"-82.5 tau20 shared","K":{"1":{"raw":[1.068,1.222,1.278],"own":[1.073,1.055,0.669],"pool":[1.067,1.108,0.651],"naive":[1.067,1.108,0.651],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.033,1.092,0.769],"own":[1.071,1.036,0.952],"pool":[0.661,0.405,0.183],"naive":[1.057,0.977,0.884],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.009,1.099,1.005],"own":[1.028,1.092,1.287],"pool":[0.603,0.367,0.216],"naive":[1.015,1.119,1.303],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.0,1.007,0.991],"own":[1.032,1.093,1.171],"pool":[0.676,0.464,0.291],"naive":[0.993,1.007,0.954],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":256,"cond":"-42.5 tau20 shared","K":{"1":{"raw":[1.006,1.055,1.034],"own":[1.046,1.177,1.095],"pool":[1.039,1.184,1.124],"naive":[1.039,1.184,1.124],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[0.993,1.089,1.171],"own":[1.036,1.0,1.281],"pool":[0.644,0.432,0.274],"naive":[1.02,1.075,1.22],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.045,1.082,1.193],"own":[1.069,1.072,1.099],"pool":[0.611,0.379,0.216],"naive":[1.037,1.092,1.102],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[1.062,1.096,1.201],"own":[1.093,1.127,1.111],"pool":[0.773,0.595,0.494],"naive":[1.04,1.109,0.986],"acc":{"raw":0,"own":0,"pool":0}}}},{"N":256,"cond":"thermal AGC +-3 dB, gain not compensated","K":{"1":{"raw":[1.04,1.058,1.126],"own":[0.993,1.042,0.852],"pool":[0.996,1.02,0.828],"naive":[0.996,1.02,0.828],"acc":{"raw":0,"own":0,"pool":0}},"2":{"raw":[1.048,1.042,1.098],"own":[1.017,1.128,1.318],"pool":[0.937,1.035,1.157],"naive":[1.481,2.259,3.781],"acc":{"raw":0,"own":0,"pool":0}},"4":{"raw":[1.052,0.909,0.785],"own":[1.025,0.997,0.91],"pool":[1.146,1.354,1.328],"naive":[1.826,3.561,5.979],"acc":{"raw":0,"own":0,"pool":0}},"8":{"raw":[0.994,0.985,0.991],"own":[0.99,1.026,1.111],"pool":[1.448,2.073,2.964],"naive":[2.028,3.822,7.921],"acc":{"raw":0,"own":0,"pool":0}}}}]};
+  var NS = 'http://www.w3.org/2000/svg';
+  var LENS = ['32', '64', '128', '256'], KS = ['1', '2', '4', '8'];
+  var VAR = {raw: {name: '원시 샘플 Λ', c: 'var(--v-raw)'}, own: {name: '지금의 Λ̂ (프래그먼트마다)', c: 'var(--v-own)'},
+             pool: {name: '모은 Λ̂ (설계 φ)', c: 'var(--v-pool)'}, ideal: {name: '이상적인 모으기 (φ = 1)', c: 'var(--v-pool)', dash: '6 4'}};
+  var SHAPE = {'32': 'circle', '64': 'square', '128': 'triangle', '256': 'diamond'};
+  var COND = {'thermal': '열잡음', 'wrong -88.5': '틀린 키 −88.5 dBm', 'wrong -82.5': '틀린 키 −82.5 dBm', 'wrong -76.5': '틀린 키 −76.5 dBm',
+              'wrong -42.5': '틀린 키 −42.5 dBm', '-82.5 tau20 shared': '−82.5 dBm, 같은 채널 멀티패스', '-42.5 tau20 shared': '−42.5 dBm, 같은 채널 멀티패스',
+              'thermal AGC +-3 dB, gain not compensated': '열잡음, AGC ±3 dB 미보정'};
+  var AGC = 'thermal AGC +-3 dB, gain not compensated';
+  var CONDS = Object.keys(COND);
+
+  function el(tag, attrs, parent, text) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]);
+    if (text !== undefined) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+  function lin(d0, d1, r0, r1) { return function (v) { return r0 + (v - d0) / (d1 - d0) * (r1 - r0); }; }
+  function lg(d0, d1, r0, r1) { var a = Math.log(d0), b = Math.log(d1); return function (v) { return r0 + (Math.log(v) - a) / (b - a) * (r1 - r0); }; }
+  function fmt(v, d) { return v === null || v === undefined || isNaN(v) ? '–' : (v < 0 ? '−' : '') + Math.abs(v).toFixed(d === undefined ? 2 : d); }
+  function sfmt(v, d) { return v === null || v === undefined ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d === undefined ? 2 : d); }
+  function marker(g, shape, x, y, r, attrs) {
+    var a = attrs || {};
+    if (shape === 'circle') return el('circle', Object.assign({cx: x, cy: y, r: r}, a), g);
+    if (shape === 'square') return el('rect', Object.assign({x: x - r * 0.88, y: y - r * 0.88, width: r * 1.76, height: r * 1.76, rx: 1.5}, a), g);
+    if (shape === 'triangle') return el('path', Object.assign({d: 'M' + x + ' ' + (y - r * 1.1) + 'L' + (x + r) + ' ' + (y + r * 0.75) + 'L' + (x - r) + ' ' + (y + r * 0.75) + 'Z'}, a), g);
+    return el('path', Object.assign({d: 'M' + x + ' ' + (y - r * 1.15) + 'L' + (x + r * 1.05) + ' ' + y + 'L' + x + ' ' + (y + r * 1.15) + 'L' + (x - r * 1.05) + ' ' + y + 'Z'}, a), g);
+  }
+  function keyLine(c, dash, shape) {
+    var s = '<svg viewBox="0 0 24 12" aria-hidden="true"><line x1="1" y1="6" x2="23" y2="6" stroke="' + c + '" stroke-width="2"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+    if (shape) s += '<circle cx="12" cy="6" r="3.2" fill="' + c + '" stroke="var(--surface)" stroke-width="1.5"/>';
+    return s + '</svg>';
+  }
+  function keys(id, items) {
+    var box = document.getElementById(id); box.innerHTML = '';
+    items.forEach(function (it) { var s = document.createElement('span'); s.className = 'key'; s.innerHTML = it.svg; s.appendChild(document.createTextNode(it.name)); box.appendChild(s); });
+  }
+  function shapeKey(shape, c) {
+    var g = '<svg viewBox="0 0 24 12" aria-hidden="true">';
+    var r = 4.2, x = 12, y = 6, f = ' fill="' + c + '"';
+    if (shape === 'circle') g += '<circle cx="12" cy="6" r="4"' + f + '/>';
+    else if (shape === 'square') g += '<rect x="8.3" y="2.3" width="7.4" height="7.4" rx="1.5"' + f + '/>';
+    else if (shape === 'triangle') g += '<path d="M12 1.4L16.2 9.2H7.8Z"' + f + '/>';
+    else g += '<path d="M12 1.2L16.4 6L12 10.8L7.6 6Z"' + f + '/>';
+    return g + '</svg>';
+  }
+  /* tooltip shared by the plates */
+  function tipFor(plate) {
+    var t = plate.querySelector('.tip');
+    if (!t) { t = document.createElement('div'); t.className = 'tip'; t.hidden = true; plate.appendChild(t); }
+    return t;
+  }
+  function showTip(svg, tip, html, vx, vy) {
+    tip.innerHTML = html; tip.hidden = false;
+    var plate = tip.parentNode, pr = plate.getBoundingClientRect(), sr = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+    var px = sr.left - pr.left + vx / vb.width * sr.width, py = sr.top - pr.top + vy / vb.height * sr.height;
+    var w = tip.offsetWidth, h = tip.offsetHeight, left = px + 14, top = py - h - 10;
+    if (left + w > pr.width - 6) left = px - w - 14;
+    if (left < 6) left = 6;
+    if (top < 6) top = py + 14;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  function svgPoint(svg, ev) { var r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; return [(ev.clientX - r.left) / r.width * vb.width, (ev.clientY - r.top) / r.height * vb.height]; }
+  function row(name, c, v) { return '<div class="r"><span><i style="background:' + c + '"></i>' + name + '</span><b>' + v + '</b></div>'; }
+
+  /* ---------------------------------------------------------------- 1 penalty curve */
+  (function () {
+    var svg = document.getElementById('c-pen'), W = 960, H = 300, L = 64, R = 24, T = 18, B = 46;
+    var x = lg(10, 300, L, W - R), y = lin(0, 7.5, H - B, T), T0 = 22.71, p = Math.exp(-T0 / 2);
+    function rise(n) { return 10 * Math.log10(n * (Math.pow(p, -2 / (n - 1)) - 1) / T0); }
+    [0, 1, 2, 3, 4, 5, 6, 7].forEach(function (v) { el('line', {x1: L, x2: W - R, y1: y(v), y2: y(v), 'class': 'grid'}, svg); el('text', {x: L - 8, y: y(v) + 4, 'text-anchor': 'end'}, svg, v); });
+    [10, 25, 50, 100, 200, 300].forEach(function (v) { el('line', {x1: x(v), x2: x(v), y1: H - B, y2: H - B + 5, 'class': 'axis'}, svg); el('text', {x: x(v), y: H - B + 18, 'text-anchor': 'middle'}, svg, v); });
+    el('line', {x1: L, x2: W - R, y1: H - B, y2: H - B, 'class': 'axis'}, svg);
+    el('text', {x: (L + W - R) / 2, y: H - 8, 'text-anchor': 'middle', 'class': 'lab'}, svg, '위상당 표본 수 n (로그)');
+    el('text', {x: 14, y: T + 4, 'class': 'lab'}, svg, 'dB');
+    var d = ''; for (var n = 10; n <= 300; n *= 1.02) d += (d ? 'L' : 'M') + x(n).toFixed(1) + ' ' + y(rise(n)).toFixed(1);
+    el('path', {d: d, fill: 'none', stroke: 'var(--ink-2)', 'stroke-width': 2}, svg);
+    var pts = [[25, '지금 (1개)', 'var(--v-own)'], [50, '2개를 모으면', 'var(--v-pool)'], [100, '4개', 'var(--v-pool)'], [200, '8개', 'var(--v-pool)']];
+    pts.forEach(function (q, i) {
+      var v = rise(q[0]);
+      el('circle', {cx: x(q[0]), cy: y(v), r: 5.5, fill: q[2], stroke: 'var(--surface)', 'stroke-width': 2}, svg);
+      el('text', {x: x(q[0]) + 9, y: y(v) - 9, 'class': 'lab'}, svg, q[1] + ' ' + v.toFixed(2) + ' dB');
+    });
+    var v10 = rise(10); el('text', {x: x(10) + 8, y: y(v10) + 4, 'class': 'lab'}, svg, 'n = 10 (MD 잡음 창만) ' + v10.toFixed(1) + ' dB');
+  })();
+
+  /* ---------------------------------------------------------------- 2 naive vs aligned tail ratios (K = 8, 32 symbols) */
+  (function () {
+    var svg = document.getElementById('c-naive'), W = 960, H = 330, L = 250, R = 30, T = 14, B = 44, rows = CONDS.length;
+    var x = lg(0.04, 60, L, W - R), rh = (H - T - B) / rows;
+    keys('k-naive', [{svg: keyLine('var(--ink-2)', null, true), name: '그대로 더함'}, {svg: keyLine('var(--v-pool)', null, true), name: '위상을 맞춰 더함 (설계 φ)'}]);
+    [0.05, 0.1, 0.3, 1, 3, 10, 30].forEach(function (v) {
+      el('line', {x1: x(v), x2: x(v), y1: T, y2: H - B, 'class': v === 1 ? 'ref' : 'grid'}, svg);
+      el('text', {x: x(v), y: H - B + 18, 'text-anchor': 'middle'}, svg, v);
+    });
+    el('text', {x: (L + W - R) / 2, y: H - 6, 'text-anchor': 'middle', 'class': 'lab'}, svg, '꼬리 비율 (1 = 이론과 같음, 로그)');
+    var plate = svg.parentNode, tip = tipFor(plate);
+    CONDS.forEach(function (c, i) {
+      var r = D.check.filter(function (q) { return q.N === 32 && q.cond === c; })[0], yc = T + rh * (i + 0.5);
+      el('text', {x: L - 12, y: yc + 4, 'text-anchor': 'end', 'class': 'lab', fill: c === AGC ? 'var(--crit)' : null}, svg, COND[c]);
+      [['naive', 'var(--ink-2)', -6], ['pool', 'var(--v-pool)', 6]].forEach(function (v) {
+        var a = r.K['8'][v[0]].map(function (z) { return Math.max(0.04, Math.min(60, z || 0.04)); });
+        var lo = Math.min.apply(null, a), hi = Math.max.apply(null, a);
+        el('line', {x1: x(lo), x2: x(hi), y1: yc + v[2], y2: yc + v[2], stroke: v[1], 'stroke-width': 2}, svg);
+        var dot = el('circle', {cx: x(a[2]), cy: yc + v[2], r: 5, fill: v[1], stroke: 'var(--surface)', 'stroke-width': 2}, svg);
+        var hit = el('rect', {x: Math.min(x(lo), x(a[2])) - 8, y: yc + v[2] - 7, width: Math.abs(x(hi) - x(lo)) + 16, height: 14, fill: 'transparent'}, svg);
+        var html = '<div class="h">' + COND[c] + ' · ' + (v[0] === 'naive' ? '그대로 더함' : '위상 맞춤') + '</div>' +
+                   ['1e-2', '1e-3', '1e-4'].map(function (q, j) { return '<div class="r"><span>P = ' + q + '</span><b>' + (r.K['8'][v[0]][j] === null ? '–' : r.K['8'][v[0]][j].toFixed(2)) + '</b></div>'; }).join('');
+        hit.addEventListener('pointerenter', function () { showTip(svg, tip, html, x(a[2]), yc); });
+        hit.addEventListener('pointerleave', function () { tip.hidden = true; });
+      });
+    });
+  })();
+
+  /* ---------------------------------------------------------------- break-even phi */
+  function breakEven(N, K) {
+    var own = D.L90[N][K].own, ph = D.phis, ls = D.phiL90[N][K];
+    for (var i = 0; i + 1 < ph.length; i++) {
+      if (ls[i] === null || ls[i + 1] === null) continue;
+      var g0 = own - ls[i], g1 = own - ls[i + 1];
+      if (g0 < 0 && g1 >= 0) { var f = -g0 / (g1 - g0); return Math.exp(Math.log(ph[i]) + f * (Math.log(ph[i + 1]) - Math.log(ph[i]))); }
+    }
+    return null;
+  }
+
+  /* ---------------------------------------------------------------- 3 phi fits */
+  (function () {
+    var svg = document.getElementById('c-phi'), W = 960, H = 380, L = 250, R = 20, T = 30, B = 44, gap = 26;
+    var pw = (W - L - R - 2 * gap) / 3, rows = CONDS.length, rh = (H - T - B) / rows, plate = svg.parentNode, tip = tipFor(plate);
+    keys('k-phi', LENS.map(function (n) { return {svg: shapeKey(SHAPE[n], 'var(--v-pool)'), name: n + '심볼'}; }).concat([{svg: shapeKey('circle', 'var(--crit)'), name: 'AGC 미보정 (설계에서 뺌)'}]));
+    CONDS.forEach(function (c, i) { el('text', {x: L - 12, y: T + rh * (i + 0.5) + 4, 'text-anchor': 'end', 'class': 'lab', fill: c === AGC ? 'var(--crit)' : null}, svg, COND[c]); });
+    ['2', '4', '8'].forEach(function (K, j) {
+      var x0 = L + j * (pw + gap), x = lin(0, 1, x0, x0 + pw);
+      el('text', {x: x0 + pw / 2, y: T - 12, 'text-anchor': 'middle', 'class': 'ttl'}, svg, K + '개');
+      var be = LENS.map(function (N) { return breakEven(N, K); }).filter(function (v) { return v !== null; });
+      var b0 = Math.min.apply(null, be), b1 = Math.max.apply(null, be);
+      el('rect', {x: x(b0), y: T, width: Math.max(2, x(b1) - x(b0)), height: H - T - B, fill: 'var(--band)'}, svg);
+      [0, 0.25, 0.5, 0.75, 1].forEach(function (v) {
+        el('line', {x1: x(v), x2: x(v), y1: T, y2: H - B, 'class': 'grid'}, svg);
+        el('text', {x: x(v), y: H - B + 16, 'text-anchor': 'middle'}, svg, v);
+      });
+      var dphi = D.phiDesign[K];
+      el('line', {x1: x(dphi), x2: x(dphi), y1: T - 2, y2: H - B, stroke: 'var(--v-pool)', 'stroke-width': 2}, svg);
+      el('text', {x: x(dphi) + 4, y: H - B - 6, 'class': 'lab', fill: 'var(--v-pool)'}, svg, '설계 ' + dphi.toFixed(2));
+      el('text', {x: x((b0 + b1) / 2), y: T + 12, 'text-anchor': 'middle', 'class': 'lab'}, svg, '손익분기');
+      CONDS.forEach(function (c, i) {
+        var yc = T + rh * (i + 0.5);
+        LENS.forEach(function (N, q) {
+          var v = D.fit[K][N][c], off = (q - 1.5) * 5;
+          var m = marker(svg, SHAPE[N], x(v), yc + off, 4.2, {fill: c === AGC ? 'var(--crit)' : 'var(--v-pool)', stroke: 'var(--surface)', 'stroke-width': 1.2});
+          var hit = el('circle', {cx: x(v), cy: yc + off, r: 9, fill: 'transparent'}, svg);
+          hit.addEventListener('pointerenter', function () { showTip(svg, tip, '<div class="h">' + K + '개 · ' + N + '심볼</div><div class="r"><span>' + COND[c] + '</span><b>φ ' + v.toFixed(2) + '</b></div>', x(v), yc + off); });
+          hit.addEventListener('pointerleave', function () { tip.hidden = true; });
+        });
+      });
+      el('text', {x: x0 + pw / 2, y: H - 8, 'text-anchor': 'middle', 'class': 'lab'}, svg, 'φ');
+    });
+  })();
+
+  /* ---------------------------------------------------------------- 3 check table */
+  (function () {
+    var t = document.getElementById('t-check');
+    var h = '<thead><tr><th>H0 조건</th>' + ['2', '4', '8'].map(function (K) { return '<th class="num">' + K + '개 최대</th><th class="num">수락</th>'; }).join('') +
+            '<th class="num">비교: 지금의 Λ̂ 8개</th><th class="num">원시 샘플 Λ 8개</th></tr></thead><tbody>';
+    CONDS.forEach(function (c) {
+      var rs = D.check.filter(function (q) { return q.cond === c; });
+      h += '<tr' + (c === AGC ? ' class="grp"' : '') + '><td>' + COND[c] + '</td>';
+      ['2', '4', '8'].forEach(function (K) {
+        var m = 0, acc = 0;
+        rs.forEach(function (q) { q.K[K].pool.forEach(function (v) { if (v !== null && v > m) m = v; }); acc += q.K[K].acc.pool; });
+        h += '<td class="num ' + (m > 1.3 ? 'bad' : m <= 1.1 ? 'ok' : '') + '">' + m.toFixed(2) + '</td><td class="num">' + acc + '</td>';
+      });
+      ['own', 'raw'].forEach(function (v) {                      /* references at P = 1e-2 and 1e-3, where the counts are large */
+        var mo = 0; rs.forEach(function (q) { q.K['8'][v].slice(0, 2).forEach(function (z) { if (z !== null && z > mo) mo = z; }); });
+        h += '<td class="num">' + mo.toFixed(2) + '</td>';
+      });
+      h += '</tr>';
+    });
+    t.innerHTML = h + '</tbody>';
+  })();
+
+  /* ---------------------------------------------------------------- 4 L90 small multiples */
+  (function () {
+    var box = document.getElementById('c-l90');
+    keys('k-l90', ['raw', 'own', 'pool', 'ideal'].map(function (v) { return {svg: keyLine(VAR[v].c, VAR[v].dash, true), name: VAR[v].name}; }));
+    LENS.forEach(function (N) {
+      var fig = document.createElement('div'); fig.style.position = 'relative'; fig.style.minWidth = '0'; box.appendChild(fig);
+      var svg = el('svg', {'class': 'ch', viewBox: '0 0 260 250', role: 'img', 'aria-label': N + '심볼 소프트 패킷 L90'}); fig.appendChild(svg);
+      var L = 46, R = 10, T = 26, B = 34, W = 260, H = 250;
+      var vals = []; KS.forEach(function (K) { ['raw', 'own', 'pool'].forEach(function (v) { vals.push(D.L90[N][K][v]); }); });
+      var lo = Math.floor(Math.min.apply(null, vals)) - 0.5, hi = Math.ceil(Math.max.apply(null, vals)) + 0.5;
+      var x = function (i) { return L + (i + 0.5) * (W - L - R) / 4; }, y = lin(lo, hi, H - B, T);
+      el('text', {x: L, y: 15, 'class': 'ttl'}, svg, N + '심볼');
+      for (var g = Math.ceil(lo); g <= hi; g += 2) { el('line', {x1: L, x2: W - R, y1: y(g), y2: y(g), 'class': 'grid'}, svg); el('text', {x: L - 6, y: y(g) + 4, 'text-anchor': 'end'}, svg, '−' + Math.abs(g)); }
+      KS.forEach(function (K, i) { el('text', {x: x(i), y: H - B + 16, 'text-anchor': 'middle'}, svg, K); });
+      el('text', {x: (L + W - R) / 2, y: H - 4, 'text-anchor': 'middle', 'class': 'lab'}, svg, '프래그먼트 수');
+      var series = {raw: KS.map(function (K) { return D.L90[N][K].raw; }), own: KS.map(function (K) { return D.L90[N][K].own; }),
+                    pool: KS.map(function (K) { return D.L90[N][K].pool; }),
+                    ideal: KS.map(function (K) { return K === '1' ? D.L90[N][K].own : D.phiL90[N][K][D.phis.indexOf(1)]; })};
+      ['raw', 'own', 'ideal', 'pool'].forEach(function (v) {
+        var d = series[v].map(function (val, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(val).toFixed(1); }).join('');
+        el('path', {d: d, fill: 'none', stroke: VAR[v].c, 'stroke-width': 2, 'stroke-dasharray': VAR[v].dash || null}, svg);
+        if (v !== 'ideal') series[v].forEach(function (val, i) { el('circle', {cx: x(i), cy: y(val), r: 4, fill: VAR[v].c, stroke: 'var(--surface)', 'stroke-width': 1.5}, svg); });
+        else series[v].forEach(function (val, i) { el('circle', {cx: x(i), cy: y(val), r: 3.6, fill: 'var(--surface)', stroke: VAR[v].c, 'stroke-width': 1.6}, svg); });
+      });
+      var tip = tipFor(fig), cross = el('line', {y1: T, y2: H - B, 'class': 'ref', visibility: 'hidden'}, svg);
+      KS.forEach(function (K, i) {
+        var hit = el('rect', {x: x(i) - (W - L - R) / 8, y: T, width: (W - L - R) / 4, height: H - T - B, fill: 'transparent'}, svg);
+        hit.addEventListener('pointerenter', function () {
+          cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
+          var html = '<div class="h">' + N + '심볼 · ' + K + '개</div>' + ['raw', 'own', 'pool', 'ideal'].map(function (v) { return row(VAR[v].name, VAR[v].c, fmt(series[v][i]) + ' dBm'); }).join('');
+          showTip(svg, tip, html, x(i), y(series.own[i]));
+        });
+        hit.addEventListener('pointerleave', function () { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); });
+      });
+    });
+  })();
+
+  /* ---------------------------------------------------------------- 4 L90 table */
+  (function () {
+    var t = document.getElementById('t-l90');
+    var h = '<thead><tr><th>길이</th><th class="num">프래그먼트</th><th class="num">원시 샘플 Λ</th><th class="num">지금의 Λ̂</th><th class="num">모은 Λ̂ (설계 φ)</th><th class="num">차이</th><th class="num">이상적 (φ = 1)</th><th class="num">차이</th><th class="num">손익분기 φ</th></tr></thead><tbody>';
+    LENS.forEach(function (N) {
+      KS.forEach(function (K, i) {
+        var r = D.L90[N][K], idl = K === '1' ? null : D.phiL90[N][K][D.phis.indexOf(1)], be = K === '1' ? null : breakEven(N, K);
+        var d1 = K === '1' ? null : r.own - r.pool, d2 = K === '1' ? null : r.own - idl;
+        h += '<tr' + (i === 0 ? ' class="grp"' : '') + '><td>' + (i === 0 ? N + '심볼' : '') + '</td><td class="num">' + K + '</td><td class="num">' + fmt(r.raw) + '</td><td class="num">' + fmt(r.own) + '</td>' +
+             '<td class="num">' + (K === '1' ? '같음' : fmt(r.pool)) + '</td><td class="num ' + (d1 !== null && d1 < 0 ? 'bad' : '') + '">' + sfmt(d1) + '</td>' +
+             '<td class="num">' + (K === '1' ? '–' : fmt(idl)) + '</td><td class="num">' + sfmt(d2) + '</td><td class="num">' + (be === null ? '–' : be.toFixed(2)) + '</td></tr>';
+      });
+    });
+    t.innerHTML = h + '</tbody>';
+  })();
+
+  /* ---------------------------------------------------------------- segmented controls */
+  function seg(id, opts, cur, on) {
+    var box = document.getElementById(id);
+    opts.forEach(function (o) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = o; b.setAttribute('aria-pressed', o === cur ? 'true' : 'false');
+      b.addEventListener('click', function () { box.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); on(o); });
+      box.appendChild(b);
+    });
+  }
+
+  /* ---------------------------------------------------------------- 4 gain vs phi */
+  var gs = {N: '32', K: '8'};
+  function drawGain() {
+    var svg = document.getElementById('c-gain'); clear(svg);
+    var W = 520, H = 320, L = 52, R = 16, T = 16, B = 44, N = gs.N, K = gs.K;
+    var own = D.L90[N][K].own, raw = D.L90[N][K].raw, ph = D.phis;
+    var g = D.phiL90[N][K].map(function (v) { return v === null ? null : own - v; });
+    var top = Math.max(0.5, own - raw + 0.3), bot = Math.min.apply(null, g.filter(function (v) { return v !== null; }).concat([-1.5])) - 0.2;
+    var x = lg(0.2, 8, L, W - R), y = lin(bot, top, H - B, T);
+    for (var v = Math.ceil(bot * 2) / 2; v <= top; v += 0.5) { el('line', {x1: L, x2: W - R, y1: y(v), y2: y(v), 'class': Math.abs(v) < 1e-9 ? 'axis' : 'grid'}, svg); el('text', {x: L - 6, y: y(v) + 4, 'text-anchor': 'end'}, svg, sfmt(v, 1)); }
+    [0.2, 0.34, 0.5, 1, 2, 4, 8].forEach(function (p) { el('text', {x: x(p), y: H - B + 16, 'text-anchor': 'middle'}, svg, p); });
+    el('text', {x: (L + W - R) / 2, y: H - 6, 'text-anchor': 'middle', 'class': 'lab'}, svg, 'φ (로그)');
+    el('text', {x: 6, y: T + 4, 'class': 'lab'}, svg, 'dB');
+    el('line', {x1: L, x2: W - R, y1: y(own - raw), y2: y(own - raw), stroke: 'var(--v-raw)', 'stroke-width': 1.5, 'stroke-dasharray': '2 3'}, svg);
+    el('text', {x: W - R, y: y(own - raw) - 6, 'text-anchor': 'end', 'class': 'lab'}, svg, '원시 샘플 Λ ' + sfmt(own - raw));
+    el('text', {x: W - R, y: y(0) + 15, 'text-anchor': 'end', 'class': 'lab'}, svg, '지금의 Λ̂');
+    var d = ''; ph.forEach(function (p, i) { if (g[i] !== null) d += (d ? 'L' : 'M') + x(p).toFixed(1) + ' ' + y(g[i]).toFixed(1); });
+    el('path', {d: d, fill: 'none', stroke: 'var(--v-pool)', 'stroke-width': 2}, svg);
+    var dp = D.phiDesign[K], dg = own - D.L90[N][K].pool, gi = g[ph.indexOf(1)];
+    el('circle', {cx: x(dp), cy: y(dg), r: 5.5, fill: 'var(--v-pool)', stroke: 'var(--surface)', 'stroke-width': 2}, svg);
+    el('text', {x: x(dp) + 8, y: y(dg) + 16, 'class': 'lab'}, svg, '설계 φ ' + dp.toFixed(2) + ': ' + sfmt(dg) + ' dB');
+    el('circle', {cx: x(1), cy: y(gi), r: 5, fill: 'var(--surface)', stroke: 'var(--v-pool)', 'stroke-width': 2}, svg);
+    el('text', {x: x(1) + 8, y: y(gi) - 8, 'class': 'lab'}, svg, 'φ = 1: ' + sfmt(gi) + ' dB');
+    var plate = svg.parentNode, tip = tipFor(plate);
+    ph.forEach(function (p, i) {
+      if (g[i] === null) return;
+      var hit = el('circle', {cx: x(p), cy: y(g[i]), r: 10, fill: 'transparent'}, svg);
+      hit.addEventListener('pointerenter', function () { showTip(svg, tip, '<div class="h">' + N + '심볼 · ' + K + '개 · φ ' + p + '</div><div class="r"><span>L90</span><b>' + fmt(D.phiL90[N][K][i]) + ' dBm</b></div><div class="r"><span>지금 방식 대비</span><b>' + sfmt(g[i]) + ' dB</b></div><div class="r"><span>문턱</span><b>' + D.phiThr[K][i].toFixed(1) + '</b></div>', x(p), y(g[i])); });
+      hit.addEventListener('pointerleave', function () { tip.hidden = true; });
+    });
+  }
+  seg('g-n', LENS, gs.N, function (v) { gs.N = v; drawGain(); });
+  seg('g-k', ['2', '4', '8'], gs.K, function (v) { gs.K = v; drawGain(); });
+  drawGain();
+
+  /* ---------------------------------------------------------------- 4 Pd curves */
+  var ps = {N: '32', K: '8'};
+  function drawPd() {
+    var svg = document.getElementById('c-pd'); clear(svg);
+    var W = 520, H = 320, L = 44, R = 14, T = 14, B = 44, e = D.Pd[ps.N][ps.K], db = e.dBm;
+    var x = lin(db[0], db[db.length - 1], L, W - R), y = lin(0, 1, H - B, T);
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (v) { el('line', {x1: L, x2: W - R, y1: y(v), y2: y(v), 'class': 'grid'}, svg); el('text', {x: L - 6, y: y(v) + 4, 'text-anchor': 'end'}, svg, v); });
+    el('line', {x1: L, x2: W - R, y1: y(0.9), y2: y(0.9), 'class': 'ref'}, svg);
+    db.forEach(function (v, i) { if (v % 4 === 0) el('text', {x: x(v), y: H - B + 16, 'text-anchor': 'middle'}, svg, '−' + Math.abs(v)); });
+    el('text', {x: (L + W - R) / 2, y: H - 6, 'text-anchor': 'middle', 'class': 'lab'}, svg, '수신 세기 [dBm]');
+    var vs = ps.K === '1' ? ['raw', 'own'] : ['raw', 'own', 'ideal', 'pool'];
+    vs.forEach(function (v) {
+      var a = e[v], d = a.map(function (p, i) { return (i ? 'L' : 'M') + x(db[i]).toFixed(1) + ' ' + y(p).toFixed(1); }).join('');
+      el('path', {d: d, fill: 'none', stroke: VAR[v].c, 'stroke-width': 2, 'stroke-dasharray': VAR[v].dash || null}, svg);
+    });
+    var plate = svg.parentNode, tip = tipFor(plate), cross = el('line', {y1: T, y2: H - B, 'class': 'ref', visibility: 'hidden'}, svg);
+    var dots = vs.map(function (v) { return el('circle', {r: 4, fill: VAR[v].c, stroke: 'var(--surface)', 'stroke-width': 1.5, visibility: 'hidden'}, svg); });
+    var hit = el('rect', {x: L, y: T, width: W - L - R, height: H - T - B, fill: 'transparent'}, svg);
+    function move(ev) {
+      var p = svgPoint(svg, ev), best = 0;
+      db.forEach(function (v, i) { if (Math.abs(x(v) - p[0]) < Math.abs(x(db[best]) - p[0])) best = i; });
+      cross.setAttribute('x1', x(db[best])); cross.setAttribute('x2', x(db[best])); cross.setAttribute('visibility', 'visible');
+      vs.forEach(function (v, j) { dots[j].setAttribute('cx', x(db[best])); dots[j].setAttribute('cy', y(e[v][best])); dots[j].setAttribute('visibility', 'visible'); });
+      showTip(svg, tip, '<div class="h">' + ps.N + '심볼 · ' + ps.K + '개 · ' + fmt(db[best], 0) + ' dBm</div>' + vs.map(function (v) { return row(VAR[v].name, VAR[v].c, e[v][best].toFixed(3)); }).join(''), x(db[best]), y(0.5));
+    }
+    hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+    hit.addEventListener('pointerleave', function () { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); dots.forEach(function (d) { d.setAttribute('visibility', 'hidden'); }); });
+  }
+  seg('p-n', LENS, ps.N, function (v) { ps.N = v; drawPd(); });
+  seg('p-k', KS, ps.K, function (v) { ps.K = v; drawPd(); });
+  drawPd();
+
+  /* ---------------------------------------------------------------- 5 thresholds */
+  (function () {
+    var t = document.getElementById('t-thr'), i1 = D.phis.indexOf(1);
+    var h = '<thead><tr><th class="num">프래그먼트</th><th class="num">χ²₂ₖ (Λ, 지금의 Λ̂)</th><th class="num">모은 Λ̂, φ = 1</th><th class="num">χ² 대비</th><th class="num">모은 Λ̂, 설계 φ</th><th class="num">χ² 대비</th></tr></thead><tbody>';
+    ['2', '4', '8'].forEach(function (K) {
+      var c = D.thr[K].chi2, a = D.phiThr[K][i1], b = D.thr[K].pool;
+      h += '<tr><td class="num">' + K + '</td><td class="num">' + c.toFixed(2) + '</td><td class="num">' + a.toFixed(1) + '</td><td class="num">+' + (10 * Math.log10(a / c)).toFixed(2) + ' dB</td>' +
+           '<td class="num">' + b.toFixed(1) + ' (φ ' + D.phiDesign[K].toFixed(2) + ')</td><td class="num">+' + (10 * Math.log10(b / c)).toFixed(2) + ' dB</td></tr>';
+    });
+    t.innerHTML = h + '</tbody>';
+  })();
+
+  /* ---------------------------------------------------------------- 5 cost decomposition (loss against raw Lambda) */
+  function swatch(c, light) {
+    return '<svg viewBox="0 0 24 12" aria-hidden="true"><rect x="2" y="1" width="20" height="10" rx="2" style="fill:' + c + ';fill-opacity:' + (light ? 0.38 : 1) + ';stroke:' + c + '"/></svg>';
+  }
+  keys('k-cost', [{svg: swatch('var(--v-own)'), name: '지금의 Λ̂: 항마다 보정한 대가'}, {svg: swatch('var(--v-pool)'), name: '모은 Λ̂: 공유 오차 (φ = 1)'},
+                  {svg: swatch('var(--v-pool)', true), name: '모은 Λ̂: 위상 맞춤 편향 (φ = 1 → 설계 φ)'}]);
+  var cs = {N: '32'};
+  function drawCost() {
+    var svg = document.getElementById('c-cost'); clear(svg);
+    var W = 960, H = 260, L = 160, R = 200, T = 8, B = 34, N = cs.N, i1 = D.phis.indexOf(1);
+    var x = lin(0, 4, L, W - R), bh = 20, gh = (H - T - B) / 3, plate = svg.parentNode, tip = tipFor(plate);
+    [0, 1, 2, 3, 4].forEach(function (v) { el('line', {x1: x(v), x2: x(v), y1: T, y2: H - B, 'class': v ? 'grid' : 'axis'}, svg); el('text', {x: x(v), y: H - B + 16, 'text-anchor': 'middle'}, svg, v + ' dB'); });
+    el('text', {x: x(2), y: H - 2, 'text-anchor': 'middle', 'class': 'lab'}, svg, '원시 샘플 Λ 대비 L90 손해 (짧을수록 좋음)');
+    ['2', '4', '8'].forEach(function (K, i) {
+      var raw = D.L90[N][K].raw, own = D.L90[N][K].own, ideal = D.phiL90[N][K][i1], des = D.L90[N][K].pool;
+      var cOwn = own - raw, cSh = ideal - raw, cBias = des - ideal, y0 = T + i * gh + 4;
+      el('text', {x: 0, y: y0 + bh + 6, 'class': 'ttl'}, svg, K + '개');
+      el('text', {x: L - 10, y: y0 + 14, 'text-anchor': 'end', 'class': 'lab'}, svg, '지금의 Λ̂');
+      el('text', {x: L - 10, y: y0 + bh + 18, 'text-anchor': 'end', 'class': 'lab'}, svg, '모은 Λ̂');
+      el('rect', {x: x(0), y: y0, width: Math.max(1, x(cOwn) - x(0)), height: bh, rx: 3, style: 'fill:var(--v-own)'}, svg);
+      el('text', {x: x(cOwn) + 8, y: y0 + 14}, svg, cOwn.toFixed(2) + ' dB');
+      var y1 = y0 + bh + 4;
+      el('rect', {x: x(0), y: y1, width: Math.max(1, x(cSh) - x(0)), height: bh, rx: 3, style: 'fill:var(--v-pool)'}, svg);
+      el('rect', {x: x(cSh) + 2, y: y1, width: Math.max(1, x(cSh + cBias) - x(cSh) - 2), height: bh, rx: 3,
+                  style: 'fill:var(--v-pool);fill-opacity:.38;stroke:var(--v-pool);stroke-width:1'}, svg);
+      el('text', {x: x(cSh + cBias) + 8, y: y1 + 14}, svg, (cSh + cBias).toFixed(2) + ' dB = ' + cSh.toFixed(2) + ' + ' + cBias.toFixed(2));
+      [[y0, '<div class="h">' + N + '심볼 · ' + K + '개 · 지금의 Λ̂</div>' + row('L90', 'var(--v-own)', fmt(own) + ' dBm') + '<div class="r"><span>원시 Λ 대비</span><b>' + cOwn.toFixed(2) + ' dB</b></div>', cOwn],
+       [y1, '<div class="h">' + N + '심볼 · ' + K + '개 · 모은 Λ̂</div>' + row('φ = 1', 'var(--v-pool)', fmt(ideal) + ' dBm') + row('설계 φ ' + D.phiDesign[K].toFixed(2), 'var(--v-pool)', fmt(des) + ' dBm') +
+            '<div class="r"><span>공유 오차</span><b>' + cSh.toFixed(2) + ' dB</b></div><div class="r"><span>위상 맞춤 편향</span><b>' + cBias.toFixed(2) + ' dB</b></div>', cSh + cBias]].forEach(function (b) {
+        var hit = el('rect', {x: x(0), y: b[0] - 2, width: x(4) - x(0), height: bh + 4, fill: 'transparent'}, svg);
+        hit.addEventListener('pointerenter', function () { showTip(svg, tip, b[1], x(b[2]), b[0]); });
+        hit.addEventListener('pointerleave', function () { tip.hidden = true; });
+      });
+    });
+  }
+  seg('d-n', LENS, cs.N, function (v) { cs.N = v; drawCost(); });
+  drawCost();
+})();
+</script>
+<script>
+(function () {
+  /* theme toggle: system -> light -> dark */
+  var themeBtn = document.getElementById('theme-btn');
+  function themeLabel() {
+    var t = document.documentElement.getAttribute('data-theme');
+    themeBtn.textContent = '테마: ' + (t === 'light' ? '라이트' : t === 'dark' ? '다크' : '시스템');
+  }
+  themeBtn.addEventListener('click', function () {
+    var t = document.documentElement.getAttribute('data-theme');
+    var next = t === null ? 'light' : t === 'light' ? 'dark' : null;
+    if (next) document.documentElement.setAttribute('data-theme', next); else document.documentElement.removeAttribute('data-theme');
+    try { if (next) localStorage.setItem('rif-theme', next); else localStorage.removeItem('rif-theme'); } catch (e) {}
+    themeLabel();
+  });
+  themeLabel();
+})();
+</script>
+</body>
+</html>
