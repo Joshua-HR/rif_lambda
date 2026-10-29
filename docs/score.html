@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>STS 점수 판정</title>
+<meta name="description" content="기존 일반 모드의 STS 점수 판정(심볼마다 한 표본 시점의 펄스 128개 부호 일치, 패킷 전체 평균 문턱 12)의 동작과 원리, SemiSyncOnlyMode에서 쓸 수 없는 이유">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<script>
+  (function () {  /* 저장된 테마를 첫 렌더링 전에 적용 */
+    try { var t = localStorage.getItem('rif-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  })();
+</script>
+<style>
+/* Layout: RIF 페이지들과 같은 체계(68ch 본문 + 1080px 도판). 동작(1~4단계) → 원리(분포와 문턱) → 조건(위상 정렬) → Λ와의 차이.
+   Color: 페이지들과 같은 중립색. 맞음/틀림은 상태 초록·빨강, 맞는 키 분포는 파랑, 신호 없음 분포는 회색, 위상 회전은 주황. */
+:root{
+  --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
+  --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.11);
+  --v-pool:#2a78d6; --v-own:#eb6834; --h0:#8e8c84;
+  --crit:#d03b3b; --good:#0c9a3e; --warn:#b7791f;
+  --band:rgba(42,120,214,.16); --code-bg:#e9eae6;
+  --f-sans:"IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+    --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+    --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+    --v-pool:#3987e5; --v-own:#d95926; --h0:#8f8d85;
+    --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
+    --band:rgba(57,135,229,.22); --code-bg:#242422;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+  --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+  --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+  --v-pool:#3987e5; --v-own:#d95926; --h0:#8f8d85;
+  --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
+  --band:rgba(57,135,229,.22); --code-bg:#242422;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:36px 80px;display:flex;flex-direction:column;gap:52px}
+h1,h2,h3{text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:clamp(28px,4.6vw,40px);font-weight:700;letter-spacing:-0.02em}
+h2{font-size:clamp(21px,2.8vw,26px);font-weight:700;letter-spacing:-0.01em}
+h3{font-size:15px;font-weight:600}
+p,ul,ol{margin:0}
+ul{padding-left:1.3em}
+li + li{margin-top:6px}
+a{color:var(--v-pool)}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+strong{font-weight:600}
+:focus-visible{outline:2px solid var(--v-pool);outline-offset:2px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font:500 12.5px/1.5 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:18px;line-height:1.7;color:var(--ink-2);max-width:66ch}
+.hero{display:flex;flex-direction:column;gap:18px}
+.facts{display:flex;flex-wrap:wrap;gap:8px}
+.fact{display:inline-flex;gap:8px;align-items:baseline;padding:5px 12px;border-radius:999px;border:1px solid var(--hair);background:var(--surface);font-size:14px;color:var(--ink-2)}
+.fact b{font:600 13.5px var(--f-mono);color:var(--ink)}
+section{display:flex;flex-direction:column;gap:18px;scroll-margin-top:16px}
+.sec-head{display:flex;flex-direction:column;gap:6px}
+.sec-head .no{font:600 12.5px var(--f-mono);color:var(--muted);letter-spacing:.05em}
+.plate{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0;position:relative;margin:0}
+.plate figcaption{font-size:13.5px;color:var(--ink-2);line-height:1.65;max-width:86ch}
+.scroll-x{overflow-x:auto;max-width:100%}
+.scroll-x svg.dg{min-width:760px}
+svg.ch{width:100%;height:auto;display:block;overflow:visible;touch-action:pan-y}
+.ch text{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+.ch .lab{fill:var(--ink-2);font-family:var(--f-sans);font-size:12px}
+.ch .grid{stroke:var(--grid);stroke-width:1}
+.ch .axis{stroke:var(--axis);stroke-width:1}
+.dg text{font-family:var(--f-sans);font-size:12.5px;fill:var(--ink-2)}
+.dg .t{fill:var(--ink);font-size:13.5px;font-weight:600}
+.dg .rl{fill:var(--muted);font-size:12px}
+.dg .m{font-family:var(--f-mono);font-size:12.5px;fill:var(--ink)}
+.dg .node{fill:var(--raised);stroke:var(--axis);stroke-width:1.2}
+.dg .node.pool{stroke:var(--v-pool);stroke-width:1.8}
+.dg .ln{stroke:var(--axis);stroke-width:1.4;fill:none}
+.dg .plane{fill:none;stroke:var(--grid);stroke-width:1.2;stroke-dasharray:3 3}
+.dg .ax{stroke:var(--grid);stroke-width:1}
+.dg .vec{stroke:var(--muted);stroke-width:1.6;fill:none}
+.dg .sum{stroke-width:3;fill:none}
+.dg .chipbg.good{fill:color-mix(in srgb, var(--good) 15%, transparent);stroke:var(--good)}
+.dg .chipbg.crit{fill:color-mix(in srgb, var(--crit) 15%, transparent);stroke:var(--crit)}
+.controls{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;font-size:13.5px;color:var(--ink-2)}
+.seg{display:inline-flex;border:1px solid var(--axis);border-radius:8px;overflow:hidden}
+.seg button{font:500 13px var(--f-mono);padding:4px 11px;border:0;background:var(--raised);color:var(--ink-2);cursor:pointer}
+.seg button + button{border-left:1px solid var(--axis)}
+.seg button[aria-pressed="true"]{background:var(--v-pool);color:#fff}
+.slider{display:inline-flex;gap:10px;align-items:center}
+.slider input{width:220px;max-width:50vw;accent-color:var(--v-pool)}
+.slider output{font:600 13px var(--f-mono);color:var(--ink);min-width:7.5em}
+.readout{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ro{border:1px solid var(--hair);border-radius:9px;padding:9px 12px;background:var(--raised);display:flex;flex-direction:column;gap:2px;min-width:0}
+.ro .k{font-size:12px;color:var(--muted)}
+.ro .v{font:600 18px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+@media (max-width:720px){.readout{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.keys{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink-2)}
+.key{display:inline-flex;align-items:center;gap:6px}
+.key i{display:inline-block;width:18px;height:10px;border-radius:2px}
+.tbl-wrap{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;font-size:14px;min-width:100%}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-weight:600;color:var(--ink-2);font-size:13px}
+.note{border-left:3px solid var(--axis);padding:2px 0 2px 14px;color:var(--ink-2);font-size:14px;max-width:76ch}
+.foot{border-top:1px solid var(--hair);padding-top:20px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:8px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto !important;transition:none !important}}
+.theme-btn{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);right:12px;z-index:40;font:500 12.5px var(--f-sans);padding:6px 11px;border-radius:999px;border:1px solid var(--hair);background:var(--raised);color:var(--ink-2);cursor:pointer}
+.theme-btn:hover{color:var(--ink);border-color:var(--axis)}
+</style>
+</head>
+<body>
+<button type="button" class="theme-btn" id="theme-btn" aria-label="테마 바꾸기">테마: 시스템</button>
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">일반 모드 · 기존 STS 수신 판정 · 2026-10-29 설명 기준</span>
+  <h1>STS 점수 판정은 부호가 맞는 펄스를 셉니다</h1>
+  <p class="lede">수신 표본의 실수부 부호가 기대한 STS 부호와 같은지만 보고, 크기는 버립니다. 심볼마다 한 번, 정해진 표본 시점에서 펄스 128개의 부호를 한꺼번에 기대 부호와 비교해 "맞은 수 − 틀린 수"를 심볼 점수로 삼습니다. 패킷의 모든 심볼로 평균해 12를 넘으면 성공입니다. 이 페이지는 그 동작과, 왜 그렇게 정해지는지를 그림으로 풉니다.</p>
+  <div class="facts">
+        <span class="fact">심볼마다 <b>한 번</b>, 한 표본 시점에서 펄스 128개를 몰아서 채점</span>
+    <span class="fact">심볼 점수 <b>−128 … +128</b></span>
+    <span class="fact">문턱 <b>평균 &gt; 12</b> ≈ 펄스 55% 일치</span>
+    <span class="fact">프래그먼트 8개면 <b>전체 평균</b></span>
+  </div>
+</header>
+
+<section id="s1">
+  <div class="sec-head"><span class="no">1 · 동작</span><h2>심볼마다 한 번 채점하고, 패킷 전체로 평균합니다</h2></div>
+  <figure class="plate">
+    <div class="scroll-x"><!--F1-->
+<svg class="ch dg" viewBox="0 0 960 560" role="img" aria-label="심볼마다 한 번, 같은 표본 시점에서 펄스 128개의 실수부를 모아 각 부호를 기대 STS 부호와 비교해 맞은 수에서 틀린 수를 뺀 값을 심볼 점수로 삼고, 8개 프래그먼트의 모든 심볼로 평균해 12를 넘으면 성공">
+<defs><marker id="s1a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--axis)"/></marker><marker id="s1p" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--v-pool)"/></marker></defs>
+<text class="t" x="0" y="18">1 · 심볼 점수: 심볼마다 한 번, 한 표본 시점에서 펄스 128개를 몰아서 채점 (16개를 예로)</text>
+<text class="rl" x="0" y="56">수신 표본 (펄스마다 8개)</text>
+<text class="rl" x="0" y="74">채점 시점 (같은 위치)</text>
+<circle cx="169.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="174.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="180.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="186" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="191.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="197.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="202.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="208.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="186" y1="66" x2="186" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="216.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="221.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="227.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="233" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="238.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="244.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="249.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="255.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="233" y1="66" x2="233" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="263.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="268.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="274.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="280" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="285.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="291.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="296.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="302.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="280" y1="66" x2="280" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="310.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="315.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="321.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="327" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="332.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="338.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="343.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="349.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="327" y1="66" x2="327" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="357.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="362.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="368.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="374" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="379.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="385.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="390.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="396.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="374" y1="66" x2="374" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="404.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="409.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="415.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="421" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="426.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="432.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="437.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="443.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="421" y1="66" x2="421" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="451.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="456.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="462.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="468" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="473.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="479.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="484.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="490.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="468" y1="66" x2="468" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="498.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="503.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="509.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="515" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="520.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="526.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="531.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="537.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="515" y1="66" x2="515" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="545.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="550.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="556.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="562" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="567.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="573.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="578.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="584.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="562" y1="66" x2="562" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="592.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="597.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="603.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="609" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="614.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="620.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="625.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="631.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="609" y1="66" x2="609" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="639.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="644.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="650.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="656" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="661.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="667.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="672.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="678.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="656" y1="66" x2="656" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="686.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="691.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="697.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="703" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="708.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="714.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="719.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="725.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="703" y1="66" x2="703" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="733.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="738.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="744.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="750" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="755.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="761.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="766.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="772.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="750" y1="66" x2="750" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="780.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="785.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="791.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="797" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="802.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="808.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="813.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="819.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="797" y1="66" x2="797" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="827.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="832.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="838.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="844" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="849.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="855.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="860.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="866.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="844" y1="66" x2="844" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<circle cx="874.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="879.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="885.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="891" cy="60" r="4" style="fill:var(--v-pool)"/>
+<circle cx="896.6" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="902.2" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="907.8" cy="60" r="1.8" style="fill:var(--axis)"/>
+<circle cx="913.4" cy="60" r="1.8" style="fill:var(--axis)"/>
+<line x1="891" y1="66" x2="891" y2="86" style="stroke:var(--v-pool);stroke-width:1.2" marker-end="url(#s1p)"/>
+<text class="rl" x="0" y="128">그 시점의 Re</text>
+<text class="rl" x="0" y="187">Re의 부호</text>
+<text class="rl" x="0" y="219">기대 부호 stsSeq</text>
+<text class="rl" x="0" y="255">부호 비교</text>
+<line class="ax" x1="166" y1="128" x2="911" y2="128"/>
+<rect x="179" y="100.8" width="14" height="27.2" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="186" y="191" text-anchor="middle">+</text>
+<text class="m" x="186" y="223" text-anchor="middle">+</text>
+<rect class="chipbg good" x="169" y="241" width="34" height="22" rx="11"/><text x="186" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<rect x="226" y="128" width="14" height="18.7" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="233" y="191" text-anchor="middle">−</text>
+<text class="m" x="233" y="223" text-anchor="middle">−</text>
+<rect class="chipbg good" x="216" y="241" width="34" height="22" rx="11"/><text x="233" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<rect x="273" y="128" width="14" height="30.6" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="280" y="191" text-anchor="middle">−</text>
+<text class="m" x="280" y="223" text-anchor="middle">−</text>
+<rect class="chipbg good" x="263" y="241" width="34" height="22" rx="11"/><text x="280" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<rect x="320" y="128" width="14" height="11.9" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="327" y="191" text-anchor="middle">−</text>
+<text class="m" x="327" y="223" text-anchor="middle">+</text>
+<rect class="chipbg crit" x="310" y="241" width="34" height="22" rx="11"/><text x="327" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">틀림</text>
+<rect x="367" y="104.2" width="14" height="23.8" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="374" y="191" text-anchor="middle">+</text>
+<text class="m" x="374" y="223" text-anchor="middle">+</text>
+<rect class="chipbg good" x="357" y="241" width="34" height="22" rx="11"/><text x="374" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<circle cx="421" cy="128" r="3" style="fill:var(--muted)"/>
+<text class="m" x="421" y="191" text-anchor="middle">0</text>
+<text class="m" x="421" y="223" text-anchor="middle">+</text>
+<text class="rl" x="421" y="259" text-anchor="middle">건너뜀</text>
+<rect x="461" y="128" width="14" height="20.4" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="468" y="191" text-anchor="middle">−</text>
+<text class="m" x="468" y="223" text-anchor="middle">−</text>
+<rect class="chipbg good" x="451" y="241" width="34" height="22" rx="11"/><text x="468" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<rect x="508" y="128" width="14" height="15.3" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="515" y="191" text-anchor="middle">−</text>
+<text class="m" x="515" y="223" text-anchor="middle">+</text>
+<rect class="chipbg crit" x="498" y="241" width="34" height="22" rx="11"/><text x="515" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">틀림</text>
+<rect x="555" y="128" width="14" height="28.9" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="562" y="191" text-anchor="middle">−</text>
+<text class="m" x="562" y="223" text-anchor="middle">−</text>
+<rect class="chipbg good" x="545" y="241" width="34" height="22" rx="11"/><text x="562" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<rect x="602" y="128" width="14" height="10.2" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="609" y="191" text-anchor="middle">−</text>
+<text class="m" x="609" y="223" text-anchor="middle">−</text>
+<rect class="chipbg good" x="592" y="241" width="34" height="22" rx="11"/><text x="609" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<rect x="649" y="128" width="14" height="22.1" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="656" y="191" text-anchor="middle">−</text>
+<text class="m" x="656" y="223" text-anchor="middle">+</text>
+<rect class="chipbg crit" x="639" y="241" width="34" height="22" rx="11"/><text x="656" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">틀림</text>
+<rect x="696" y="128" width="14" height="17" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="703" y="191" text-anchor="middle">−</text>
+<text class="m" x="703" y="223" text-anchor="middle">−</text>
+<rect class="chipbg good" x="686" y="241" width="34" height="22" rx="11"/><text x="703" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<rect x="743" y="102.5" width="14" height="25.5" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="750" y="191" text-anchor="middle">+</text>
+<text class="m" x="750" y="223" text-anchor="middle">+</text>
+<rect class="chipbg good" x="733" y="241" width="34" height="22" rx="11"/><text x="750" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<rect x="790" y="128" width="14" height="13.6" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="797" y="191" text-anchor="middle">−</text>
+<text class="m" x="797" y="223" text-anchor="middle">+</text>
+<rect class="chipbg crit" x="780" y="241" width="34" height="22" rx="11"/><text x="797" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">틀림</text>
+<rect x="837" y="128" width="14" height="32.3" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="844" y="191" text-anchor="middle">−</text>
+<text class="m" x="844" y="223" text-anchor="middle">−</text>
+<rect class="chipbg good" x="827" y="241" width="34" height="22" rx="11"/><text x="844" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<rect x="884" y="128" width="14" height="20.4" rx="2" style="fill:var(--ink-2)"/>
+<text class="m" x="891" y="191" text-anchor="middle">−</text>
+<text class="m" x="891" y="223" text-anchor="middle">−</text>
+<rect class="chipbg good" x="874" y="241" width="34" height="22" rx="11"/><text x="891" y="256" text-anchor="middle" style="fill:var(--ink);font-size:12px">맞음</text>
+<path d="M168 272 V280 H909 V272" style="fill:none;stroke:var(--v-pool);stroke-width:1.5"/>
+<line x1="538" y1="280" x2="538" y2="302" style="stroke:var(--v-pool);stroke-width:1.5" marker-end="url(#s1p)"/>
+<text x="538" y="320" text-anchor="middle" style="fill:var(--v-pool)">심볼 점수 = 맞은 수 − 틀린 수 (128개 한꺼번에, 심볼당 한 번)</text>
+<text class="rl" x="538" y="340" text-anchor="middle">펄스 간격 8표본(sampsPerCode_), 심볼(512칩)당 128개. 실수부가 정확히 0인 펄스는 세지 않음</text>
+<rect class="node" x="12" y="368" width="268" height="150" rx="8"/>
+<text class="t" x="28" y="394">심볼 점수 (1의 결과)</text>
+<text class="m" x="28" y="422">범위 −128 … +128</text>
+<text class="m" x="28" y="443">예시 16개: 11 − 4 = +7</text>
+<text x="28" y="464">틀린 키·신호 없음 → 평균 0</text>
+<text x="28" y="485">맞는 키 → SNR에 따라 + 쪽</text>
+<text x="28" y="506">심볼마다 하나씩 나옴</text>
+<line class="ln" x1="284" y1="443" x2="316" y2="443" marker-end="url(#s1a)"/>
+<rect class="node" x="320" y="368" width="268" height="150" rx="8"/>
+<text class="t" x="336" y="394">2 · 누적</text>
+<text x="336" y="422">유효 심볼마다 stsScoreTotal에 더함</text>
+<text x="336" y="443">구간 = RIF 한 세그먼트</text>
+<text x="336" y="464">(segLen = 32~256심볼)</text>
+<text x="336" y="485">프래그먼트 8개면</text>
+<text x="336" y="506">8 × segLen 심볼을 모두 더함</text>
+<line class="ln" x1="592" y1="443" x2="624" y2="443" marker-end="url(#s1a)"/>
+<rect class="node pool" x="628" y="368" width="268" height="150" rx="8"/>
+<text class="t" x="644" y="394">3 · 판정 (안테나마다)</text>
+<text x="644" y="422">평균 = 총합 ÷ 심볼 수</text>
+<text class="m" x="644" y="443">평균 > 12 → 성공</text>
+<text class="m" x="644" y="464">12 / 128 ≈ 0.094</text>
+<text x="644" y="485">→ 펄스의 약 55%가 맞으면 통과</text>
+<text x="644" y="506">문턱 12는 조정 가능</text>
+<text class="rl" x="12" y="546">입력: resampler/CE 출력 또는 CMF 출력 중 하나를 골라 같은 계산을 함. 크기 정보는 쓰지 않음(경판정)</text>
+</svg>
+<!--/F1--></div>
+    <figcaption>채점은 펄스가 들어올 때마다가 아니라 심볼마다 한 번입니다. 펄스 칸마다 8개 표본 중 같은 위치(파란 점, 한 표본 시점)의 값을 골라 128개를 모은 뒤, 각 실수부의 부호를 기대 부호 stsSeq와 비교해 맞은 수에서 틀린 수를 뺍니다. 위 줄은 128개 중 16개를 예로 든 것이고, 막대는 그 시점 표본의 실수부입니다. 잡음 때문에 부호가 뒤집힌 펄스는 틀림(빨강)이 되고, 실수부가 정확히 0인 펄스는 세지 않습니다. 아래 줄은 심볼 점수가 구간과 패킷으로 쌓여 문턱과 비교되는 과정입니다. Rx는 Tx와 같은 시드로 stsSeq를 다시 만들어 씁니다.</figcaption>
+  </figure>
+</section>
+
+<section id="s2">
+  <div class="sec-head"><span class="no">2 · 원리</span><h2>신호가 없으면 평균 0, 신호가 있으면 SNR만큼 올라갑니다</h2></div>
+  <div class="prose">
+    <p>한 심볼의 점수는 펄스 128개 각각의 부호 비교(맞으면 +1, 틀리면 −1)를 한꺼번에 더한 것과 같습니다. 틀린 키이거나 신호가 없으면 각 비교가 +1과 −1을 반반으로 내고 서로 독립입니다. 그래서 심볼 점수는 평균 0, 분산 128이고, S개 심볼을 평균하면 분산이 128 / S로 줄어 0 근처에 몰립니다. 신호가 아무리 세도 틀린 키의 부호는 기대 부호와 무관하므로 이 분포는 그대로입니다.</p>
+    <p>맞는 키이면 펄스가 맞을 확률이 (1 + erf√γ) / 2로 올라갑니다(γ는 펄스당 SNR). 평균 점수의 기대값은 128 · erf√γ이고, 이 값이 12에 닿는 세기가 50% 통과 레벨(MD 문서 약 −110.6 dBm)입니다. 문턱 12는 신호 없는 분포에서 아주 멀리 떨어져 있어서, 감도는 오검출이 아니라 "평균이 12에 닿는 SNR"이 정합니다.</p>
+  </div>
+  <figure class="plate">
+    <div class="controls">
+      <span>RIF 길이</span><div class="seg" id="c-n"></div>
+      <span>프래그먼트</span><div class="seg" id="c-k"></div>
+      <label class="slider" for="c-p"><span>수신 세기</span><input type="range" id="c-p" min="-118" max="-104" step="0.5" value="-110"><output id="c-pv" for="c-p">−110.0 dBm</output></label>
+    </div>
+    <div class="keys"><span class="key"><i style="background:var(--h0)"></i>틀린 키·신호 없음</span><span class="key"><i style="background:var(--v-pool)"></i>맞는 키 (선택한 세기)</span><span class="key"><i style="background:var(--band);border:1px solid var(--v-pool)"></i>문턱을 넘는 부분 = 통과 확률</span></div>
+    <svg class="ch" id="c-dist" viewBox="0 0 960 300" role="img" aria-label="평균 점수의 분포. 신호가 없으면 0 근처, 맞는 키는 세기에 따라 오른쪽으로 이동하고 문턱 12를 넘는 부분이 통과 확률"></svg>
+    <div class="readout">
+      <div class="ro"><span class="k">평균 낸 심볼 수 S</span><span class="v" id="r-s">–</span></div>
+      <div class="ro"><span class="k">펄스가 맞을 확률</span><span class="v" id="r-m">–</span></div>
+      <div class="ro"><span class="k">통과 확률 (맞는 키)</span><span class="v" id="r-pd">–</span></div>
+      <div class="ro"><span class="k">신호 없이 12를 넘을 확률</span><span class="v" id="r-pfa">–</span></div>
+    </div>
+    <figcaption>계산 가정: 펄스 판정이 서로 독립이고, 위상이 맞아 있으며(잔여 CFO 추적), 50% 통과 레벨은 MD 문서의 −110.6 dBm입니다. S는 프래그먼트마다 유효 심볼을 (길이 − 1)개로 잡았습니다(MD 문서의 누적 심볼 수와 같게). 프래그먼트를 늘리면 두 분포가 모두 좁아져, 50% 레벨은 그대로이고 통과 확률이 0에서 1로 바뀌는 구간만 짧아집니다.</figcaption>
+  </figure>
+</section>
+
+<section id="s3">
+  <div class="sec-head"><span class="no">3 · 지금 모드에서 못 쓰는 이유</span><h2>심볼 경계를 다시 잡지 않으니 점수 모듈도, CFO·SCO 추적도 돌지 않습니다</h2></div>
+  <div class="prose">
+    <p>일반 모드에서는 SemiSync 블록이 심볼 몇 개를 써서 심볼 경계를 다시 잡고, 점수 모듈은 그 경계를 기준으로 심볼마다 채점합니다. 잔여 CFO와 SCO도 계속 추적해 보정합니다.</p>
+    <p>지금의 SemiSyncOnlyMode는 경계를 다시 잡지 않습니다. RIF 길이만큼 모든 심볼에서 얻을 수 있는 CIR을 그대로 누적해 씁니다. 경계가 새로 잡히지 않으므로 점수 모듈이 동작하지 못하고, CFO·SCO 추적도 이 모드에서는 동작하지 않도록 HW가 정의되어 있습니다. 그래서 이 모드에서는 누적한 CIR로 판정해야 하고, 그 판정기가 Λ·Λ̂입니다.</p>
+  </div>
+  <figure class="plate">
+    <h3>두 모드에서 RIF 한 구간이 쓰이는 방식</h3>
+    <div class="scroll-x"><!--F2-->
+<svg class="ch dg" viewBox="0 0 960 380" role="img" aria-label="일반 모드는 SemiSync가 심볼 몇 개로 심볼 경계를 다시 잡은 뒤 점수 모듈과 CFO SCO 추적이 동작한다. SemiSyncOnlyMode는 경계를 다시 잡지 않고 RIF 길이의 모든 심볼에서 얻은 CIR을 그대로 누적하며, 점수 모듈과 CFO SCO 추적이 HW 정의로 꺼져 있다">
+<defs><marker id="s2a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--axis)"/></marker><marker id="s2p" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--v-pool)"/></marker></defs>
+<text class="t" x="0" y="68">일반 모드</text><text class="rl" x="0" y="86">점수 판정</text>
+<text class="rl" x="170" y="26">RIF 한 구간의 심볼 (예: 16개)</text>
+<text class="t" x="0" y="240">SemiSyncOnlyMode</text><text class="rl" x="0" y="258">지금 모드, Λ·Λ̂ 판정</text>
+<text class="rl" x="170" y="198">RIF 한 구간의 심볼 (예: 16개)</text>
+<rect x="172" y="48" width="36" height="30" rx="3" style="fill:color-mix(in srgb, var(--warn) 22%, var(--raised));stroke:var(--warn);stroke-width:1.2"/>
+<rect x="212" y="48" width="36" height="30" rx="3" style="fill:color-mix(in srgb, var(--warn) 22%, var(--raised));stroke:var(--warn);stroke-width:1.2"/>
+<rect x="252" y="48" width="36" height="30" rx="3" style="fill:color-mix(in srgb, var(--warn) 22%, var(--raised));stroke:var(--warn);stroke-width:1.2"/>
+<rect x="292" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="310" y1="80" x2="310" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="332" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="350" y1="80" x2="350" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="372" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="390" y1="80" x2="390" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="412" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="430" y1="80" x2="430" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="452" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="470" y1="80" x2="470" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="492" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="510" y1="80" x2="510" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="532" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="550" y1="80" x2="550" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="572" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="590" y1="80" x2="590" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="612" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="630" y1="80" x2="630" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="652" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="670" y1="80" x2="670" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="692" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="710" y1="80" x2="710" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="732" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="750" y1="80" x2="750" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<rect x="772" y="48" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line x1="790" y1="80" x2="790" y2="98" style="stroke:var(--v-pool);stroke-width:1.4" marker-end="url(#s2p)"/>
+<line x1="290" y1="34" x2="290" y2="86" style="stroke:var(--ink);stroke-width:2"/>
+<text class="m" x="296" y="42">심볼 경계</text>
+<text x="270" y="116" text-anchor="middle" style="fill:var(--warn)">SemiSync가 경계를 다시 잡음 (몇 개 소모)</text>
+<text x="410" y="116" style="fill:var(--v-pool)">점수 모듈: 경계부터 심볼마다 한 번 채점</text>
+<rect class="chipbg good" x="410" y="130" width="210" height="24" rx="12"/><text x="424" y="146" style="fill:var(--ink);font-size:12.5px">CFO·SCO 추적 동작 (계속 보정)</text>
+<rect x="172" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="190" y1="250" x2="490" y2="286"/>
+<rect x="212" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="230" y1="250" x2="490" y2="286"/>
+<rect x="252" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="270" y1="250" x2="490" y2="286"/>
+<rect x="292" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="310" y1="250" x2="490" y2="286"/>
+<rect x="332" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="350" y1="250" x2="490" y2="286"/>
+<rect x="372" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="390" y1="250" x2="490" y2="286"/>
+<rect x="412" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="430" y1="250" x2="490" y2="286"/>
+<rect x="452" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="470" y1="250" x2="490" y2="286"/>
+<rect x="492" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="510" y1="250" x2="490" y2="286"/>
+<rect x="532" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="550" y1="250" x2="490" y2="286"/>
+<rect x="572" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="590" y1="250" x2="490" y2="286"/>
+<rect x="612" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="630" y1="250" x2="490" y2="286"/>
+<rect x="652" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="670" y1="250" x2="490" y2="286"/>
+<rect x="692" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="710" y1="250" x2="490" y2="286"/>
+<rect x="732" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="750" y1="250" x2="490" y2="286"/>
+<rect x="772" y="220" width="36" height="30" rx="3" style="fill:var(--raised);stroke:var(--axis);stroke-width:1.2"/>
+<line class="ln" x1="790" y1="250" x2="490" y2="286"/>
+<rect class="node" x="380" y="286" width="220" height="30" rx="6"/><text x="490" y="306" text-anchor="middle">CIR 누적 (모든 심볼, 그대로)</text>
+<line class="ln" x1="600" y1="301" x2="640" y2="301" marker-end="url(#s2a)"/>
+<rect class="node pool" x="642" y="286" width="170" height="30" rx="6"/><text x="727" y="306" text-anchor="middle">CIR 256탭 → Λ·Λ̂</text>
+<rect class="chipbg crit" x="170" y="334" width="211" height="24" rx="12"/><text x="182" y="350" style="fill:var(--ink);font-size:12.5px">심볼 경계를 다시 잡지 않음</text>
+<rect class="chipbg crit" x="406" y="334" width="172" height="24" rx="12"/><text x="418" y="350" style="fill:var(--ink);font-size:12.5px">점수 모듈 동작 못 함</text>
+<rect class="chipbg crit" x="616" y="334" width="289" height="24" rx="12"/><text x="628" y="350" style="fill:var(--ink);font-size:12.5px">CFO·SCO 추적 꺼짐 (HW 정의)</text>
+</svg>
+<!--/F2--></div>
+    <figcaption>위: 일반 모드. 앞의 심볼 몇 개(주황, 개수는 예시)로 경계를 다시 잡은 뒤, 나머지 심볼을 점수 모듈이 심볼마다 채점하고 CFO·SCO 추적이 돕니다. 아래: SemiSyncOnlyMode. 모든 심볼의 CIR을 하나로 누적하고, 경계 재획득·점수 모듈·CFO·SCO 추적은 모두 없습니다.</figcaption>
+  </figure>
+  <figure class="plate">
+    <h3>추적이 없으면 생기는 일: 잔여 CFO로 위상이 돕니다</h3>
+    <div class="scroll-x"><!--F3-->
+<svg class="ch dg" viewBox="0 0 960 330" role="img" aria-label="실수부의 부호만 보므로 신호 위상이 실수축에 맞아 있어야 한다. 잔여 CFO를 추적하면 위상이 실수축 근처에 머물고, 추적하지 않으면 구간 동안 위상이 돌아 실수부가 줄거나 부호가 뒤집힌다">
+<defs><marker id="s3p" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--v-pool)"/></marker><marker id="s3v" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--muted)"/></marker></defs>
+<text class="t" x="40" y="18">잔여 CFO를 추적함 (일반 모드)</text>
+<text class="t" x="490" y="18">추적하지 않음 (우리 대상, 0.25 ppm)</text>
+<circle class="plane" cx="150" cy="150" r="96"/>
+<line class="ax" x1="40" y1="150" x2="260" y2="150"/><line class="ax" x1="150" y1="40" x2="150" y2="260"/>
+<text class="rl" x="262" y="154">Re</text><text class="rl" x="154" y="38">Im</text>
+<circle class="plane" cx="600" cy="150" r="96"/>
+<line class="ax" x1="490" y1="150" x2="710" y2="150"/><line class="ax" x1="600" y1="40" x2="600" y2="260"/>
+<text class="rl" x="712" y="154">Re</text><text class="rl" x="604" y="38">Im</text>
+<line class="vec" x1="150" y1="150" x2="231.2" y2="158.5" marker-end="url(#s3v)"/>
+<line class="vec" x1="150" y1="150" x2="231.5" y2="154.3" marker-end="url(#s3v)"/>
+<line class="vec" x1="150" y1="150" x2="231.6" y2="150" marker-end="url(#s3v)"/>
+<line class="vec" x1="150" y1="150" x2="231.5" y2="145.7" marker-end="url(#s3v)"/>
+<line class="vec" x1="150" y1="150" x2="231.2" y2="141.5" marker-end="url(#s3v)"/>
+<line class="sum" x1="150" y1="164" x2="231" y2="164" style="stroke:var(--v-pool)" marker-end="url(#s3p)"/>
+<text class="rl" x="90" y="278">실수부가 그대로 남음</text>
+<path d="M639.5 158 A40.3 40.3 0 0 0 639.5 142" style="fill:none;stroke:var(--v-own);stroke-width:2.2" marker-end="url(#s3v)"/>
+<text class="m" x="643.5" y="138" text-anchor="start">32</text>
+<path d="M652.1 172.1 A56.6 56.6 0 0 0 652.1 127.9" style="fill:none;stroke:var(--v-own);stroke-width:2.2" marker-end="url(#s3v)"/>
+<text class="m" x="656.1" y="123.9" text-anchor="start">64</text>
+<path d="M649.8 203.4 A73 73 0 0 0 649.8 96.6" style="fill:none;stroke:var(--v-own);stroke-width:2.2" marker-end="url(#s3v)"/>
+<text class="m" x="653.8" y="92.6" text-anchor="start">128</text>
+<path d="M593.8 239.1 A89.3 89.3 0 1 0 593.8 60.9" style="fill:none;stroke:var(--v-own);stroke-width:2.2" marker-end="url(#s3v)"/>
+<text class="m" x="597.8" y="56.9" text-anchor="start">256</text>
+<text class="rl" x="746" y="64">한 구간에서 위상이 도는 양과</text>
+<text class="rl" x="746" y="82">실수부 평균의 손해 (가운데를 맞출 때)</text>
+<text class="m" x="746" y="112"> 32심볼   23°  -0.06 dB</text>
+<text class="m" x="746" y="136"> 64심볼   46°  -0.23 dB</text>
+<text class="m" x="746" y="160">128심볼   94°  -1.00 dB</text>
+<text class="m" x="746" y="184">256심볼  188°  -4.32 dB</text>
+<text class="rl" x="746" y="230">가운데가 아니라 처음을 맞추면</text>
+<text class="rl" x="746" y="248">256심볼은 평균이 거의 0이 됨</text>
+<text class="rl" x="540" y="278">호의 바깥쪽일수록 긴 구간</text>
+</svg>
+<!--/F3--></div>
+    <figcaption>점수 판정은 실수부의 부호를 읽으므로, 신호 위상이 실수축 근처에 있어야 합니다. 일반 모드에서는 CFO 추적이 그렇게 만들어 줍니다(왼쪽). 지금 모드는 추적이 꺼져 있어 한 구간 동안 위상이 돕니다(오른쪽, 0.25 ppm). 손해는 구간 가운데의 위상을 맞췄다고 칠 때 실수부 평균이 줄어드는 양입니다. 같은 회전이 지금 모드의 CIR 누적에도 같은 크기의 손해를 줍니다. 합성 시험에서 길이마다 세기를 옮기는 S(0 / −3 / −5 / −5 dB)도 이 손해가 원인입니다. SCO 추적도 없어서, 한 패킷의 프래그먼트마다 CIR 피크가 조금씩 밀립니다(이동 탐색 'Drift'가 다루는 부분).</figcaption>
+  </figure>
+</section>
+
+<section id="s4">
+  <div class="sec-head"><span class="no">4 · Λ 판정기와의 차이</span><h2>같은 상관을 다른 방식으로 씁니다</h2></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th></th><th>점수 판정 (일반 모드)</th><th>Λ·Λ̂ 판정 (SemiSyncOnlyMode)</th></tr></thead>
+    <tbody>
+      <tr><td>채점 단위</td><td>심볼마다 한 번: 한 표본 시점의 펄스 128개 실수부 부호 (크기 버림)</td><td>프래그먼트마다: 복소 상관값을 누적한 CIR 256탭</td></tr>
+      <tr><td>앞단 동작</td><td>SemiSync가 심볼 몇 개로 경계를 다시 잡음, CFO·SCO 추적</td><td>경계 재획득 없음, RIF의 모든 심볼로 CIR 누적, 추적 없음 (HW 정의)</td></tr>
+      <tr><td>위상</td><td>맞아 있어야 함 (잔여 CFO 추적)</td><td>몰라도 됨 (크기와 공분산으로 판정)</td></tr>
+      <tr><td>타이밍</td><td>resampler가 정한 표본 시점 하나 (심볼 안에서 고정)</td><td>신호 창 57탭에서 찾음</td></tr>
+      <tr><td>프래그먼트 묶기</td><td>모든 심볼의 점수를 한 평균으로 (위상이 이어져 있다는 전제)</td><td>프래그먼트마다 Λ를 만들어 더함 (위상 몰라도 됨)</td></tr>
+      <tr><td>신호 없을 때 분포</td><td>세기와 무관 (부호가 반반)</td><td>정규화로 세기와 무관 (χ²₂)</td></tr>
+      <tr><td>문턱</td><td>평균 12 (오검출은 사실상 0이고, 감도가 정함)</td><td>패킷 10⁻⁶에서 공식으로</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">이 차이 때문에 두 방식의 감도를 비교할 때는 환경(위상 추적 여부, 타이밍)을 함께 적어야 합니다. 같은 오수락으로 맞춘 비교는 결정 4에서 모델로 계산할 예정입니다.</p>
+</section>
+
+<footer class="foot">
+  <p>출처: 점수 규칙과 두 모드의 동작은 2026-10-29의 사용자 설명, 50% 통과 레벨 −110.6 dBm은 <code>RIF_CIR_Validity_Detector.md</code> 6장, 분포와 손해는 위 가정의 계산입니다.</p>
+  <p>관련 페이지: <a href="index.html">RIF Λ 판정기</a>(누적 CIR로 판정하는 Λ·Λ̂), <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶). 결정 기록: <code>lambda_patch/DECISIONS.md</code> 결정 4.</p>
+</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var NS = 'http://www.w3.org/2000/svg';
+  var st = {N: 32, K: 8, P: -110};
+  var L50 = -110.6;
+  function el(tag, a, p, txt) { var e = document.createElementNS(NS, tag); for (var k in a) if (a[k] !== null && a[k] !== undefined) e.setAttribute(k, a[k]); if (txt !== undefined) e.textContent = txt; if (p) p.appendChild(e); return e; }
+  function erf(x) {   /* Abramowitz-Stegun 7.1.26, |error| < 1.5e-7 */
+    var s = x < 0 ? -1 : 1; x = Math.abs(x);
+    var t = 1 / (1 + 0.3275911 * x);
+    var y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return s * y;
+  }
+  function erfinv(y) { var lo = 0, hi = 6; for (var i = 0; i < 80; i++) { var m = (lo + hi) / 2; if (erf(m) < y) lo = m; else hi = m; } return (lo + hi) / 2; }
+  var G50 = Math.pow(erfinv(12 / 128), 2);                         /* per-pulse SNR at the 50 % level */
+  function qtail(z) {                                              /* P(N(0,1) > z) */
+    if (z < 6) return 0.5 * (1 - erf(z / Math.SQRT2));
+    return Math.exp(-z * z / 2) / (z * Math.sqrt(2 * Math.PI)) * (1 - 1 / (z * z) + 3 / Math.pow(z, 4));
+  }
+  function log10q(z) {
+    if (z < 6) return Math.log10(qtail(z));
+    return (-z * z / 2) / Math.LN10 - Math.log10(z * Math.sqrt(2 * Math.PI)) + Math.log10(1 - 1 / (z * z) + 3 / Math.pow(z, 4));
+  }
+  function seg(id, opts, key) {
+    var box = document.getElementById(id);
+    opts.forEach(function (o) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = o; b.setAttribute('aria-pressed', o === st[key] ? 'true' : 'false');
+      b.addEventListener('click', function () { st[key] = o; box.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); draw(); });
+      box.appendChild(b);
+    });
+  }
+  function fmtPfa(z) {
+    var l = log10q(z);
+    if (l > -3) return Math.pow(10, l).toFixed(4);
+    var e = Math.floor(l), m = Math.pow(10, l - e);
+    return m.toFixed(1) + 'e' + e;
+  }
+  function draw() {
+    var svg = document.getElementById('c-dist'); while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var W = 960, H = 300, L = 40, R = 20, T = 14, B = 44;
+    var S = st.K * (st.N - 1);
+    var g = G50 * Math.pow(10, (st.P - L50) / 10), m = erf(Math.sqrt(g));
+    var mu1 = 128 * m, sd1 = Math.sqrt(128 * (1 - m * m) / S), sd0 = Math.sqrt(128 / S);
+    var x0 = -8, x1 = 32, x = function (v) { return L + (v - x0) / (x1 - x0) * (W - L - R); };
+    function pdf(v, mu, sd) { return Math.exp(-0.5 * Math.pow((v - mu) / sd, 2)) / (sd * Math.sqrt(2 * Math.PI)); }
+    var top = Math.max(pdf(0, 0, sd0), pdf(mu1, mu1, sd1)) * 1.08, y = function (v) { return H - B - v / top * (H - T - B); };
+    for (var v = x0; v <= x1; v += 4) {
+      el('line', {x1: x(v), x2: x(v), y1: T, y2: H - B, 'class': 'grid'}, svg);
+      el('text', {x: x(v), y: H - B + 16, 'text-anchor': 'middle'}, svg, v < 0 ? '−' + Math.abs(v) : v);
+    }
+    el('line', {x1: L, x2: W - R, y1: H - B, y2: H - B, 'class': 'axis'}, svg);
+    el('text', {x: (L + W - R) / 2, y: H - 6, 'text-anchor': 'middle', 'class': 'lab'}, svg, '심볼당 평균 점수');
+    function curve(mu, sd, col, fillFrom) {
+      var d = '', a = '', n = 400;
+      for (var i = 0; i <= n; i++) { var vv = x0 + (x1 - x0) * i / n, yy = y(pdf(vv, mu, sd)); d += (i ? 'L' : 'M') + x(vv).toFixed(1) + ' ' + yy.toFixed(1); }
+      if (fillFrom !== undefined) {
+        a = 'M' + x(fillFrom).toFixed(1) + ' ' + y(0).toFixed(1);
+        for (var j = 0; j <= n; j++) { var v2 = fillFrom + (x1 - fillFrom) * j / n; a += 'L' + x(v2).toFixed(1) + ' ' + y(pdf(v2, mu, sd)).toFixed(1); }
+        a += 'L' + x(x1).toFixed(1) + ' ' + y(0).toFixed(1) + 'Z';
+        el('path', {d: a, style: 'fill:var(--band);stroke:none'}, svg);
+      }
+      el('path', {d: d, style: 'fill:none;stroke:' + col + ';stroke-width:2'}, svg);
+    }
+    curve(0, sd0, 'var(--h0)');
+    curve(mu1, sd1, 'var(--v-pool)', 12);
+    el('line', {x1: x(12), x2: x(12), y1: T, y2: H - B, style: 'stroke:var(--ink);stroke-width:1.5;stroke-dasharray:4 3'}, svg);
+    el('text', {x: x(12) + 6, y: T + 12, 'class': 'lab'}, svg, '문턱 12');
+    el('text', {x: x(0), y: Math.max(T + 12, y(pdf(0, 0, sd0)) - 8), 'text-anchor': 'middle', 'class': 'lab'}, svg, '신호 없음');
+    el('text', {x: x(mu1), y: Math.max(T + 26, y(pdf(mu1, mu1, sd1)) - 8), 'text-anchor': 'middle', 'class': 'lab'}, svg, '맞는 키 ' + mu1.toFixed(1));
+    var pd = qtail((12 - mu1) / sd1);
+    document.getElementById('r-s').textContent = S + ' (' + st.K + ' × ' + (st.N - 1) + ')';
+    document.getElementById('r-m').textContent = (50 * (1 + m)).toFixed(1) + '%';
+    document.getElementById('r-pd').textContent = (100 * pd).toFixed(1) + '%';
+    document.getElementById('r-pfa').textContent = fmtPfa(12 / sd0);
+    document.getElementById('c-pv').textContent = (st.P < 0 ? '−' : '') + Math.abs(st.P).toFixed(1) + ' dBm';
+  }
+  seg('c-n', [32, 64, 128, 256], 'N');
+  seg('c-k', [1, 2, 4, 8], 'K');
+  var sl = document.getElementById('c-p');
+  sl.addEventListener('input', function () { st.P = parseFloat(sl.value); draw(); });
+  draw();
+})();
+</script>
+<script>
+(function () {
+  /* theme toggle: system -> light -> dark */
+  var themeBtn = document.getElementById('theme-btn');
+  function themeLabel() {
+    var t = document.documentElement.getAttribute('data-theme');
+    themeBtn.textContent = '테마: ' + (t === 'light' ? '라이트' : t === 'dark' ? '다크' : '시스템');
+  }
+  themeBtn.addEventListener('click', function () {
+    var t = document.documentElement.getAttribute('data-theme');
+    var next = t === null ? 'light' : t === 'light' ? 'dark' : null;
+    if (next) document.documentElement.setAttribute('data-theme', next); else document.documentElement.removeAttribute('data-theme');
+    try { if (next) localStorage.setItem('rif-theme', next); else localStorage.removeItem('rif-theme'); } catch (e) {}
+    themeLabel();
+  });
+  themeLabel();
+})();
+</script>
+</body>
+</html>
