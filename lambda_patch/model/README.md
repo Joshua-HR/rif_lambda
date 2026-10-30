@@ -32,6 +32,7 @@ numpy 없이 표준 라이브러리와 `multiprocessing`(6 프로세스)만 씁�
 | `expect_spread.py` | H0 꼬리 비율·쌍 상관 판정(19종)의 표본 퍼짐: 길이별 기준 세트에서 프래그먼트·패킷 bootstrap: `python3 expect_spread.py <기준 세트 폴더> results/expect_spread.json` | 64·128·256심볼 꼬리·상관 범위 (평균 ± 4σ) | 약 5분 |
 | `build_expect.py` | 길이별 판정 범위를 만들어 MATLAB 함수 `test/synthetic_expect.m`으로 씀 (32심볼은 기존 범위 그대로): `python3 build_expect.py results ../test/synthetic_expect.m`, 범위와 파이썬 값 대조는 `python3 build_expect.py results --report` | `run_synthetic_test`의 길이별 범위 | 수 초 |
 | `pooled_moments.py` | 고정 칩 Λ̂의 Q̂·Π̂를 패킷의 K = 1·2·4·8개 프래그먼트에서 모아 추정(프래그먼트마다 반송파 위상을 맞춘 뒤): K개가 공분산 추정 하나를 함께 쓰는 소프트 합의 H0 분포(2×2 Wishart 적분), H0 8조건 × 4길이의 꼬리 비율(맞추는 세트 A, 확인 세트 B, 각 6,000패킷)로 정한 유효 표본 비율 φ, H1 소프트 L90 (원시 샘플 Λ, 프래그먼트마다 추정한 Λ̂, 모은 Λ̂, 세기당 1,500패킷): `python3 pooled_moments.py h0 6000 11 A.json`, `... h0 6000 22 B.json`, `... h1 1500 H1.json`, `... post A.json B.json H1.json results/pooled_moments.json`, `... phi H1.json results/pooled_moments.json` | Λ̂ 모멘트 모으기 페이지 (`docs/pooled.html`) | 약 30분 |
+| `score_compare.py` | 결정 4: 일반 모드 STS 점수 방식(심볼마다 펄스 128개 부호 일치, 패킷 전체 평균 > 12)을 같은 모델(세기 환산, 펄스 모양)로 계산. 채점 시점에서 펄스가 겹치지 않아 맞은 수가 정확히 이항분포라 Pfa·Pd를 근사 없이 계산. 지금 문턱 12와 패킷 10⁻⁶ 문턱의 L90을 `pooled_moments.json`·`length_ppm.json`의 Λ·Λ̂와 비교, 경계 재획득 심볼 b = 1 / 4 / 8, CE·CMF 입력: `python3 score_compare.py results/score_compare.json` | 설계 문서 9.8절, 점수 판정 페이지 5장 (`docs/score.html`) | 약 10초 |
 
 `results/`에는 위 스크립트의 결과(JSON)를 둡니다. 길이별 기준 세트는 `gen_dumps.py <root> --N <N>`과 `make_2col.py`로 만들고(5열 약 100 MB, 2열 약 60 MB씩, 32심볼 약 7분 ~ 256심볼 약 70분), 저장소에는 넣지 않습니다.
 

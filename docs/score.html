@@ -20,7 +20,7 @@
   --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
   --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
   --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.11);
-  --v-pool:#2a78d6; --v-own:#eb6834; --h0:#8e8c84;
+  --v-pool:#2a78d6; --v-own:#eb6834; --v-raw:#8a5cc2; --h0:#8e8c84;
   --crit:#d03b3b; --good:#0c9a3e; --warn:#b7791f;
   --band:rgba(42,120,214,.16); --code-bg:#e9eae6;
   --f-sans:"IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
@@ -31,7 +31,7 @@
     --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
     --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
     --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
-    --v-pool:#3987e5; --v-own:#d95926; --h0:#8f8d85;
+    --v-pool:#3987e5; --v-own:#d95926; --v-raw:#9b72d0; --h0:#8f8d85;
     --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
     --band:rgba(57,135,229,.22); --code-bg:#242422;
     color-scheme:dark;
@@ -41,7 +41,7 @@
   --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
   --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
   --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
-  --v-pool:#3987e5; --v-own:#d95926; --h0:#8f8d85;
+  --v-pool:#3987e5; --v-own:#d95926; --v-raw:#9b72d0; --h0:#8f8d85;
   --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
   --band:rgba(57,135,229,.22); --code-bg:#242422;
   color-scheme:dark;
@@ -115,6 +115,16 @@ table{border-collapse:collapse;font-size:14px;min-width:100%}
 th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--grid);vertical-align:top}
 th{font-weight:600;color:var(--ink-2);font-size:13px}
 .note{border-left:3px solid var(--axis);padding:2px 0 2px 14px;color:var(--ink-2);font-size:14px;max-width:76ch}
+.four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.four{grid-template-columns:1fr}}
+.tip{position:absolute;pointer-events:none;background:var(--raised);border:1px solid var(--axis);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.5;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.12);min-width:170px;z-index:5}
+.tip .h{font:600 12px var(--f-mono);color:var(--muted);margin-bottom:2px}
+.tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+.tip .r i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.good{color:var(--good);font-weight:600} td.bad{color:var(--crit);font-weight:600}
+tr.grp td{border-top:2px solid var(--axis)}
 .foot{border-top:1px solid var(--hair);padding-top:20px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:8px}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto !important;transition:none !important}}
 .theme-btn{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);right:12px;z-index:40;font:500 12.5px var(--f-sans);padding:6px 11px;border-radius:999px;border:1px solid var(--hair);background:var(--raised);color:var(--ink-2);cursor:pointer}
@@ -568,6 +578,38 @@ th{font-weight:600;color:var(--ink-2);font-size:13px}
   <p class="note">이 차이 때문에 두 방식의 감도를 비교할 때는 환경(위상 추적 여부, 타이밍)을 함께 적어야 합니다. 같은 오수락으로 맞춘 비교는 결정 4에서 모델로 계산할 예정입니다.</p>
 </section>
 
+<section id="s5">
+  <div class="sec-head"><span class="no">5 · 같은 오수락에서의 비교 (결정 4)</span><h2>지금 문턱 12와는 Λ̂가 앞서고, 10⁻⁶로 맞추면 점수 방식이 앞섭니다</h2></div>
+  <div class="prose">
+    <p>점수 방식을 같은 모델(세기 환산, 펄스 모양, 잡음)로 계산해 Λ·Λ̂의 소프트 패킷 판정과 비교했습니다. 채점 시점에서 펄스끼리 겹치지 않으므로(펄스 모양이 8표본 간격 안의 −3~4탭) AWGN에서는 펄스 판정이 서로 독립이고, 패킷의 맞은 수는 정확히 이항분포입니다. 그래서 Pfa와 Pd를 근사 없이 계산했습니다. 비교는 두 가지입니다.</p>
+    <ul>
+      <li><b>지금 제품 문턱(평균 12):</b> 일반 모드가 실제로 내는 감도입니다. 요구사항 "기존 방식보다 좋을 것"의 기준선입니다.</li>
+      <li><b>같은 패킷 오수락 10⁻⁶(÷1.5)로 맞춘 문턱:</b> 판정 방식끼리 같은 조건에서 비교한 값입니다. 점수 방식은 일반 모드의 환경(경계 재획득, CFO·SCO 추적, 정해진 타이밍)에서, Λ·Λ̂는 지금 모드의 환경(추적 없음, 잔여 CFO 0.25 ppm)에서 계산했습니다.</li>
+    </ul>
+  </div>
+  <figure class="plate">
+    <h3>소프트 패킷 L90 [dBm], 프래그먼트 수와 RIF 길이별 (아래로 갈수록 좋음)</h3>
+    <div class="keys" id="k-cmp"></div>
+    <div class="four" id="c-cmp"></div>
+    <figcaption>점수 방식은 CE 입력(채점 시점의 표본 하나)이고, 구간마다 1심볼을 경계 재획득에 쓴다고 두었습니다. 이 수를 8로 늘려도 문턱 12에서는 0.2 dB, 10⁻⁶ 문턱에서는 최대 1.1 dB(32심볼 1개) 달라집니다. Λ·Λ̂는 Λ̂ 모멘트 모으기 페이지와 같은 모델 결과입니다(이동 0, AWGN).</figcaption>
+  </figure>
+  <div class="plate">
+    <h3>점수 방식 대비 Λ̂의 여유 [dB] (양수면 Λ̂가 좋음)</h3>
+    <div class="tbl-wrap"><table id="t-cmp"></table></div>
+    <p class="note" style="font-size:13px">"10⁻⁶ 문턱"은 같은 오수락이 되도록 낮춘 점수 방식의 평균 점수 문턱입니다. 문턱 12의 패킷 오수락은 32심볼 1개에서 약 1e-9이고, 프래그먼트가 늘수록 1e-60보다도 작아집니다. 그래서 문턱 12는 오수락이 아니라 감도를 정하는 문턱입니다.</p>
+  </div>
+  <div class="prose">
+    <p><b>읽는 법</b></p>
+    <ul>
+      <li><b>지금 제품 문턱(12) 대비:</b> Λ̂ 소프트는 프래그먼트가 2개 이상이면 모든 길이에서 1.6~12.0 dB 좋습니다. 1개 설정에서는 32심볼이 2.2 dB 나쁘고 64심볼은 비슷하며(+0.2 dB), 128·256심볼은 1.6~2.1 dB 좋습니다. 원시 샘플 Λ(새 칩)는 16조합 모두 좋습니다.</li>
+      <li><b>같은 10⁻⁶ 대비:</b> 일반 모드 환경의 점수 방식이 Λ̂보다 1.9~7.9 dB 좋고, Λ보다도 1개 32·64심볼(Λ가 0.2~0.3 dB 좋음)을 빼면 최대 5.6 dB 좋습니다. 차이의 대부분은 길이가 길수록 커지는 잔여 CFO 손해입니다. Λ·Λ̂를 CFO 0으로 계산하면 8개에서 남는 차이는 Λ 약 1.2 dB, Λ̂ 약 2.1 dB이고, 1개에서는 Λ가 오히려 0.4 dB 좋습니다.</li>
+      <li><b>남는 차이의 원인:</b> 점수 방식은 위상이 이어져 있어 패킷 전체를 한 위상으로 더하고(코히어런트), 채점 시점이 정해져 있습니다. Λ·Λ̂는 프래그먼트마다 위상을 몰라 에너지로 더하고, 57탭을 찾느라 문턱이 오릅니다. 점수 방식은 경판정으로 약 2 dB를 잃지만 이 둘을 합친 것보다 작습니다.</li>
+      <li><b>의미:</b> 점수 방식은 지금 모드에서 동작하지 않으므로, 요구사항의 기준선은 일반 모드의 실제 감도(문턱 12)입니다. 같은 10⁻⁶ 비교는 "지금 모드의 손해가 판정기가 아니라 경계 재획득과 CFO 추적이 없는 데서 온다"는 것을 보여 주는 참고값입니다. 일반 모드의 문턱 12는 10⁻⁶보다 훨씬 엄격해, 그 모드만 보면 문턱을 낮출 여지가 큽니다(이 프로젝트 범위 밖).</li>
+    </ul>
+    <p class="note">가정: AWGN, 펄스 판정 독립, 위상과 타이밍이 정확히 맞음(일반 모드의 추적이 완벽). CMF 입력은 이 모델에서 펄스 탭을 묶을 때 상관된 잡음도 함께 더해져 CE보다 0.6 dB 나쁘게 나왔습니다. CMF의 이득은 멀티패스에서 나오며, 멀티패스는 이 비교에 넣지 않았습니다. 모델의 문턱 12 50% 레벨은 −110.2 dBm으로 MD 문서(−110.6 dBm)보다 0.4 dB 비관적이고, 같은 모델의 Λ·Λ̂도 같은 방향입니다. 계산: <code>lambda_patch/model/score_compare.py</code>.</p>
+  </div>
+</section>
+
 <footer class="foot">
   <p>출처: 점수 규칙과 두 모드의 동작은 2026-10-29의 사용자 설명, 50% 통과 레벨 −110.6 dBm은 <code>RIF_CIR_Validity_Detector.md</code> 6장, 분포와 손해는 위 가정의 계산입니다.</p>
   <p>관련 페이지: <a href="index.html">RIF Λ 판정기</a>(누적 CIR로 판정하는 Λ·Λ̂), <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶). 결정 기록: <code>lambda_patch/DECISIONS.md</code> 결정 4.</p>
@@ -655,6 +697,70 @@ th{font-weight:600;color:var(--ink-2);font-size:13px}
   var sl = document.getElementById('c-p');
   sl.addEventListener('input', function () { st.P = parseFloat(sl.value); draw(); });
   draw();
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  var D = {"rows":[{"N":32,"K":1,"lam":-110.15,"lamhat":-106.22,"lam_cfo0":-110.27,"lamhat_cfo0":-106.2,"score":{"1":{"n_sym":31,"pfa12_log10":-8.808,"thr6_avg":9.871,"L90_12_CE":-108.464,"L90_6_CE":-109.882,"L90_12_CMF":-107.882,"L90_6_CMF":-109.299}}},{"N":32,"K":2,"lam":-112.87,"lamhat":-110.5,"score":{"1":{"n_sym":62,"pfa12_log10":-16.537,"thr6_avg":6.968,"L90_12_CE":-108.939,"L90_6_CE":-112.904,"L90_12_CMF":-108.357,"L90_6_CMF":-112.322}}},{"N":32,"K":4,"lam":-115.28,"lamhat":-114.04,"score":{"1":{"n_sym":124,"pfa12_log10":-31.852,"thr6_avg":4.935,"L90_12_CE":-109.289,"L90_6_CE":-115.901,"L90_12_CMF":-108.707,"L90_6_CMF":-115.319}}},{"N":32,"K":8,"lam":-117.59,"lamhat":-116.69,"lam_cfo0":-117.66,"lamhat_cfo0":-116.79,"score":{"1":{"n_sym":248,"pfa12_log10":-62.338,"thr6_avg":3.484,"L90_12_CE":-109.545,"L90_6_CE":-118.922,"L90_12_CMF":-108.962,"L90_6_CMF":-118.339}}},{"N":64,"K":1,"lam":-113.14,"lamhat":-109.13,"lam_cfo0":-113.36,"lamhat_cfo0":-109.41,"score":{"1":{"n_sym":63,"pfa12_log10":-16.785,"thr6_avg":6.921,"L90_12_CE":-108.949,"L90_6_CE":-112.965,"L90_12_CMF":-108.366,"L90_6_CMF":-112.383}}},{"N":64,"K":2,"lam":-115.76,"lamhat":-113.44,"score":{"1":{"n_sym":126,"pfa12_log10":-32.345,"thr6_avg":4.889,"L90_12_CE":-109.296,"L90_6_CE":-115.981,"L90_12_CMF":-108.714,"L90_6_CMF":-115.398}}},{"N":64,"K":4,"lam":-118.22,"lamhat":-116.75,"score":{"1":{"n_sym":252,"pfa12_log10":-63.32,"thr6_avg":3.452,"L90_12_CE":-109.55,"L90_6_CE":-118.998,"L90_12_CMF":-108.967,"L90_6_CMF":-118.416}}},{"N":64,"K":8,"lam":-120.47,"lamhat":-119.54,"lam_cfo0":-120.81,"lamhat_cfo0":-119.88,"score":{"1":{"n_sym":504,"pfa12_log10":-125.121,"thr6_avg":2.44,"L90_12_CE":-109.733,"L90_6_CE":-122.009,"L90_12_CMF":-109.151,"L90_6_CMF":-121.427}}},{"N":128,"K":1,"lam":-115.35,"lamhat":-111.43,"lam_cfo0":-116.39,"lamhat_cfo0":-112.35,"score":{"1":{"n_sym":127,"pfa12_log10":-32.591,"thr6_avg":4.866,"L90_12_CE":-109.3,"L90_6_CE":-116.02,"L90_12_CMF":-108.717,"L90_6_CMF":-115.438}}},{"N":128,"K":2,"lam":-118.09,"lamhat":-115.75,"score":{"1":{"n_sym":254,"pfa12_log10":-63.811,"thr6_avg":3.441,"L90_12_CE":-109.552,"L90_6_CE":-119.028,"L90_12_CMF":-108.97,"L90_6_CMF":-118.446}}},{"N":128,"K":4,"lam":-120.47,"lamhat":-119.16,"score":{"1":{"n_sym":508,"pfa12_log10":-126.101,"thr6_avg":2.429,"L90_12_CE":-109.735,"L90_6_CE":-122.048,"L90_12_CMF":-109.152,"L90_6_CMF":-121.466}}},{"N":128,"K":8,"lam":-122.83,"lamhat":-121.91,"lam_cfo0":-123.94,"lamhat_cfo0":-122.93,"score":{"1":{"n_sym":1016,"pfa12_log10":-250.534,"thr6_avg":1.719,"L90_12_CE":-109.866,"L90_6_CE":-125.054,"L90_12_CMF":-109.283,"L90_6_CMF":-124.472}}},{"N":256,"K":1,"lam":-115.2,"lamhat":-111.16,"lam_cfo0":-119.48,"lamhat_cfo0":-115.45,"score":{"1":{"n_sym":255,"pfa12_log10":-64.056,"thr6_avg":3.435,"L90_12_CE":-109.553,"L90_6_CE":-119.043,"L90_12_CMF":-108.971,"L90_6_CMF":-118.461}}},{"N":256,"K":2,"lam":-117.72,"lamhat":-115.51,"score":{"1":{"n_sym":510,"pfa12_log10":-126.591,"thr6_avg":2.427,"L90_12_CE":-109.735,"L90_6_CE":-122.057,"L90_12_CMF":-109.153,"L90_6_CMF":-121.474}}},{"N":256,"K":4,"lam":-120.17,"lamhat":-118.87,"score":{"1":{"n_sym":1020,"pfa12_log10":-251.513,"thr6_avg":1.714,"L90_12_CE":-109.866,"L90_6_CE":-125.077,"L90_12_CMF":-109.284,"L90_6_CMF":-124.494}}},{"N":256,"K":8,"lam":-122.44,"lamhat":-121.49,"lam_cfo0":-126.88,"lamhat_cfo0":-125.95,"score":{"1":{"n_sym":2040,"pfa12_log10":-501.206,"thr6_avg":1.212,"L90_12_CE":-109.96,"L90_6_CE":-128.086,"L90_12_CMF":-109.378,"L90_6_CMF":-127.504}}}]};
+  var NS = 'http://www.w3.org/2000/svg', LENS = ['32', '64', '128', '256'], KS = [1, 2, 4, 8];
+  var SER = [{k: 's12', name: '점수 방식, 지금 문턱 12', c: 'var(--ink-2)', dash: '5 4'},
+             {k: 's6', name: '점수 방식, 10⁻⁶에 맞춘 문턱', c: 'var(--v-pool)'},
+             {k: 'lam', name: 'Λ 소프트 (새 칩)', c: 'var(--v-raw)'},
+             {k: 'lamhat', name: 'Λ̂ 소프트 (고정 칩)', c: 'var(--v-own)'}];
+  function el(t, a, p, x) { var e = document.createElementNS(NS, t); for (var k in a) if (a[k] !== null && a[k] !== undefined) e.setAttribute(k, a[k]); if (x !== undefined) e.textContent = x; if (p) p.appendChild(e); return e; }
+  function f(v) { return (v < 0 ? '−' : '') + Math.abs(v).toFixed(2); }
+  function sf(v) { return (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2); }
+  function row(N, K) { return D.rows.filter(function (r) { return r.N === +N && r.K === K; })[0]; }
+  function val(r, k) { var s = r.score['1']; return k === 's12' ? s.L90_12_CE : k === 's6' ? s.L90_6_CE : r[k]; }
+  var keys = document.getElementById('k-cmp');
+  SER.forEach(function (s) {
+    var sp = document.createElement('span'); sp.className = 'key';
+    sp.innerHTML = '<svg viewBox="0 0 24 12" aria-hidden="true" style="width:24px;height:12px"><line x1="1" y1="6" x2="23" y2="6" stroke="' + s.c + '" stroke-width="2"' + (s.dash ? ' stroke-dasharray="' + s.dash + '"' : '') + '/><circle cx="12" cy="6" r="3.2" fill="' + s.c + '"/></svg>';
+    sp.appendChild(document.createTextNode(s.name)); keys.appendChild(sp);
+  });
+  var box = document.getElementById('c-cmp');
+  LENS.forEach(function (N) {
+    var fig = document.createElement('div'); fig.style.position = 'relative'; fig.style.minWidth = '0'; box.appendChild(fig);
+    var svg = el('svg', {'class': 'ch', viewBox: '0 0 260 260', role: 'img', 'aria-label': N + '심볼에서 점수 방식과 Λ·Λ̂의 소프트 패킷 L90'}); fig.appendChild(svg);
+    var L = 46, R = 10, T = 26, B = 34, W = 260, H = 260, vals = [];
+    KS.forEach(function (K) { var r = row(N, K); SER.forEach(function (s) { vals.push(val(r, s.k)); }); });
+    var lo = Math.floor(Math.min.apply(null, vals)) - 0.5, hi = Math.ceil(Math.max.apply(null, vals)) + 0.5;
+    var x = function (i) { return L + (i + 0.5) * (W - L - R) / 4; }, y = function (v) { return H - B - (v - lo) / (hi - lo) * (H - T - B); };
+    el('text', {x: L, y: 15, style: 'fill:var(--ink);font-family:var(--f-sans);font-size:13px;font-weight:600'}, svg, N + '심볼');
+    var step = hi - lo > 14 ? 4 : 2;
+    for (var g = Math.ceil(lo / step) * step; g <= hi; g += step) { el('line', {x1: L, x2: W - R, y1: y(g), y2: y(g), 'class': 'grid'}, svg); el('text', {x: L - 6, y: y(g) + 4, 'text-anchor': 'end'}, svg, '−' + Math.abs(g)); }
+    KS.forEach(function (K, i) { el('text', {x: x(i), y: H - B + 16, 'text-anchor': 'middle'}, svg, K); });
+    el('text', {x: (L + W - R) / 2, y: H - 4, 'text-anchor': 'middle', 'class': 'lab'}, svg, '프래그먼트 수');
+    SER.forEach(function (s) {
+      var d = KS.map(function (K, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(val(row(N, K), s.k)).toFixed(1); }).join('');
+      el('path', {d: d, style: 'fill:none;stroke:' + s.c + ';stroke-width:2', 'stroke-dasharray': s.dash || null}, svg);
+      KS.forEach(function (K, i) { el('circle', {cx: x(i), cy: y(val(row(N, K), s.k)), r: 3.6, style: 'fill:' + s.c + ';stroke:var(--surface);stroke-width:1.5'}, svg); });
+    });
+    var tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; fig.appendChild(tip);
+    KS.forEach(function (K, i) {
+      var r = row(N, K);
+      var hit = el('rect', {x: x(i) - (W - L - R) / 8, y: T, width: (W - L - R) / 4, height: H - T - B, fill: 'transparent'}, svg);
+      hit.addEventListener('pointerenter', function () {
+        tip.innerHTML = '<div class="h">' + N + '심볼 · ' + K + '개</div>' + SER.map(function (s) { return '<div class="r"><span><i style="background:' + s.c + '"></i>' + s.name + '</span><b>' + f(val(r, s.k)) + '</b></div>'; }).join('') +
+          '<div class="r"><span>10⁻⁶ 문턱(평균 점수)</span><b>' + r.score['1'].thr6_avg.toFixed(2) + '</b></div>';
+        tip.hidden = false;
+        var sr = svg.getBoundingClientRect(), fr = fig.getBoundingClientRect(), px = sr.left - fr.left + x(i) / W * sr.width;
+        var left = px + 12; if (left + tip.offsetWidth > fr.width) left = px - tip.offsetWidth - 12; if (left < 0) left = 0;
+        tip.style.left = left + 'px'; tip.style.top = '30px';
+      });
+      hit.addEventListener('pointerleave', function () { tip.hidden = true; });
+    });
+  });
+  var h = '<thead><tr><th class="num">길이</th><th class="num">개수</th><th class="num">점수 문턱 12</th><th class="num">점수 10⁻⁶ (문턱)</th><th class="num">Λ̂</th><th class="num">Λ̂ − 점수(12)</th><th class="num">Λ̂ − 점수(10⁻⁶)</th><th class="num">Λ</th><th class="num">Λ − 점수(10⁻⁶)</th></tr></thead><tbody>';
+  LENS.forEach(function (N) {
+    KS.forEach(function (K, i) {
+      var r = row(N, K), s = r.score['1'], m12 = s.L90_12_CE - r.lamhat, m6 = s.L90_6_CE - r.lamhat, l6 = s.L90_6_CE - r.lam;
+      h += '<tr' + (i === 0 ? ' class="grp"' : '') + '><td class="num">' + (i === 0 ? N : '') + '</td><td class="num">' + K + '</td><td class="num">' + f(s.L90_12_CE) + '</td><td class="num">' + f(s.L90_6_CE) + ' (' + s.thr6_avg.toFixed(2) + ')</td>' +
+           '<td class="num">' + f(r.lamhat) + '</td><td class="num ' + (m12 >= 1 ? 'good' : m12 < 0 ? 'bad' : '') + '">' + sf(m12) + '</td><td class="num">' + sf(m6) + '</td><td class="num">' + f(r.lam) + '</td><td class="num">' + sf(l6) + '</td></tr>';
+    });
+  });
+  document.getElementById('t-cmp').innerHTML = h + '</tbody>';
 })();
 </script>
 <script>
