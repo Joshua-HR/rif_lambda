@@ -654,7 +654,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
   <div class="sec-head"><span class="sec-no">8</span><h2>고정 칩 대안: CIR만으로 Λ 추정</h2></div>
   <div class="prose stack">
     <p>Λ는 프래그먼트마다 원시 샘플의 Q와 Π를 누적해야 합니다. 이미 만들어진 칩에는 그 누산기를 더할 수 없습니다. 그래도 펌웨어가 프래그먼트별 CIR(256탭, 복소)을 읽을 수 있다면, Q와 Π를 <strong>CIR에서 추정</strong>해 같은 백색화를 할 수 있습니다.</p>
-    <p>근거는 4장의 구조입니다. H0에서 탭 k = 127 + 8m + e의 값은 펄스 모양 g(e)에 독립인 랜덤 합 X<sub>m</sub>을 곱한 것이라, <strong>같은 위상 e의 탭은 위치(m)와 상관없이 같은 분포</strong>를 따르고 서로 독립입니다. 그래서 신호 창 밖에 있는 같은 위상의 탭들이, 신호 창 안 그 위상 탭들의 Q와 Π를 재는 표본이 됩니다.</p>
+    <p>근거는 4장의 구조입니다. H0에서 탭 k = 127 + 8m + e의 값은 펄스 모양 g(e)에 독립인 랜덤 합 X<sub>m</sub>을 곱한 것이라, <strong>같은 위상 e의 탭은 위치(m)와 상관없이 같은 분포</strong>를 따르고 서로 독립입니다. 그래서 신호 창 밖에 있는 같은 위상의 탭들이, 신호 창 안 그 위상 탭들의 Q와 Π를 재는 표본이 됩니다. 수식을 CIR 그림으로 따라가는 설명은 <a href="lamhat.html">Λ̂ 판정기 원리</a>에 있습니다.</p>
   </div>
 
   <figure class="plate">
@@ -1089,7 +1089,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
   <p><strong>가정과 한계.</strong> 수치는 통계 모델(MD 5.1장의 빗 프로파일, 펄스당 가우시안 근사)과 파형 모델(이상 펄스, 부동소수점, 단일 안테나, HPRF)에서 나왔습니다. 실제 시뮬레이터의 덤프로 다시 확인해야 합니다. 패킷 10⁻⁶은 FiRa 원문이 아니라 그것을 인용한 논문에서 왔습니다.</p>
   <p>Λ의 보장은 H0 신호가 내 키 시퀀스와 독립일 때 성립합니다. 키를 알거나 일부 아는 공격(재전송, 일부 비트 반전)은 대상이 아니며, 표준이 RIF에 요구하는 ToA 무결성 검증은 별도 과제입니다.</p>
   <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(MD 방식), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>(패치 설계), <code>lambda_patch/TEST_PLAN.md</code>(검증 계획), <code>lambda_patch/model/</code>(수치를 다시 만드는 Python 스크립트). 2026-10-15 기준(판정 기준을 패킷 10⁻⁶으로 전환).</p>
-  <p>관련 페이지: <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶ 기준으로 바꾼 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(일관성 검사 폐기율 결정 자료), <a href="checklist.html">RIF 검증 체크리스트</a>(직접 돌려 볼 시험과 결과 기록), <a href="length.html">RIF 길이별 합성 시험</a>(합성 시험의 RIF 길이 지원 범위), <a href="length-verify.html">RIF 길이 지원 검증 기록</a>(5·6단계 실행 결과와 수정), <a href="pooled.html">Λ̂ 모멘트 모으기</a>(프래그먼트를 모은 Q̂·Π̂ 추정의 모델 확인), <a href="score.html">STS 점수 판정</a>(기존 일반 모드 방식과 지금 모드에서 못 쓰는 이유). 결정 기록: <code>lambda_patch/DECISIONS.md</code>.</p>
+  <p>관련 페이지: <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶ 기준으로 바꾼 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(일관성 검사 폐기율 결정 자료), <a href="checklist.html">RIF 검증 체크리스트</a>(직접 돌려 볼 시험과 결과 기록), <a href="length.html">RIF 길이별 합성 시험</a>(합성 시험의 RIF 길이 지원 범위), <a href="length-verify.html">RIF 길이 지원 검증 기록</a>(5·6단계 실행 결과와 수정), <a href="pooled.html">Λ̂ 모멘트 모으기</a>(프래그먼트를 모은 Q̂·Π̂ 추정의 모델 확인), <a href="score.html">STS 점수 판정</a>(기존 일반 모드 방식과 지금 모드에서 못 쓰는 이유), <a href="lamhat.html">Λ̂ 판정기 원리</a>(고정 칩 Λ̂의 수식을 CIR 그림으로 설명). 결정 기록: <code>lambda_patch/DECISIONS.md</code>.</p>
 </footer>
 </div>
 

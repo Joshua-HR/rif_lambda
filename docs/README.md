@@ -1,6 +1,6 @@
 # RIF Λ 판정기 해설 페이지 (GitHub Pages)
 
-정적 페이지 여덟 개입니다. 빌드 과정이 없고, 위젯의 시뮬레이션과 그래프는 브라우저에서 돕니다.
+정적 페이지 아홉 개입니다. 빌드 과정이 없고, 위젯의 시뮬레이션과 그래프는 브라우저에서 돕니다.
 
 | 파일 | 내용 |
 |---|---|
@@ -12,14 +12,15 @@
 | `length-verify.html` | RIF 길이 지원 검증 기록: 바꾼 것(커밋), 길이에 따라 움직이는 정답(L90, MD 규칙 통계, κ, 이동 탐색), MATLAB 5·6단계 FAIL의 원인과 해결, H0 꼬리·상관 판정 탐색기 |
 | `pooled.html` | Λ̂ 모멘트 모으기: 고정 칩 Λ̂의 Q̂·Π̂를 패킷의 1·2·4·8개 프래그먼트에서 모아 추정할 때의 Pfa(H0 꼬리 비율)와 소프트 패킷 L90, RIF 길이 32·64·128·256 (통계 모델) |
 | `score.html` | STS 점수 판정: 기존 일반 모드의 점수 판정(심볼마다 한 표본 시점의 펄스 128개 부호 일치, 패킷 전체 평균 문턱 12)의 동작과 원리, 신호 유무에 따른 평균 점수 분포, SemiSyncOnlyMode에서 쓸 수 없는 이유 |
+| `lamhat.html` | Λ̂ 판정기 원리: 고정 칩 Λ̂의 수식을 CIR 그림으로 설명. 같은 빗 위상의 바깥 탭으로 잡음(열잡음과 틀린 키 신호의 자기잡음)의 세기 Q̂와 모양 Π̂를 추정하는 방법, 복소평면의 문턱 타원, 계산 순서, Hotelling T²를 χ²₂로 바꾸는 이유, Λ와의 차이 |
 
 페이지들은 바닥글에서 서로 링크됩니다. 결정과 재검토 조건은 `../lambda_patch/DECISIONS.md`에 있습니다.
-`basis.html`, `consistency.html`, `checklist.html`, `length.html`, `length-verify.html`, `pooled.html`, `score.html`은 작업 폴더의 원본에서 만든 결과물이라 직접 고치지 않습니다.
+`basis.html`, `consistency.html`, `checklist.html`, `length.html`, `length-verify.html`, `pooled.html`, `score.html`, `lamhat.html`은 작업 폴더의 원본에서 만든 결과물이라 직접 고치지 않습니다.
 외부로 나가는 요청은 Google Fonts 하나뿐이며, 사내망에서 막혀도 렌더링을 막지 않고 시스템 글꼴(맑은 고딕 등)로 표시됩니다.
 
 ## 사내 GitHub(GitHub Enterprise) Pages로 게시
 
-1. 이 `docs/` 폴더(HTML 여덟 개, `.nojekyll`)를 저장소의 게시할 브랜치에 커밋합니다.
+1. 이 `docs/` 폴더(HTML 아홉 개, `.nojekyll`)를 저장소의 게시할 브랜치에 커밋합니다.
 2. 저장소 **Settings → Pages → Build and deployment**
    - Source: **Deploy from a branch**
    - Branch: 게시할 브랜치(예: `main`), Folder: **`/docs`** → Save
