@@ -15,8 +15,9 @@
 | Λ̂ 모멘트 모으기 | 결정 9의 근거: 고정 칩 Λ̂의 Q̂·Π̂를 패킷의 1·2·4·8개 프래그먼트에서 모을 때의 Pfa와 소프트 패킷 감도(RIF 32~256심볼), 더 나빠지는 이유 | https://joshua-hr.github.io/rif_lambda/pooled.html (`docs/pooled.html`) | https://claude.ai/artifact/2sBzqM3Ref6NiHcvPr2s14 |
 | STS 점수 판정 | 결정 4의 근거: 기존 일반 모드 점수 판정의 동작과 원리, SemiSyncOnlyMode에서 쓸 수 없는 이유(심볼 경계 재획득과 CFO·SCO 추적 없음) | https://joshua-hr.github.io/rif_lambda/score.html (`docs/score.html`) | https://claude.ai/artifact/PT1DfL6ijHxGce4ErPXXyW |
 | Λ̂ 판정기 원리 | 고정 칩 Λ̂(결정 9에서 프래그먼트마다 추정하기로 한 판정기) 수식의 그림 설명: 같은 빗 위상의 바깥 탭으로 잡음(열잡음과 틀린 키 신호의 자기잡음)의 Q̂·Π̂를 추정하는 방법, 문턱 타원, χ²₂ 변환 | https://joshua-hr.github.io/rif_lambda/lamhat.html (`docs/lamhat.html`) | https://claude.ai/artifact/SKuYM2RE4hHh2K6Asg1T98 |
+| Λ·Λ̂ 우도비 유도 | 두 판정기의 근거: Λ = 2·ln GLR(잡음 통계를 앎), Λ̂ = (n−1)/(n+1)·2·ln GLR(바깥 탭으로 추정)의 그림 유도와 H0에서 정확히 χ²₂인 이유 | https://joshua-hr.github.io/rif_lambda/glr.html (`docs/glr.html`) | https://claude.ai/artifact/QrnPZt8YZidDkaU1gupW9B |
 
-Pages판은 공개 저장소에서 게시되므로 링크만 있으면 누구나 볼 수 있습니다. claude.ai판은 비공개이며, 보여 주려면 각 페이지의 공유 메뉴에서 공유해야 합니다. 두 판의 내용은 같고, 페이지끼리의 링크만 다릅니다(Pages판은 상대 경로, claude.ai판은 artifact 주소). `docs/index.html`을 뺀 나머지 페이지(`basis.html`, `consistency.html`, `checklist.html`, `length.html`, `length-verify.html`, `pooled.html`, `score.html`, `lamhat.html`)는 저장소 밖 작업 폴더의 원본에서 `build_pages.py`로 만든 결과물이므로 직접 고치지 말고 원본을 고친 뒤 다시 만듭니다.
+Pages판은 공개 저장소에서 게시되므로 링크만 있으면 누구나 볼 수 있습니다. claude.ai판은 비공개이며, 보여 주려면 각 페이지의 공유 메뉴에서 공유해야 합니다. 두 판의 내용은 같고, 페이지끼리의 링크만 다릅니다(Pages판은 상대 경로, claude.ai판은 artifact 주소). `docs/index.html`을 뺀 나머지 페이지(`basis.html`, `consistency.html`, `checklist.html`, `length.html`, `length-verify.html`, `pooled.html`, `score.html`, `lamhat.html`, `glr.html`)는 저장소 밖 작업 폴더의 원본에서 `build_pages.py`로 만든 결과물이므로 직접 고치지 말고 원본을 고친 뒤 다시 만듭니다.
 
 ## 결정
 
