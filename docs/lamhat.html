@@ -20,7 +20,7 @@
   --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
   --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
   --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.11);
-  --v-pool:#2a78d6; --v-own:#eb6834; --v-raw:#8a5cc2; --h0:#8e8c84;
+  --v-pool:#2a78d6; --v-own:#eb6834; --v-raw:#8a5cc2; --v-glr:#0f9a84; --h0:#8e8c84;
   --crit:#d03b3b; --good:#0c9a3e; --warn:#b7791f;
   --band:rgba(42,120,214,.16); --code-bg:#e9eae6;
   --f-sans:"IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
@@ -31,7 +31,7 @@
     --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
     --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
     --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
-    --v-pool:#3987e5; --v-own:#d95926; --v-raw:#9b72d0; --h0:#8f8d85;
+    --v-pool:#3987e5; --v-own:#d95926; --v-raw:#9b72d0; --v-glr:#14a88f; --h0:#8f8d85;
     --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
     --band:rgba(57,135,229,.22); --code-bg:#242422;
     color-scheme:dark;
@@ -41,7 +41,7 @@
   --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
   --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
   --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
-  --v-pool:#3987e5; --v-own:#d95926; --v-raw:#9b72d0; --h0:#8f8d85;
+  --v-pool:#3987e5; --v-own:#d95926; --v-raw:#9b72d0; --v-glr:#14a88f; --h0:#8f8d85;
   --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
   --band:rgba(57,135,229,.22); --code-bg:#242422;
   color-scheme:dark;
@@ -263,6 +263,199 @@ tr.grp td{border-top:2px solid var(--axis)}
 <!--/L1--></div>
     <figcaption>32심볼 프래그먼트 하나의 |C[k]|² (열잡음 기준 dB, 통계 모델 표본). 회색 선이 256탭 전체이고, 위상 7(피크 127탭의 위상)만 점으로 표시했습니다. 파란 점은 신호 창 밖의 바깥 탭으로 잡음 통계를 추정하는 데 쓰고, 주황 원은 창 안에서 판정할 탭입니다. 파란 점선은 그 위상의 바깥 탭 평균 Q̂₇입니다. 위: 맞는 키는 127탭이 Q̂₇보다 크게 튀어 Λ̂가 문턱 22.71을 넘습니다. 아래: 강한 틀린 키는 127탭 전력이 53 dB로 훨씬 크지만, 같은 위상 바깥 탭도 48 dB라 튀지 않습니다(Λ̂ 4.8). 전력만 보면 이 둘을 가르기 어렵고, 이것이 MD 방식이 중간 세기에서 깨지는 이유입니다.</figcaption>
   </figure>
+  <h3>빗 위상: 8탭 떨어진 탭끼리 비교하는 이유</h3>
+  <div class="prose">
+    <p>상관기는 수신 샘플을 8개씩 끊은 "펄스 슬롯"마다 같은 자리의 샘플 하나씩을 골라, 내 키의 부호(±1)를 곱해 더합니다. 식으로는 C[k] = Σₙ bₙ·r[8n + k]이고, 탭 k가 고르는 자리인 슬롯 안 위치 k mod 8이 빗 위상입니다. 아래 그림은 틀린 키 신호가 들어왔을 때의 수신 샘플을, 펄스 네 개만 실수로 단순화해 그린 예입니다.</p>
+  </div>
+  <figure class="plate">
+    <div class="scroll-x"><!--L5-->
+<svg class="ch dg" viewBox="0 0 960 410" role="img" aria-label="틀린 키 신호의 수신 샘플을 8개씩 끊은 펄스 슬롯 네 개. 펄스 중심은 각 슬롯의 위치 7에 떨어져 그 샘플이 크고, 위치 6은 0.6배, 펄스 사이인 위치 3은 아주 작다. 탭 127과 135는 같은 위치 7의 숫자를 부호만 한 칸 밀어 쓰고, 탭 126과 131은 다른 위치의 숫자를 쓴다">
+<rect x="120" y="34" width="205" height="190" style="fill:var(--code-bg)"/>
+<text class="rl" x="222.5" y="26" text-anchor="middle">슬롯 0</text>
+<text class="m" x="132.8" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">0</text>
+<text class="m" x="158.4" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">1</text>
+<text class="m" x="184.1" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">2</text>
+<text class="m" x="209.7" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-raw);font-weight:600">3</text>
+<text class="m" x="235.3" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">4</text>
+<text class="m" x="260.9" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">5</text>
+<text class="m" x="286.6" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-glr);font-weight:600">6</text>
+<text class="m" x="312.2" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-pool);font-weight:600">7</text>
+<rect x="325" y="34" width="205" height="190" style="fill:var(--surface)"/>
+<text class="rl" x="427.5" y="26" text-anchor="middle">슬롯 1</text>
+<text class="m" x="337.8" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">0</text>
+<text class="m" x="363.4" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">1</text>
+<text class="m" x="389.1" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">2</text>
+<text class="m" x="414.7" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-raw);font-weight:600">3</text>
+<text class="m" x="440.3" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">4</text>
+<text class="m" x="465.9" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">5</text>
+<text class="m" x="491.6" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-glr);font-weight:600">6</text>
+<text class="m" x="517.2" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-pool);font-weight:600">7</text>
+<rect x="530" y="34" width="205" height="190" style="fill:var(--code-bg)"/>
+<text class="rl" x="632.5" y="26" text-anchor="middle">슬롯 2</text>
+<text class="m" x="542.8" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">0</text>
+<text class="m" x="568.4" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">1</text>
+<text class="m" x="594.1" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">2</text>
+<text class="m" x="619.7" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-raw);font-weight:600">3</text>
+<text class="m" x="645.3" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">4</text>
+<text class="m" x="670.9" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">5</text>
+<text class="m" x="696.6" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-glr);font-weight:600">6</text>
+<text class="m" x="722.2" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-pool);font-weight:600">7</text>
+<rect x="735" y="34" width="205" height="190" style="fill:var(--surface)"/>
+<text class="rl" x="837.5" y="26" text-anchor="middle">슬롯 3</text>
+<text class="m" x="747.8" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">0</text>
+<text class="m" x="773.4" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">1</text>
+<text class="m" x="799.1" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">2</text>
+<text class="m" x="824.7" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-raw);font-weight:600">3</text>
+<text class="m" x="850.3" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">4</text>
+<text class="m" x="875.9" y="214" text-anchor="middle" style="font-size:11px;fill:var(--muted)">5</text>
+<text class="m" x="901.6" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-glr);font-weight:600">6</text>
+<text class="m" x="927.2" y="214" text-anchor="middle" style="font-size:11px;fill:var(--v-pool);font-weight:600">7</text>
+<line class="axis" x1="120" y1="128" x2="940" y2="128"/>
+<text class="rl" x="0" y="132">수신 샘플 r</text><text class="rl" x="0" y="214">슬롯 안 위치</text>
+<line x1="132.8" y1="128" x2="132.8" y2="102.8" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="132.8" cy="102.8" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="158.4" y1="128" x2="158.4" y2="115.4" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="158.4" cy="115.4" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="184.1" y1="128" x2="184.1" y2="123" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="184.1" cy="123" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="209.7" y1="128" x2="209.7" y2="122.3" style="stroke:var(--v-raw);stroke-width:2.4"/>
+<circle cx="209.7" cy="122.3" r="4" style="fill:var(--v-raw);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="235.3" y1="128" x2="235.3" y2="121.7" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="235.3" cy="121.7" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="260.9" y1="128" x2="260.9" y2="112.2" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="260.9" cy="112.2" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="286.6" y1="128" x2="286.6" y2="96.5" style="stroke:var(--v-glr);stroke-width:2.4"/>
+<circle cx="286.6" cy="96.5" r="4" style="fill:var(--v-glr);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="312.2" y1="128" x2="312.2" y2="75.5" style="stroke:var(--v-pool);stroke-width:2.4"/>
+<circle cx="312.2" cy="75.5" r="4" style="fill:var(--v-pool);stroke:var(--surface);stroke-width:1.5"/>
+<text class="m" x="312.2" y="66.5" text-anchor="middle" style="font-size:12px;font-weight:600">5</text>
+<line x1="337.8" y1="128" x2="337.8" y2="96.5" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="337.8" cy="96.5" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="363.4" y1="128" x2="363.4" y2="112.2" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="363.4" cy="112.2" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="389.1" y1="128" x2="389.1" y2="121.7" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="389.1" cy="121.7" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="414.7" y1="128" x2="414.7" y2="127.4" style="stroke:var(--v-raw);stroke-width:2.4"/>
+<circle cx="414.7" cy="127.4" r="4" style="fill:var(--v-raw);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="440.3" y1="128" x2="440.3" y2="133" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="440.3" cy="133" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="465.9" y1="128" x2="465.9" y2="140.6" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="465.9" cy="140.6" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="491.6" y1="128" x2="491.6" y2="153.2" style="stroke:var(--v-glr);stroke-width:2.4"/>
+<circle cx="491.6" cy="153.2" r="4" style="fill:var(--v-glr);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="517.2" y1="128" x2="517.2" y2="170" style="stroke:var(--v-pool);stroke-width:2.4"/>
+<circle cx="517.2" cy="170" r="4" style="fill:var(--v-pool);stroke:var(--surface);stroke-width:1.5"/>
+<text class="m" x="517.2" y="188" text-anchor="middle" style="font-size:12px;font-weight:600">−4</text>
+<line x1="542.8" y1="128" x2="542.8" y2="153.2" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="542.8" cy="153.2" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="568.4" y1="128" x2="568.4" y2="140.6" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="568.4" cy="140.6" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="594.1" y1="128" x2="594.1" y2="133" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="594.1" cy="133" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="619.7" y1="128" x2="619.7" y2="126.7" style="stroke:var(--v-raw);stroke-width:2.4"/>
+<circle cx="619.7" cy="126.7" r="4" style="fill:var(--v-raw);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="645.3" y1="128" x2="645.3" y2="120.4" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="645.3" cy="120.4" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="670.9" y1="128" x2="670.9" y2="109.1" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="670.9" cy="109.1" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="696.6" y1="128" x2="696.6" y2="90.2" style="stroke:var(--v-glr);stroke-width:2.4"/>
+<circle cx="696.6" cy="90.2" r="4" style="fill:var(--v-glr);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="722.2" y1="128" x2="722.2" y2="65" style="stroke:var(--v-pool);stroke-width:2.4"/>
+<circle cx="722.2" cy="65" r="4" style="fill:var(--v-pool);stroke:var(--surface);stroke-width:1.5"/>
+<text class="m" x="722.2" y="56" text-anchor="middle" style="font-size:12px;font-weight:600">6</text>
+<line x1="747.8" y1="128" x2="747.8" y2="90.2" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="747.8" cy="90.2" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="773.4" y1="128" x2="773.4" y2="109.1" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="773.4" cy="109.1" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="799.1" y1="128" x2="799.1" y2="120.4" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="799.1" cy="120.4" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="824.7" y1="128" x2="824.7" y2="127.4" style="stroke:var(--v-raw);stroke-width:2.4"/>
+<circle cx="824.7" cy="127.4" r="4" style="fill:var(--v-raw);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="850.3" y1="128" x2="850.3" y2="134.3" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="850.3" cy="134.3" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="875.9" y1="128" x2="875.9" y2="143.8" style="stroke:var(--h0);stroke-width:1.4"/>
+<circle cx="875.9" cy="143.8" r="2.8" style="fill:var(--h0);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="901.6" y1="128" x2="901.6" y2="159.5" style="stroke:var(--v-glr);stroke-width:2.4"/>
+<circle cx="901.6" cy="159.5" r="4" style="fill:var(--v-glr);stroke:var(--surface);stroke-width:1.5"/>
+<line x1="927.2" y1="128" x2="927.2" y2="180.5" style="stroke:var(--v-pool);stroke-width:2.4"/>
+<circle cx="927.2" cy="180.5" r="4" style="fill:var(--v-pool);stroke:var(--surface);stroke-width:1.5"/>
+<text class="m" x="927.2" y="198.5" text-anchor="middle" style="font-size:12px;font-weight:600">−5</text>
+<text class="rl" x="0" y="250">탭 값 = 그 위치 샘플 × 내 키 부호(±1)의 합</text><text class="rl" x="560" y="250">보통 크기</text>
+<circle cx="6" cy="274" r="5" style="fill:var(--v-pool)"/><text x="18" y="278" style="fill:var(--ink);font-size:12.5px;font-weight:600">탭 127</text><text class="rl" x="70" y="278">위치 7</text>
+<text class="m" x="130" y="278" style="font-size:12.5px">b₁·5 + b₂·(−4) + b₃·6 + b₄·(−5)</text>
+<text class="m" x="560" y="278" style="font-size:12.5px;font-weight:600">≈ 10</text><text x="640" y="278" style="fill:var(--ink-2);font-size:12.5px">기준</text>
+<circle cx="6" cy="304" r="5" style="fill:var(--v-pool)"/><text x="18" y="308" style="fill:var(--ink);font-size:12.5px;font-weight:600">탭 135</text><text class="rl" x="70" y="308">위치 7</text>
+<text class="m" x="130" y="308" style="font-size:12.5px">b₀·5 + b₁·(−4) + b₂·6 + b₃·(−5)</text>
+<text class="m" x="560" y="308" style="font-size:12.5px;font-weight:600">≈ 10</text><text x="640" y="308" style="fill:var(--ink-2);font-size:12.5px">같은 숫자, 부호만 한 칸 밀림 → 같은 분포</text>
+<circle cx="6" cy="334" r="5" style="fill:var(--v-glr)"/><text x="18" y="338" style="fill:var(--ink);font-size:12.5px;font-weight:600">탭 126</text><text class="rl" x="70" y="338">위치 6</text>
+<text class="m" x="130" y="338" style="font-size:12.5px">b₁·3 + b₂·(−2.4) + b₃·3.6 + b₄·(−3)</text>
+<text class="m" x="560" y="338" style="font-size:12.5px;font-weight:600">≈ 6.1</text><text x="640" y="338" style="fill:var(--ink-2);font-size:12.5px">한 칸 옆 위치: 숫자가 0.6배 → 다른 분포</text>
+<circle cx="6" cy="364" r="5" style="fill:var(--v-raw)"/><text x="18" y="368" style="fill:var(--ink);font-size:12.5px;font-weight:600">탭 131</text><text class="rl" x="70" y="368">위치 3</text>
+<text class="m" x="130" y="368" style="font-size:12.5px">b₀·0.54 + b₁·0.06 + b₂·0.12 + b₃·0.06</text>
+<text class="m" x="560" y="368" style="font-size:12.5px;font-weight:600">≈ 0.56</text><text x="640" y="368" style="fill:var(--ink-2);font-size:12.5px">펄스 사이: 숫자가 아주 작음 → 다른 분포</text>
+</svg>
+<!--/L5--></div>
+    <figcaption>펄스 중심이 각 슬롯의 위치 7에 떨어지는 예입니다. 탭 값은 그 위치의 숫자 묶음에 무작위 부호를 붙여 더한 합이고, 그 보통 크기(표준편차)는 숫자들의 제곱합의 제곱근입니다. 실제로는 펄스가 수천 개(32심볼이면 3,968개)이고 값이 복소수이지만 원리는 같습니다.</figcaption>
+  </figure>
+  <div class="prose">
+    <p><strong>8탭 떨어진 탭은 같은 분포를 따릅니다.</strong> 탭 127과 135는 같은 숫자 묶음(위치 7의 5, −4, 6, −5)을 쓰고, 내 키의 부호만 한 칸 밀려 붙습니다. 틀린 키에서는 부호가 동전 던지기처럼 무작위라, 두 합은 실제 값은 다르지만 나올 수 있는 값의 크기와 퍼짐은 같습니다. 같은 주사위를 두 번 던지는 셈입니다. 그래서 신호 창 밖에서 같은 위치를 쓰는 탭들이 "127탭이 잡음만이라면 보통 이 정도"라는 기준이 됩니다. 맞는 키라면 127탭에서만 부호가 수신 펄스와 정확히 맞아 모든 항이 같은 방향으로 더해지므로, 그 탭만 형제 탭들보다 크게 튑니다.</p>
+    <p><strong>1탭 떨어진 탭은 분포가 다릅니다.</strong> 수신 신호는 펄스마다 가운데가 크고 양옆으로 갈수록 작아집니다. 이 예에서는 펄스 중심이 위치 7에 떨어지므로 위치 7의 숫자가 가장 크고, 한 칸 옆인 위치 6은 0.6배, 펄스 사이인 위치 3은 아주 작습니다. 탭은 자기 위치의 숫자 묶음을 쓰므로, 위치가 다르면 주사위 자체가 다릅니다(보통 크기가 탭 127은 10, 탭 126은 6.1, 탭 131은 0.56). 열잡음은 모든 위치에서 세기가 같아 이런 차이가 없고, 강한 틀린 키 신호일수록 펄스 모양이 잡음 바닥에 그대로 드러납니다. 펄스 중심이 슬롯의 어느 위치에 떨어지는지는 그 신호의 도착 시점이 정합니다.</p>
+  </div>
+  <figure class="plate">
+    <div class="scroll-x"><!--L6-->
+<svg class="ch dg" viewBox="0 0 960 330" role="img" aria-label="위상별 잡음 바닥. 강한 틀린 키는 위상 7이 48.4 dB로 가장 세고 위상 3은 22.9 dB로 25 dB 낮다. 맞는 키 −108 dBm 프래그먼트의 바깥 탭은 사실상 열잡음이라 여덟 위상이 모두 0 dB 근처다. 위상을 섞어 평균하면 42.0 dB">
+<line class="grid" x1="64" y1="251.2" x2="940" y2="251.2"/><text x="58" y="255.2" text-anchor="end">0</text>
+<line class="grid" x1="64" y1="213.5" x2="940" y2="213.5"/><text x="58" y="217.5" text-anchor="end">10</text>
+<line class="grid" x1="64" y1="175.8" x2="940" y2="175.8"/><text x="58" y="179.8" text-anchor="end">20</text>
+<line class="grid" x1="64" y1="138.2" x2="940" y2="138.2"/><text x="58" y="142.2" text-anchor="end">30</text>
+<line class="grid" x1="64" y1="100.5" x2="940" y2="100.5"/><text x="58" y="104.5" text-anchor="end">40</text>
+<line class="grid" x1="64" y1="62.8" x2="940" y2="62.8"/><text x="58" y="66.8" text-anchor="end">50</text>
+<line class="axis" x1="64" y1="251.2" x2="940" y2="251.2"/>
+<text class="lab" x="0" y="20">위상별 잡음 바닥 Q̂ₑ (열잡음 기준 dB, 바깥 탭 24~25개 평균)</text>
+<path d="M87.8 251.2L87.8 251.5Q87.8 251 88.2 251L117.2 251Q117.8 251 117.8 251.5L117.8 251.2Z" style="fill:var(--h0)"/>
+<path d="M119.8 251.2L119.8 91.7Q119.8 87.7 123.8 87.7L145.8 87.7Q149.8 87.7 149.8 91.7L149.8 251.2Z" style="fill:var(--v-pool)"/>
+<text x="134.8" y="81.7" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">43.4</text>
+<text class="lab" x="118.8" y="290" text-anchor="middle">위상 0</text>
+<path d="M197.2 251.2L197.2 252.9Q197.2 254.7 199 254.7L225.5 254.7Q227.2 254.7 227.2 252.9L227.2 251.2Z" style="fill:var(--h0)"/>
+<path d="M229.2 251.2L229.2 137.3Q229.2 133.3 233.2 133.3L255.2 133.3Q259.2 133.3 259.2 137.3L259.2 251.2Z" style="fill:var(--v-pool)"/>
+<text x="244.2" y="127.3" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">31.3</text>
+<text class="lab" x="228.2" y="290" text-anchor="middle">위상 1</text>
+<path d="M306.8 251.2L306.8 252.2Q306.8 253.2 307.8 253.2L335.7 253.2Q336.8 253.2 336.8 252.2L336.8 251.2Z" style="fill:var(--h0)"/>
+<path d="M338.8 251.2L338.8 126.2Q338.8 122.2 342.8 122.2L364.8 122.2Q368.8 122.2 368.8 126.2L368.8 251.2Z" style="fill:var(--v-pool)"/>
+<text x="353.8" y="116.2" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">34.3</text>
+<text class="lab" x="337.8" y="290" text-anchor="middle">위상 2</text>
+<path d="M416.2 251.2L416.2 253Q416.2 254.8 418.1 254.8L444.4 254.8Q446.2 254.8 446.2 253L446.2 251.2Z" style="fill:var(--h0)"/>
+<path d="M448.2 251.2L448.2 169.1Q448.2 165.1 452.2 165.1L474.2 165.1Q478.2 165.1 478.2 169.1L478.2 251.2Z" style="fill:var(--v-pool)"/>
+<text x="463.2" y="159.1" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">22.9</text>
+<text class="lab" x="447.2" y="290" text-anchor="middle">위상 3</text>
+<path d="M525.8 251.2L525.8 253.8Q525.8 256.4 528.4 256.4L553.1 256.4Q555.8 256.4 555.8 253.8L555.8 251.2Z" style="fill:var(--h0)"/>
+<path d="M557.8 251.2L557.8 148.9Q557.8 144.9 561.8 144.9L583.8 144.9Q587.8 144.9 587.8 148.9L587.8 251.2Z" style="fill:var(--v-pool)"/>
+<text x="572.8" y="138.9" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">28.2</text>
+<text class="lab" x="556.8" y="290" text-anchor="middle">위상 4</text>
+<path d="M635.2 251.2L635.2 254.2Q635.2 257.2 638.3 257.2L662.2 257.2Q665.2 257.2 665.2 254.2L665.2 251.2Z" style="fill:var(--h0)"/>
+<path d="M667.2 251.2L667.2 132.8Q667.2 128.8 671.2 128.8L693.2 128.8Q697.2 128.8 697.2 132.8L697.2 251.2Z" style="fill:var(--v-pool)"/>
+<text x="682.2" y="122.8" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">32.5</text>
+<text class="lab" x="666.2" y="290" text-anchor="middle">위상 5</text>
+<path d="M744.8 251.2L744.8 253.9Q744.8 256.6 747.5 256.6L772 256.6Q774.8 256.6 774.8 253.9L774.8 251.2Z" style="fill:var(--h0)"/>
+<path d="M776.8 251.2L776.8 85.6Q776.8 81.6 780.8 81.6L802.8 81.6Q806.8 81.6 806.8 85.6L806.8 251.2Z" style="fill:var(--v-pool)"/>
+<text x="791.8" y="75.6" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">45.0</text>
+<text class="lab" x="775.8" y="290" text-anchor="middle">위상 6</text>
+<path d="M854.2 251.2L854.2 250.8Q854.2 250.3 854.8 250.3L883.8 250.3Q884.2 250.3 884.2 250.8L884.2 251.2Z" style="fill:var(--h0)"/>
+<path d="M886.2 251.2L886.2 72.9Q886.2 68.9 890.2 68.9L912.2 68.9Q916.2 68.9 916.2 72.9L916.2 251.2Z" style="fill:var(--v-pool)"/>
+<text x="901.2" y="62.9" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">48.4</text>
+<text class="lab" x="885.2" y="290" text-anchor="middle">위상 7</text>
+<text x="885.2" y="308" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">피크 127탭의 위상</text>
+<text x="447.2" y="308" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">펄스 사이</text>
+<text x="24" y="308" style="fill:var(--muted);font-size:11.5px">회색 막대: 여덟 위상 모두 0 dB 근처 (−1.6 ~ 0.2 dB)</text>
+<line x1="64" y1="92.9" x2="940" y2="92.9" style="stroke:var(--ink-2);stroke-width:1.4;stroke-dasharray:6 4"/>
+<text x="291.8" y="86.9" style="fill:var(--ink-2);font-size:12px">위상을 섞어 199개 평균: 42.0 dB</text>
+<rect x="470" y="10" width="12" height="12" rx="2" style="fill:var(--v-pool)"/><text x="488" y="20" style="font-size:12px">틀린 키, −40 dBm</text>
+<rect x="620" y="10" width="12" height="12" rx="2" style="fill:var(--h0)"/><text x="638" y="20" style="font-size:12px">맞는 키, −108 dBm (바깥 탭은 사실상 열잡음)</text>
+</svg>
+<!--/L6--></div>
+    <figcaption>그림 1과 같은 두 프래그먼트를 위상별로 잰 값입니다. 틀린 키는 위상 7(48.4 dB)과 이웃한 6·0이 가장 세고, 위상 3은 22.9 dB로 25 dB 낮아 8탭 주기의 빗 모양이 됩니다. 맞는 키 −108 dBm 프래그먼트는 바깥 탭이 사실상 열잡음이라 여덟 위상이 모두 0 dB 근처입니다(표본 24~25개의 추정 흔들림 ±2 dB). 위상을 섞어 바깥 탭 199개를 평균하면 42.0 dB(점선)이고, 이 값으로 위상 7의 탭을 재면 잡음을 6.4 dB 작게 보아 T²가 약 4.4배로 부풉니다. 그러면 문턱 40.4가 실제로는 약 9.3에 해당해, 탭당 오검출 확률이 1.2e-5에서 약 2e-2로 커집니다. 위상 3의 탭은 반대로 잡음을 크게 보아 신호를 놓칩니다. 위상별로 나누는 대가는 표본 수(199개 → 위상당 24~25개)이고, Λ̂ 문턱이 원시 샘플 Λ보다 약 2.4 dB 높은 이유가 이것입니다.</figcaption>
+  </figure>
+  <h3>여기서 잡음의 범위</h3>
   <div class="prose">
     <p><strong>여기서 "잡음"은 열잡음만이 아닙니다.</strong> 맞는 키의 피크가 아닌 성분을 모두 뜻하며, 틀린 키 신호의 자기잡음도 포함합니다. 키가 맞지 않은 신호는 피크로 모이지 못하고 모든 탭에 흩어지는데, 그 에너지가 열잡음보다 훨씬 클 수 있습니다(그림 1 아래). Q̂·Π̂는 바깥 탭에 실제로 있는 것을 그대로 재므로, 신호가 없으면 열잡음을, 틀린 키 신호가 있으면 열잡음과 그 자기잡음을 함께 잽니다.</p>
   </div>
