@@ -420,18 +420,18 @@ H1:  S ~ 비중심 χ²<sub>2K</sub>(K·λ)      평균 2K + K·λ              
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r1-tbl"></table></div></details>
   </figure>
   <figure class="plate">
-    <h3>L90 요약 [dBm]</h3>
+    <h3>L90 / L99 요약 [dBm]</h3>
     <div class="tbl-wrap"><table class="guide">
-      <thead><tr><th>구성</th><th>기준</th><th class="num">CIR 추정 Λ̂</th><th class="num">원시 샘플 Λ</th></tr></thead>
+      <thead><tr><th>구성</th><th>기준</th><th class="num">CIR 추정 Λ̂ L90 / L99</th><th class="num">원시 샘플 Λ L90 / L99</th></tr></thead>
       <tbody>
-        <tr><td>RIF 8개, 프래그먼트마다 판정</td><td>지금: 프래그먼트 1e-3 (패킷 보장 없음)</td><td class="num">−109.6</td><td class="num">−112.0</td></tr>
-        <tr class="pick"><td>RIF 8개, 소프트 결합 + 일관성 검사</td><td>제안: 패킷 10⁻⁶</td><td class="num">−116.5</td><td class="num">−117.3</td></tr>
-        <tr><td>RIF 8개, 8개 중 6개 이상</td><td>제안: 패킷 10⁻⁶</td><td class="num">−112.5</td><td class="num">−114.1</td></tr>
-        <tr><td>RIF 1개 설정 (32심볼)</td><td>지금: 1e-3</td><td class="num">−109.6</td><td class="num">−112.1</td></tr>
-        <tr><td>RIF 1개 설정 (32심볼)</td><td>제안: 10⁻⁶</td><td class="num">−106.1</td><td class="num">−110.2</td></tr>
+        <tr><td>RIF 8개, 프래그먼트마다 판정</td><td>지금: 프래그먼트 1e-3 (패킷 보장 없음)</td><td class="num">−109.6 / −108.1</td><td class="num">−112.0 / −110.6</td></tr>
+        <tr class="pick"><td>RIF 8개, 소프트 결합 + 일관성 검사</td><td>제안: 패킷 10⁻⁶</td><td class="num">−116.5 / −115.5</td><td class="num">−117.3 / −116.0</td></tr>
+        <tr><td>RIF 8개, 8개 중 6개 이상</td><td>제안: 패킷 10⁻⁶</td><td class="num">−112.5 / −111.7</td><td class="num">−114.1 / −113.1</td></tr>
+        <tr><td>RIF 1개 설정 (32심볼)</td><td>지금: 1e-3</td><td class="num">−109.6 / −108.1</td><td class="num">−112.1 / −110.6</td></tr>
+        <tr><td>RIF 1개 설정 (32심볼)</td><td>제안: 10⁻⁶</td><td class="num">−106.1 / −104.8</td><td class="num">−110.2 / −109.1</td></tr>
       </tbody>
     </table></div>
-    <figcaption>RIF가 8개면 기준을 바꿔도 감도가 7 dB 가까이 좋아집니다. RIF가 1개뿐인 설정은 묶을 증거가 없어서, 목표가 엄격해진 만큼 손해를 봅니다(CIR 추정 Λ̂ 3.5 dB).</figcaption>
+    <figcaption>RIF가 8개면 기준을 바꿔도 감도가 7 dB 가까이 좋아집니다. RIF가 1개뿐인 설정은 묶을 증거가 없어서, 목표가 엄격해진 만큼 손해를 봅니다(CIR 추정 Λ̂ 3.5 dB). L99는 Pd 99%가 되는 세기로, L99 부근을 0.5 dB 간격, 세기당 6,000패킷으로 다시 돌린 값입니다(<code>model/l99.py</code>). 기준을 바꿔 얻는 이득은 L99에서도 거의 같습니다.</figcaption>
   </figure>
 </section>
 
@@ -915,6 +915,7 @@ p⁸ = 10⁻⁶   ⇔   p = 0.178                          <span class="c">한 �
 
   /* ------------------------------------------------------------------ 5: simulation results */
   var r1State = {chip: 'c'};
+  var L99R = {"c":{"soft":-115.69,"soft1":-115.46,"k2":-111.66,"and":-110.1,"strict":-107.15,"single":-104.75,"cur":-108.12},"x":{"soft":-116.66,"soft1":-116.01,"k2":-113.13,"and":-111.38,"strict":-109.66,"single":-109.07,"cur":-110.59}};   /* L99 per rule (model/l99.py: 0.5 dB grid, 6,000 packets per power; soft and single from the pooled run) */
   var R1SER = [
     {k: 'soft', src: 'h1', line: 's1s', mk: 'sq', mc: 's1f', key: 'sq', name: '소프트 결합'},
     {k: 'soft1', src: 'pol', line: 's1s', dash: '6 4', mk: 'sqo', mc: '', key: 'sq', keyCls: 's1f', name: '소프트 + 일관성'},
@@ -939,7 +940,7 @@ p⁸ = 10⁻⁶   ⇔   p = 0.178                          <span class="c">한 �
       series: R1SER, hlines: [{y: 0.9, label: 'Pd 0.9', below: true}],
       tipTitle: function (x) { return minus(x) + ' dBm · ' + (chip === 'c' ? 'CIR 추정 Λ̂' : '원시 샘플 Λ'); }, tipVal: function (v) { return v.toFixed(3); }
     });
-    document.getElementById('r1-cap').textContent = 'L90: ' + R1SER.map(function (s) { return s.name.split(':')[0].split(' (')[0] + ' ' + (isNaN(s.l90) ? '–' : minus(s.l90.toFixed(1))); }).join(' · ') +
+    document.getElementById('r1-cap').textContent = 'L90: ' + R1SER.map(function (s) { return s.name.split(':')[0].split(' (')[0] + ' ' + (isNaN(s.l90) ? '–' : minus(s.l90.toFixed(1))); }).join(' · ') + ' dBm. L99: ' + R1SER.map(function (s) { return s.name.split(':')[0].split(' (')[0] + ' ' + minus(L99R[chip][s.k].toFixed(1)); }).join(' · ') +
       ' dBm. 같은 덤프 모델에서 기준만 바꾼 결과입니다. 소프트 결합은 지금보다 ' + (R1SER[6].l90 - R1SER[0].l90).toFixed(1) + ' dB 좋고, 프래그먼트마다 1e-3으로 판정해 8개 모두를 요구하는 방식은 지금보다도 나쁩니다.';
     var tb = document.getElementById('r1-tbl'); clear(tb);
     var hd = tb.createTHead().insertRow();
@@ -952,6 +953,8 @@ p⁸ = 10⁻⁶   ⇔   p = 0.178                          <span class="c">한 �
     });
     var trL = body.insertRow(), cL = trL.insertCell(); cL.className = 'num'; cL.textContent = 'L90';
     R1SER.forEach(function (s) { var td = trL.insertCell(); td.className = 'num'; td.textContent = isNaN(s.l90) ? '–' : minus(s.l90.toFixed(2)); });
+    var tr9 = body.insertRow(), c9 = tr9.insertCell(); c9.className = 'num'; c9.textContent = 'L99';
+    R1SER.forEach(function (s) { var td = tr9.insertCell(); td.className = 'num'; td.textContent = minus(L99R[chip][s.k].toFixed(2)); });
   }
 
   /* ------------------------------------------------------------------ 6: verification */

@@ -9,7 +9,7 @@
 # input = the pulse taps combined with the pulse shape (SNR A^2 (g'g)^2 / g'Rg). The pulse shape spans taps -3..4 inside
 # the 8-sample spacing, so in AWGN the pulses do not overlap at the scoring instant and the n = 128 K (L - b) sign
 # decisions are independent: the count of matches is exactly Binomial(n, (1 + erf(sqrt(gamma))) / 2).
-#   python3 score_compare.py results/score_compare.json
+#   python3 score_compare.py results/score_compare.json   (L90 and L99; the Λ / Λ̂ L99 come from results/l99.json)
 import os, sys, math, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rifsim import G
@@ -98,6 +98,8 @@ def main(fout):
     here = os.path.dirname(os.path.abspath(__file__))
     pm = json.load(open(os.path.join(here, 'results', 'pooled_moments.json')))
     cp = json.load(open(os.path.join(here, 'results', 'length_ppm.json')))
+    f99 = os.path.join(here, 'results', 'l99.json')                    # L99 of Λ / Λ̂ (l99.py), if computed
+    l99 = json.load(open(f99))['parts'] if os.path.exists(f99) else None
     print('per-pulse gain: CE %.2f dB, CMF %.2f dB (A^2 = dBm + 82.5 dB)' % (10 * math.log10(GAIN['CE']), 10 * math.log10(GAIN['CMF'])))
     g50 = math.atanh(0) if False else None
     out = {'gain_dB': {k: 10 * math.log10(v) for k, v in GAIN.items()}, 'target': TARGET, 'rows': []}
@@ -117,6 +119,12 @@ def main(fout):
             if K in (1, 8):
                 r = cp['%d_0' % N]['rules']; key = 'single' if K == 1 else 'soft'
                 row['lam_cfo0'] = r[key + '_x']['L90']; row['lamhat_cfo0'] = r[key + '_c']['L90']
+            if l99:
+                e = l99['pooled'][str(N)][str(K)]
+                row['lam99'] = e['raw']['L99']['lin']; row['lamhat99'] = e['own']['L99']['lin']
+                if K in (1, 8) and 'rules' in l99:
+                    r = l99['rules']['%d_0' % N]; key = 'single' if K == 1 else 'soft'
+                    row['lam99_cfo0'] = r[key + '_x']['L99']['lin']; row['lamhat99_cfo0'] = r[key + '_c']['L99']['lin']
             for b in BOUND:
                 ns = K * (N - b); n = 128 * ns
                 c12 = 70 * ns + 1                                        # average > 12  <=>  matches >= 70 ns + 1
@@ -124,6 +132,7 @@ def main(fout):
                 ent = {'n_sym': ns, 'pfa12_log10': log10_tail_half(n, c12), 'thr6_avg': (2 * c6 - n) / ns}
                 for inp in GAIN:
                     ent['L90_12_' + inp] = level(n, c12, inp); ent['L90_6_' + inp] = level(n, c6, inp)
+                    ent['L99_12_' + inp] = level(n, c12, inp, 0.99); ent['L99_6_' + inp] = level(n, c6, inp, 0.99)
                 row['score'][str(b)] = ent
             out['rows'].append(row)
             e = row['score']['1']

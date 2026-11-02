@@ -602,7 +602,8 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
   </figure>
 
   <figure class="plate" id="r3">
-    <h3>감도: 90% 검출 레벨 L90 (왼쪽일수록 좋음)</h3>
+    <h3>감도: <span id="r3-lvname">90% 검출 레벨 L90</span> (왼쪽일수록 좋음)</h3>
+    <div class="seg" id="r3-lv" role="group" aria-label="감도 기준"><button type="button" data-lv="L90" aria-pressed="true">L90 (Pd 90%)</button><button type="button" data-lv="L99" aria-pressed="false">L99 (Pd 99%)</button></div>
     <div class="legend">
       <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s1f"/></svg>Λ (Pfa 보장)</span>
       <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>Z 판정기 (Pfa 보장 안 됨)</span>
@@ -642,8 +643,8 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
   <figure class="plate">
     <h3>MMS 패킷 단위 소프트 결합 (요구사항의 기본 판정, 9장)</h3>
     <div class="stats">
-      <div class="stat"><span class="k">프래그먼트 1개, Λ</span><span class="v">−112.0 dBm</span><span class="s">L90, 32심볼, 진단 기준 1e-3</span></div>
-      <div class="stat"><span class="k">RIF 8개 ΣΛ</span><span class="v">−117.6 dBm</span><span class="s">L90, 패킷 오수락 10⁻⁶</span></div>
+      <div class="stat"><span class="k">프래그먼트 1개, Λ</span><span class="v">−112.0 dBm</span><span class="s">L90, 32심볼, 진단 기준 1e-3 (L99 −110.4)</span></div>
+      <div class="stat"><span class="k">RIF 8개 ΣΛ</span><span class="v">−117.6 dBm</span><span class="s">L90, 패킷 오수락 10⁻⁶ (L99 −116.7)</span></div>
       <div class="stat"><span class="k">이득</span><span class="v">+5.6 dB</span><span class="s">문턱은 χ²₁₆ 공식 (69.61)</span></div>
     </div>
     <figcaption>프래그먼트마다 STS가 다르므로 H0에서 Λ를 K개 더한 값은 자유도 2K인 카이제곱을 따릅니다. 결합 문턱도 공식으로 정해지고, 802.15.4ab MMS의 여러 프래그먼트 에너지 누적과 맞습니다. 목표가 1,000배 엄격해져도 증거가 8배로 늘어 감도는 좋아집니다. 프래그먼트 사이 탭 정렬(피크 이동 보정)이 전제이며, 규칙별 비교와 일관성 검사는 9장에 있습니다.</figcaption>
@@ -705,22 +706,22 @@ H0에서  P(Λ̂ ≥ t) = (1 + t/n)^(−(n−1)/2)        <span class="c">Hotell
       <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="muteds dash" stroke-width="2"/><path d="M8 1.5 L12.5 10 L3.5 10 Z" class="mutedf"/></svg>Λ̂ (CIR 추정, 기존 잡음 창 W_n만)</span>
     </div>
     <svg class="chart" id="r6-svg" viewBox="0 0 760 340" role="img" aria-label="맞는 키 세기에 따른 네 판정 방식의 검출 확률"></svg>
-    <figcaption id="r6-cap">L90: Λ −112.0, Z 판정기 −111.3, Λ̂(전체) −109.6, Λ̂(기존 잡음 창 W_n만) −105.2 dBm. Λ̂는 원시 샘플 Λ보다 약 2.5 dB 나쁘고, Pfa 보장이 없는 Z 판정기보다는 약 1.7 dB 나쁩니다. 하지만 Z 판정기를 안전한 단일 문턱(15.5 dB)으로 올린 경우(−106.0)보다는 약 3.6 dB 좋습니다.</figcaption>
+    <figcaption id="r6-cap">L90: Λ −112.0, Z 판정기 −111.3, Λ̂(전체) −109.6, Λ̂(기존 잡음 창 W_n만) −105.2 dBm. L99: Λ −110.4, Z 판정기 −109.9, Λ̂(전체) −108.1, Λ̂(기존 잡음 창 W_n만) −103.1 dBm. Λ̂는 원시 샘플 Λ보다 약 2.5 dB 나쁘고, Pfa 보장이 없는 Z 판정기보다는 약 1.7 dB 나쁩니다. 하지만 Z 판정기를 안전한 단일 문턱(15.5 dB)으로 올린 경우(−106.0)보다는 약 3.6 dB 좋습니다.</figcaption>
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r6-tbl"></table></div></details>
   </figure>
 
   <figure class="plate">
     <h3>칩 상황별 선택</h3>
     <div class="tbl-wrap"><table class="guide">
-      <thead><tr><th>칩 상황</th><th>판정 방식</th><th>필요한 것</th><th class="num">패킷 L90 (RIF 8개, 10⁻⁶)</th><th class="num">프래그먼트 L90 (1e-3)</th><th>Pfa 보장</th></tr></thead>
+      <thead><tr><th>칩 상황</th><th>판정 방식</th><th>필요한 것</th><th class="num">패킷 L90 / L99 (RIF 8개, 10⁻⁶)</th><th class="num">프래그먼트 L90 / L99 (1e-3)</th><th>Pfa 보장</th></tr></thead>
       <tbody>
-        <tr><td>누산기 추가 (RTL 수정 가능)</td><td>Λ (원시 샘플 Q·Π)</td><td>위상별 누산기 3 × 8, 입력 샘플당 곱 3개</td><td class="num">−117.6 dBm</td><td class="num">−112.0 dBm</td><td>있음</td></tr>
-        <tr class="pick"><td>지금 하드웨어, CIR 읽기 가능</td><td>Λ̂ (CIR 추정, 신호 창 밖 전체)</td><td>펌웨어 연산 (제곱합 2종, 신호 창 57탭 비교)</td><td class="num">−116.7 dBm</td><td class="num">−109.6 dBm</td><td>있음</td></tr>
-        <tr><td>지금 하드웨어, 현행 유지</td><td>Z 판정기 (두 단계 문턱)</td><td>없음</td><td class="num">−110.0 dBm (8개 모두 통과)</td><td class="num">−111.3 dBm</td><td>없음 (프래그먼트 최대 5.6e-2)</td></tr>
-        <tr><td>지금 하드웨어, 현행을 안전하게</td><td>Z 판정기 단일 문턱 15.5 dB</td><td>문턱 변경</td><td class="num">–</td><td class="num">−106.0 dBm</td><td>프래그먼트만</td></tr>
+        <tr><td>누산기 추가 (RTL 수정 가능)</td><td>Λ (원시 샘플 Q·Π)</td><td>위상별 누산기 3 × 8, 입력 샘플당 곱 3개</td><td class="num">−117.6 / −116.7 dBm</td><td class="num">−112.0 / −110.4 dBm</td><td>있음</td></tr>
+        <tr class="pick"><td>지금 하드웨어, CIR 읽기 가능</td><td>Λ̂ (CIR 추정, 신호 창 밖 전체)</td><td>펌웨어 연산 (제곱합 2종, 신호 창 57탭 비교)</td><td class="num">−116.7 / −115.7 dBm</td><td class="num">−109.6 / −108.1 dBm</td><td>있음</td></tr>
+        <tr><td>지금 하드웨어, 현행 유지</td><td>Z 판정기 (두 단계 문턱)</td><td>없음</td><td class="num">−110.0 / −109.0 dBm (8개 모두 통과)</td><td class="num">−111.3 / −109.9 dBm</td><td>없음 (프래그먼트 최대 5.6e-2)</td></tr>
+        <tr><td>지금 하드웨어, 현행을 안전하게</td><td>Z 판정기 단일 문턱 15.5 dB</td><td>문턱 변경</td><td class="num">–</td><td class="num">−106.0 / −105.0 dBm</td><td>프래그먼트만</td></tr>
       </tbody>
     </table></div>
-    <figcaption>지금 하드웨어에서 Pfa를 보장하는 방법 중에서는 Λ̂가 가장 좋습니다. 패킷 기준에서는 8개 소프트 결합으로 원시 샘플 Λ와의 차이가 0.9 dB로 줄어듭니다(9장). Z 판정기 단일 문턱의 패킷 감도는 계산하지 않았습니다. 확인할 전제는 두 가지입니다. 첫째, 신호 창 밖 탭이 H0에서 신호 창 안과 같은 분포여야 합니다(CIR 양 끝의 누적 경계 효과나 16비트 포화가 없어야 함). 둘째, H1에서 멀티패스 꼬리가 신호 창 밖까지 이어지면 Q̂가 커져 Pd가 조금 떨어집니다(Pfa에는 영향 없음). 둘 다 지금 있는 2열 덤프로 확인할 수 있습니다.</figcaption>
+    <figcaption>지금 하드웨어에서 Pfa를 보장하는 방법 중에서는 Λ̂가 가장 좋습니다. 패킷 기준에서는 8개 소프트 결합으로 원시 샘플 Λ와의 차이가 0.9 dB(L99에서도 약 1 dB)로 줄어듭니다(9장). L99는 Pd 99%가 되는 세기로, 모든 RIF 길이와 개수의 값은 <a href="pooled.html#l99">Λ̂ 모멘트 모으기 페이지의 L99 표</a>에 있습니다. Z 판정기 단일 문턱의 패킷 감도는 계산하지 않았습니다. 확인할 전제는 두 가지입니다. 첫째, 신호 창 밖 탭이 H0에서 신호 창 안과 같은 분포여야 합니다(CIR 양 끝의 누적 경계 효과나 16비트 포화가 없어야 함). 둘째, H1에서 멀티패스 꼬리가 신호 창 밖까지 이어지면 Q̂가 커져 Pd가 조금 떨어집니다(Pfa에는 영향 없음). 둘 다 지금 있는 2열 덤프로 확인할 수 있습니다.</figcaption>
   </figure>
 </section>
 
@@ -783,14 +784,14 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
   <figure class="plate">
     <h3>"하나라도 공격받으면 폐기"를 어떻게 구현하나</h3>
     <div class="tbl-wrap"><table class="guide">
-      <thead><tr><th>판정 방식</th><th>패킷 오수락</th><th class="num">L90 CIR 추정 Λ̂</th><th class="num">L90 원시 샘플 Λ</th><th>한 프래그먼트 공격</th></tr></thead>
+      <thead><tr><th>판정 방식</th><th>패킷 오수락</th><th class="num">L90 / L99 CIR 추정 Λ̂</th><th class="num">L90 / L99 원시 샘플 Λ</th><th>한 프래그먼트 공격</th></tr></thead>
       <tbody>
-        <tr><td>이전 기준 (프래그먼트 하나, 1e-3)</td><td>보장 없음</td><td class="num">−109.6</td><td class="num">−112.0</td><td>–</td></tr>
-        <tr><td>프래그먼트마다 1e-3 판정, 8개 모두 통과</td><td>약 10⁻²⁴</td><td class="num">−108.2</td><td class="num">−110.6</td><td>이른 가짜 피크는 못 잡음</td></tr>
-        <tr><td>8개 모두 통과 (예산 0.178)</td><td>10⁻⁶</td><td class="num">−111.3</td><td class="num">−112.5</td><td>빈 프래그먼트면 대부분 거부 (약 90%)</td></tr>
-        <tr><td>8개 중 6개 이상</td><td>10⁻⁶</td><td class="num">−112.5</td><td class="num">−114.1</td><td>2개까지 빠져도 통과</td></tr>
-        <tr><td>소프트 합</td><td>10⁻⁶</td><td class="num">−116.7</td><td class="num">−117.6</td><td>한 줄의 가짜 탭은 합에서 희석</td></tr>
-        <tr class="pick"><td>소프트 합 + 일관성 (F = 1)</td><td>≤ 10⁻⁶</td><td class="num">−116.5</td><td class="num">−117.3</td><td>빈 프래그먼트를 약 40% 폐기</td></tr>
+        <tr><td>이전 기준 (프래그먼트 하나, 1e-3)</td><td>보장 없음</td><td class="num">−109.6 / −108.1</td><td class="num">−112.0 / −110.4</td><td>–</td></tr>
+        <tr><td>프래그먼트마다 1e-3 판정, 8개 모두 통과</td><td>약 10⁻²⁴</td><td class="num">−108.2 / −107.2</td><td class="num">−110.6 / −109.7</td><td>이른 가짜 피크는 못 잡음</td></tr>
+        <tr><td>8개 모두 통과 (예산 0.178)</td><td>10⁻⁶</td><td class="num">−111.3 / −110.1</td><td class="num">−112.5 / −111.4</td><td>빈 프래그먼트면 대부분 거부 (약 90%)</td></tr>
+        <tr><td>8개 중 6개 이상</td><td>10⁻⁶</td><td class="num">−112.5 / −111.7</td><td class="num">−114.1 / −113.1</td><td>2개까지 빠져도 통과</td></tr>
+        <tr><td>소프트 합</td><td>10⁻⁶</td><td class="num">−116.7 / −115.7</td><td class="num">−117.6 / −116.7</td><td>한 줄의 가짜 탭은 합에서 희석</td></tr>
+        <tr class="pick"><td>소프트 합 + 일관성 (F = 1)</td><td>≤ 10⁻⁶</td><td class="num">−116.5 / −115.5</td><td class="num">−117.3 / −116.0</td><td>빈 프래그먼트를 약 40% 폐기</td></tr>
       </tbody>
     </table></div>
     <figcaption>"하나라도 공격받으면 폐기"는 타당한 정책입니다. 다만 프래그먼트마다 1e-3으로 판정해 8개 모두 통과를 요구하면 감도를 약 8.5 dB 잃습니다. 하나가 탈락하는 가장 흔한 원인은 공격이 아니라 낮은 SNR이기 때문입니다. 게다가 실제 위협인 이른 가짜 피크(진짜 신호 위에 덧붙임)에서는 그 프래그먼트가 여전히 유효로 나와 이 방식으로 걸러지지 않습니다. 키 없는 공격자는 프래그먼트를 유효로 만들 수 없으므로, 존재 판정은 소프트 합에 맡기고 "비어 있는 프래그먼트"는 일관성 검사로 걸러 냅니다. 고정 하한 F = 1은 비용이 0.2 dB이지만, 빈 프래그먼트의 값이 1 미만일 확률이 39%라 그만큼만 잡습니다. F를 4로 올리면 86%를 잡는 대신 감도를 1.7~2.3 dB 잃습니다. 높은 SNR에서 다른 프래그먼트와 비교하는 상대 기준이 남은 과제입니다.</figcaption>
@@ -814,15 +815,15 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
     <figure class="plate main" style="flex-basis:400px">
       <h3>RIF 1개 설정 (프래그먼트 10⁻⁶)</h3>
       <div class="tbl-wrap"><table>
-        <thead><tr><th class="num">길이</th><th class="num">CIR 추정 Λ̂</th><th class="num">원시 샘플 Λ</th><th class="num">점수 방식</th></tr></thead>
+        <thead><tr><th class="num">길이</th><th class="num">CIR 추정 Λ̂</th><th class="num">원시 샘플 Λ</th><th class="num">점수 방식</th></tr><tr><th></th><th class="num">L90 / L99</th><th class="num">L90 / L99</th><th class="num">L90 / L99</th></tr></thead>
         <tbody>
-          <tr><td class="num">32</td><td class="num">−106.1</td><td class="num">−110.2</td><td class="num">−108.9</td></tr>
-          <tr><td class="num">64</td><td class="num">−109.1</td><td class="num">−113.2</td><td class="num">−109.4</td></tr>
-          <tr><td class="num">128</td><td class="num">−111.4</td><td class="num">−115.4</td><td class="num">−109.8</td></tr>
-          <tr><td class="num">256</td><td class="num">−111.1</td><td class="num">−115.2</td><td class="num">−110.0</td></tr>
+          <tr><td class="num">32</td><td class="num">−106.1 / −104.8</td><td class="num">−110.2 / −109.1</td><td class="num">−108.9 / −107.7</td></tr>
+          <tr><td class="num">64</td><td class="num">−109.1 / −107.8</td><td class="num">−113.2 / −112.0</td><td class="num">−109.4 / −108.5</td></tr>
+          <tr><td class="num">128</td><td class="num">−111.4 / −110.1</td><td class="num">−115.4 / −114.3</td><td class="num">−109.8 / −109.1</td></tr>
+          <tr><td class="num">256</td><td class="num">−111.1 / −109.8</td><td class="num">−115.2 / −114.1</td><td class="num">−110.0 / −109.5</td></tr>
         </tbody>
       </table></div>
-      <figcaption>L90 [dBm]. 결합할 프래그먼트가 없으면 문턱을 프래그먼트 하나에서 10⁻⁶에 맞춰야 해서 Λ는 1.8 dB, Λ̂는 3.4 dB를 잃습니다. CIR 추정 Λ̂ 32심볼은 일반 모드 점수 방식(기존 문서 환산값, 세그먼트 하나)보다 나빠, 1개 설정에서는 64심볼 이상을 권합니다. 10⁻⁶은 프래그먼트 꼬리를 세 자릿수 외삽해야 확인되고, 프래그먼트끼리 비교하는 일관성 검사도 할 수 없습니다.</figcaption>
+      <figcaption>L90 / L99 [dBm]. 점수 방식의 L99는 기존 문서의 환산 L90에 모델의 (L99 − L90)을 더한 값입니다. 결합할 프래그먼트가 없으면 문턱을 프래그먼트 하나에서 10⁻⁶에 맞춰야 해서 Λ는 1.8 dB, Λ̂는 3.4 dB를 잃습니다. CIR 추정 Λ̂ 32심볼은 일반 모드 점수 방식(기존 문서 환산값, 세그먼트 하나)보다 나빠, 1개 설정에서는 64심볼 이상을 권합니다. 10⁻⁶은 프래그먼트 꼬리를 세 자릿수 외삽해야 확인되고, 프래그먼트끼리 비교하는 일관성 검사도 할 수 없습니다.</figcaption>
     </figure>
   </div>
 
@@ -1123,10 +1124,10 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     {label:'−82.5 dBm · 멀티패스 τ20',full:'틀린 키 −82.5 dBm, 멀티패스 τrms 20 ns 확산 우세',n:60000,kMD:1819,kZq:249,kL:31}
   ];
   var SENS = [
-    {N:32, score:-108.9, safe:-105.96, md:-111.34, lam:-111.93},
-    {N:64, score:-109.4, safe:-108.87, md:-114.22, lam:-114.86},
-    {N:128,score:-109.8, safe:-111.22, md:-116.56, lam:-117.17},
-    {N:256,score:-110.0, safe:-110.88, md:-116.19, lam:-116.85}
+    {N:32, score:-108.9, safe:-105.96, md:-111.34, lam:-111.93, lam99:-110.55, md99:-109.90, safe99:-105.00, score99:-107.7},
+    {N:64, score:-109.4, safe:-108.87, md:-114.22, lam:-114.86, lam99:-113.51, md99:-112.78, safe99:-107.85, score99:-108.5},
+    {N:128,score:-109.8, safe:-111.22, md:-116.56, lam:-117.17, lam99:-115.79, md99:-115.07, safe99:-110.15, score99:-109.1},
+    {N:256,score:-110.0, safe:-110.88, md:-116.19, lam:-116.85, lam99:-115.53, md99:-114.80, safe99:-109.80, score99:-109.5}
   ];
   /* H1: [dBm, n, kMD, kLocMD, loMD, hiMD, kL, kLocL, loL, hiL]  (AWGN, 32 symbols)            */
   /*     multipath rows carry the channel name first                                         */
@@ -1863,42 +1864,52 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
   }
 
   /* ------------------------------------------------------------------ R3: sensitivity */
+  var R3LV = 'L90';
+  function r3Wire() {
+    var bs = document.querySelectorAll('#r3-lv button');
+    Array.prototype.forEach.call(bs, function (b) { b.addEventListener('click', function () {
+      R3LV = b.getAttribute('data-lv'); Array.prototype.forEach.call(bs, function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.getElementById('r3-lvname').textContent = R3LV === 'L99' ? '99% 검출 레벨 L99' : '90% 검출 레벨 L90'; r3Draw(); }); });
+  }
   function r3Draw() {
     var svg = document.getElementById('r3-svg'); clear(svg);
+    var v = function (s, k) { return R3LV === 'L99' ? s[k + '99'] : s[k]; };
     var W = 760, rowH = 50, mt = 14, mb = 46, ml = 90, mr = 24, H = mt + mb + rowH * SENS.length;
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-    var X = lin(-119, -104, ml, W - mr);
-    for (var xt = -118; xt <= -104; xt += 2) {
+    var X = lin(-119, -102, ml, W - mr);
+    for (var xt = -118; xt <= -102; xt += 2) {
       el('line', {x1: X(xt), x2: X(xt), y1: mt, y2: H - mb, 'class': 'gl'}, svg);
       txt(svg, X(xt), H - mb + 18, minus(xt), 'tick', 'middle');
     }
-    txt(svg, (ml + W - mr) / 2, H - 6, 'L90 (dBm) · 왼쪽일수록 약한 신호까지 검출', 'axt', 'middle');
+    txt(svg, (ml + W - mr) / 2, H - 6, R3LV + ' (dBm) · 왼쪽일수록 약한 신호까지 검출', 'axt', 'middle');
     SENS.forEach(function (s, i) {
       var y = mt + rowH * i + rowH / 2;
       el('line', {x1: ml, x2: W - mr, y1: y + rowH / 2, y2: y + rowH / 2, 'class': 'gl'}, svg);
       txt(svg, ml - 14, y + 4, s.N + '심볼', 'lab', 'end');
-      el('line', {x1: X(s.lam), x2: X(s.safe), y1: y, y2: y, 'class': 'axl'}, svg);
-      el('line', {x1: X(s.score), x2: X(s.score), y1: y - 10, y2: y + 10, 'class': 'inks', 'stroke-width': 2}, svg);
-      marker(svg, 'tri', X(s.safe), y, 's3f');
-      marker(svg, 'circle', X(s.md), y, 's2f');
-      marker(svg, 'sq', X(s.lam), y, 's1f');
-      txt(svg, X(s.lam) - 9, y + 4, minus(s.lam.toFixed(1)), 'labs', 'end');
+      var lam = v(s, 'lam'), md = v(s, 'md'), safe = v(s, 'safe'), score = v(s, 'score');
+      el('line', {x1: X(lam), x2: X(safe), y1: y, y2: y, 'class': 'axl'}, svg);
+      el('line', {x1: X(score), x2: X(score), y1: y - 10, y2: y + 10, 'class': 'inks', 'stroke-width': 2}, svg);
+      marker(svg, 'tri', X(safe), y, 's3f');
+      marker(svg, 'circle', X(md), y, 's2f');
+      marker(svg, 'sq', X(lam), y, 's1f');
+      txt(svg, X(lam) - 9, y + 4, minus(lam.toFixed(1)), 'labs', 'end');
       var hit = el('rect', {x: ml, y: y - rowH / 2, width: W - ml - mr, height: rowH, 'class': 'hit'}, svg);
       hit.addEventListener('pointermove', function (ev) {
-        showTip(ev, [{key: keySvg('sq', 's1f'), v: minus(s.lam.toFixed(2)) + ' dBm', l: 'Λ'},
-                     {key: keySvg('dot', 's2f'), v: minus(s.md.toFixed(2)) + ' dBm', l: 'Z 판정기'},
-                     {key: keySvg('tri', 's3f'), v: minus(s.safe.toFixed(2)) + ' dBm', l: 'Z 판정기 안전 단일 문턱'},
-                     {key: keySvg('tick', 'inks'), v: minus(s.score.toFixed(1)) + ' dBm', l: '점수 방식 (실측)'}], s.N + '심볼 L90');
+        showTip(ev, [{key: keySvg('sq', 's1f'), v: minus(lam.toFixed(2)) + ' dBm', l: 'Λ'},
+                     {key: keySvg('dot', 's2f'), v: minus(md.toFixed(2)) + ' dBm', l: 'Z 판정기'},
+                     {key: keySvg('tri', 's3f'), v: minus(safe.toFixed(2)) + ' dBm', l: 'Z 판정기 안전 단일 문턱'},
+                     {key: keySvg('tick', 'inks'), v: minus(score.toFixed(1)) + ' dBm', l: R3LV === 'L99' ? '점수 방식 (환산값 + 모델 L99−L90)' : '점수 방식 (환산값)'}], s.N + '심볼 ' + R3LV);
       });
       hit.addEventListener('pointerleave', hideTip);
     });
     var tb = document.getElementById('r3-tbl'); clear(tb);
     var hd = tb.createTHead().insertRow();
-    ['길이', 'Λ', 'Z 판정기', 'Z 판정기 안전 단일', '점수 방식', 'Λ − 점수 방식'].forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
+    ['길이 (각 칸 L90 / L99)', 'Λ', 'Z 판정기', 'Z 판정기 안전 단일', '점수 방식', 'Λ − 점수 방식'].forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
     var bd2 = tb.createTBody();
     SENS.forEach(function (s) {
       var r = bd2.insertRow(), c0 = r.insertCell(); c0.textContent = s.N + '심볼';
-      [s.lam.toFixed(2), s.md.toFixed(2), s.safe.toFixed(2), s.score.toFixed(1), (s.score - s.lam).toFixed(1) + ' dB'].forEach(function (v) { var c = r.insertCell(); c.className = 'num'; c.textContent = minus(v); });
+      [s.lam.toFixed(2) + ' / ' + s.lam99.toFixed(2), s.md.toFixed(2) + ' / ' + s.md99.toFixed(2), s.safe.toFixed(2) + ' / ' + s.safe99.toFixed(2),
+       s.score.toFixed(1) + ' / ' + s.score99.toFixed(1), (s.score - s.lam).toFixed(1) + ' / ' + (s.score99 - s.lam99).toFixed(1) + ' dB'].forEach(function (v) { var c = r.insertCell(); c.className = 'num'; c.textContent = minus(v); });
     });
   }
 
@@ -2728,6 +2739,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
   /* ------------------------------------------------------------------ R8: packet Pd per rule (statistical model, lambda_patch/model/medium_level.py, policy_k8.py) */
   var PKD = {"h1":{"dBm":[-122,-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106],"n":[3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996,3996],"x":{"soft":[0.0283,0.0976,0.277,0.5631,0.8388,0.975,0.9987,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"k2":[0.0003,0.0,0.0008,0.0015,0.009,0.0628,0.242,0.6289,0.9177,0.9952,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"and":[0.0,0.0,0.0,0.0,0.0013,0.0085,0.0561,0.243,0.535,0.8318,0.9652,0.9965,1.0,1.0,1.0,1.0,1.0],"single":[0.0,0.0,0.0003,0.0008,0.0028,0.0048,0.0135,0.044,0.1131,0.2472,0.5145,0.751,0.9392,0.9915,0.9997,1.0,1.0],"cur":[0.004,0.0083,0.015,0.0288,0.0566,0.1086,0.1939,0.3481,0.5323,0.74,0.9069,0.9762,0.998,0.9997,1.0,1.0,1.0]},"c":{"soft":[0.0088,0.0333,0.1059,0.2795,0.5641,0.8586,0.9807,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"k2":[0.0,0.0,0.0,0.0003,0.0003,0.003,0.0323,0.1594,0.4532,0.8168,0.9835,0.9995,1.0,1.0,1.0,1.0,1.0],"and":[0.0,0.0,0.0,0.0,0.0,0.0003,0.0063,0.0498,0.1889,0.4737,0.786,0.9439,0.9952,0.9995,1.0,1.0,1.0],"single":[0.0,0.0,0.0,0.0,0.0,0.0003,0.0003,0.0018,0.0028,0.0095,0.0285,0.0648,0.1547,0.3043,0.5295,0.771,0.9249],"cur":[0.0008,0.0018,0.0048,0.007,0.0143,0.0233,0.047,0.0933,0.1784,0.2985,0.494,0.6754,0.8616,0.9565,0.9925,0.9992,1.0]}},"pol":{"dBm":[-121,-120,-119,-118,-117,-116,-115,-114,-113,-112,-111,-110,-109,-108,-107,-106,-105,-104],"n":[3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000],"x":{"strict":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0093,0.0917,0.453,0.832,0.9847,0.9993,1.0,1.0,1.0,1.0,1.0],"soft1":[0.0847,0.225,0.508,0.7977,0.9527,0.9863,0.9967,0.9993,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]},"c":{"strict":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0043,0.057,0.2967,0.717,0.9403,0.9937,1.0,1.0,1.0],"soft1":[0.0253,0.0883,0.2577,0.5577,0.83,0.9657,0.9967,0.999,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]}}};
   var r8State = {chip: 'c'};
+  var L99R = {"c":{"soft":-115.69,"soft1":-115.46,"k2":-111.66,"and":-110.1,"strict":-107.15,"single":-104.75,"cur":-108.12},"x":{"soft":-116.66,"soft1":-116.01,"k2":-113.13,"and":-111.38,"strict":-109.66,"single":-109.07,"cur":-110.59}};   /* L99 per rule (model/l99.py: 0.5 dB grid, 6,000 packets per power; soft and single from the pooled run) */
   var R8SER = [
     {k: 'soft', src: 'h1', line: 's1s', mk: 'sq', mc: 's1f', key: 'sq', name: '소프트 합'},
     {k: 'soft1', src: 'pol', line: 's1s dash', mk: 'sqo', mc: '', key: 'sq', name: '소프트 + 일관성'},
@@ -2807,7 +2819,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     var cap = document.getElementById('r8-cap');
     cap.textContent = 'L90 (' + (chip === 'c' ? 'CIR 추정 Λ̂' : '원시 샘플 Λ') + '): ' + R8SER.map(function (s) {
       return s.name.split(':')[0].split(' (')[0] + ' ' + (isNaN(L[s.k]) ? '–' : minus(L[s.k].toFixed(1)));
-    }).join(' · ') + ' dBm. 소프트 합은 프래그먼트 하나하나가 약한 세기에서도 8개의 증거를 모아 판정하므로, ' +
+    }).join(' · ') + ' dBm. L99: ' + R8SER.map(function (s) { return s.name.split(':')[0].split(' (')[0] + ' ' + minus(L99R[chip][s.k].toFixed(1)); }).join(' · ') + ' dBm(L99 부근을 0.5 dB 간격, 세기당 6,000패킷으로 다시 돌린 값). 소프트 합은 프래그먼트 하나하나가 약한 세기에서도 8개의 증거를 모아 판정하므로, ' +
       '이전 기준(프래그먼트 하나)보다 약 ' + (L.cur - L.soft).toFixed(1) + ' dB 좋습니다. 프래그먼트마다 1e-3으로 판정해 8개 모두를 요구하면 오히려 이전 기준보다 나빠집니다. ' +
       '모든 방식이 패킷 오수락 10⁻⁶ 이하를 지키며(이전 기준 제외), 이동 탐색(후보 7개)을 켜면 소프트 계열이 약 0.3 dB 물러납니다.';
     var tb = document.getElementById('r8-tbl'); clear(tb);
@@ -2825,13 +2837,15 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     });
     var trL = body.insertRow(), cL = trL.insertCell(); cL.className = 'num'; cL.textContent = 'L90';
     R8SER.forEach(function (s) { var td = trL.insertCell(); td.className = 'num'; td.textContent = isNaN(L[s.k]) ? '–' : minus(L[s.k].toFixed(2)); });
+    var tr9 = body.insertRow(), c9 = tr9.insertCell(); c9.className = 'num'; c9.textContent = 'L99';
+    R8SER.forEach(function (s) { var td = tr9.insertCell(); td.className = 'num'; td.textContent = minus(L99R[chip][s.k].toFixed(2)); });
   }
 
   /* ------------------------------------------------------------------ boot & theme */
   function redrawCanvases() { w2Draw(); w3Draw(); }
   function boot() {
     w1Run(); drawCloud('d2a', false); drawCloud('d2b', true); w4Draw(); w5Update();
-    r1Draw(); r2Draw(); r3Draw(); r4Draw(); d5Draw(); w6Draw(); r5Draw(); r6Draw(); w7Wire(); w7Run(); r8Legend(); r8Draw(); r7Boot();
+    r1Draw(); r2Draw(); r3Wire(); r3Draw(); r4Draw(); d5Draw(); w6Draw(); r5Draw(); r6Draw(); w7Wire(); w7Run(); r8Legend(); r8Draw(); r7Boot();
     w2Run(); w3Run();
   }
   if (window.matchMedia) {

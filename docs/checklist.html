@@ -502,8 +502,9 @@ res2 = run_synthetic_test('D:/rif_test2');                            % 그대�
 Rx = h1_pd_analyze('D:/rif_test5/h1_wide', 'Chip', 'new',   'Profile', 'fira-medium');   % Λ (5열만)
 Rc = h1_pd_analyze('D:/rif_test5/h1_wide', 'Chip', 'fixed', 'Profile', 'fira-medium');   % Λ̂
 R2 = h1_pd_analyze('D:/rif_test2/h1_wide', 'Chip', 'fixed', 'Profile', 'fira-medium');   % Λ̂, 2열
-[Rx.pkt.L90, Rc.pkt.L90, R2.pkt.L90]</code></pre></div>
-    <dl class="expect"><dt>세트</dt><dd>32심볼 기준 −104 ~ −126 dBm, 1 dB 간격. −114 ~ −122 dBm은 세기당 800개(100패킷), 나머지 200개. 다른 길이는 S만큼 옮기고, 길이·형식·CFO는 루트의 <code>synthetic_set.txt</code>에서 읽습니다(파일이 없는 예전 2열 세트는 <code>'Cols', 2</code>).</dd><dt>기대</dt><dd>32심볼 Λ −117.6, Λ̂ −116.7 dBm 근처, ±1.5 dB 안이면 정상. 2열의 Λ̂ L90은 5열과 정확히 같아야 합니다. <code>run_synthetic_test</code>는 <code>h1_wide</code>를 읽지 않아 94/94, 49/49가 그대로여야 합니다.</dd><dt>시간</dt><dd>생성은 32심볼 세트 하나(8,100개)와 비슷한 규모로 수 분. 64·128·256심볼은 약 2·4·8배</dd></dl>
+[Rx.pkt.L90, Rc.pkt.L90, R2.pkt.L90]
+[Rx.pkt.L99, Rc.pkt.L99, R2.pkt.L99]                 % L99: 참고 (판정하지 않음)</code></pre></div>
+    <dl class="expect"><dt>세트</dt><dd>32심볼 기준 −104 ~ −126 dBm, 1 dB 간격. −114 ~ −122 dBm은 세기당 800개(100패킷), 나머지 200개. 다른 길이는 S만큼 옮기고, 길이·형식·CFO는 루트의 <code>synthetic_set.txt</code>에서 읽습니다(파일이 없는 예전 2열 세트는 <code>'Cols', 2</code>).</dd><dt>기대</dt><dd>32심볼 Λ −117.6, Λ̂ −116.7 dBm 근처, ±1.5 dB 안이면 정상. 2열의 Λ̂ L90은 5열과 정확히 같아야 합니다. L99는 전이 구간이 세기당 100패킷이라 참고로만 적습니다(32심볼 모델 Λ −116.7, Λ̂ −115.7 dBm). <code>run_synthetic_test</code>는 <code>h1_wide</code>를 읽지 않아 94/94, 49/49가 그대로여야 합니다.</dd><dt>시간</dt><dd>생성은 32심볼 세트 하나(8,100개)와 비슷한 규모로 수 분. 64·128·256심볼은 약 2·4·8배</dd></dl>
     <details class="guide">
       <summary>길이별 기대값 (모델)</summary>
       <div class="tbl-wrap"><table>
@@ -512,10 +513,11 @@ R2 = h1_pd_analyze('D:/rif_test2/h1_wide', 'Chip', 'fixed', 'Profile', 'fira-med
           <tr><td>원시 샘플 Λ (5열)</td><td class="num">−117.6</td><td class="num">−120.5</td><td class="num">−122.8</td><td class="num">−122.5</td></tr>
           <tr><td>CIR 추정 Λ̂</td><td class="num">−116.7</td><td class="num">−119.5</td><td class="num">−121.9</td><td class="num">−121.5</td></tr>
           <tr><td>Octave 사전 확인 Λ / Λ̂</td><td class="num">−117.15 / −116.62</td><td class="num">−120.20 / −119.32</td><td class="num">−122.50 / −121.70</td><td class="num">−122.12 / −121.64</td></tr>
+          <tr><td>소프트 패킷 L99 Λ / Λ̂ (참고)</td><td class="num">−116.7 / −115.7</td><td class="num">−119.6 / −118.6</td><td class="num">−121.9 / −120.9</td><td class="num">−121.6 / −120.6</td></tr>
           <tr><td><code>h1_wide</code> 세기 범위</td><td class="num">−104 … −126</td><td class="num">−107 … −129</td><td class="num">−109 … −131</td><td class="num">−109 … −131</td></tr>
         </tbody>
       </table></div>
-      <p class="hint">모델 값은 32심볼이 설계 문서 9.3절, 64·128·256심볼이 <code>model/length_l90.py</code>의 결과입니다(이동 탐색 없음, 잔여 CFO 0.25 ppm). Octave 사전 확인은 같은 생성기와 <code>h1_pd_analyze</code>를 Octave 10.3에서 돌린 값으로, 모델과 −0.13 ~ +0.45 dB 차이입니다. Λ는 네 길이 모두 모델보다 0.3~0.45 dB 나쁘게 나왔고 원인은 확인하지 않았습니다. MATLAB으로는 아직 재지 않았습니다.</p>
+      <p class="hint">모델 값은 32심볼이 설계 문서 9.3절, 64·128·256심볼이 <code>model/length_l90.py</code>의 결과입니다(이동 탐색 없음, 잔여 CFO 0.25 ppm). Octave 사전 확인은 같은 생성기와 <code>h1_pd_analyze</code>를 Octave 10.3에서 돌린 값으로, 모델과 −0.13 ~ +0.45 dB 차이입니다. L99는 L99 부근을 0.5 dB 간격, 세기당 6,000패킷으로 다시 돌린 모델 값입니다(<code>model/l99.py</code>, 설계 문서 9.9절). Λ는 네 길이 모두 모델보다 0.3~0.45 dB 나쁘게 나왔고 원인은 확인하지 않았습니다. MATLAB으로는 아직 재지 않았습니다.</p>
     </details>
     <div class="rec"><label for="st-A-5">상태 · 결과</label><div class="fields"><div class="row"><select id="st-A-5"></select><span class="meta" id="mt-A-5"></span></div><textarea id="nt-A-5" placeholder="예: N32 Λ −117.4, Λ̂ −116.5 (2열 같음), 94/94·49/49 그대로"></textarea></div></div>
   </article>
@@ -622,8 +624,9 @@ R0p = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Chip', 'fixed', 'Profi
 R1c = h1_pd_analyze('D:/rif/h1_awgn', 'Moments', 'cir');        % Λ̂ 프래그먼트
 R1p = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
 R1a = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Combine', 'kofn', 'KofN', 6);
-R1p.pkt.L90, R1a.pkt.L90, R1c.L90</code></pre></div>
-    <dl class="expect"><dt>기준</dt><dd>Λ̂ 소프트 패킷 L90 32심볼 약 −116.7, 256심볼 약 −121.5 dBm(이동 탐색 시 약 0.3 dB 덜함). 32심볼은 프래그먼트 Λ̂ L90(−109.6)보다 6 dB 이상 좋을 것. 패킷 위치 정확도 ≥ 98%</dd><dt>참고</dt><dd>6-of-8 약 −112.5 dBm. 프래그먼트: Z 판정기 −111.3(실측 −111.9), Λ̂ −109.6(LLS 약 −110.1 예상), Z 판정기 대비 손해 ≤ 2.5 dB</dd></dl>
+R1p.pkt.L90, R1a.pkt.L90, R1c.L90
+R1p.pkt.L99, R1a.pkt.L99, R1c.L99                               % L99 (Pd 99%)</code></pre></div>
+    <dl class="expect"><dt>기준</dt><dd>Λ̂ 소프트 패킷 L90 32심볼 약 −116.7, 256심볼 약 −121.5 dBm(이동 탐색 시 약 0.3 dB 덜함). 32심볼은 프래그먼트 Λ̂ L90(−109.6)보다 6 dB 이상 좋을 것. 패킷 위치 정확도 ≥ 98%</dd><dt>참고</dt><dd>6-of-8 약 −112.5 dBm. 프래그먼트: Z 판정기 −111.3(실측 −111.9), Λ̂ −109.6(LLS 약 −110.1 예상), Z 판정기 대비 손해 ≤ 2.5 dB</dd><dt>L99</dt><dd>모델: Λ̂ 소프트 패킷 32 / 64 / 128 / 256심볼 −115.7 / −118.6 / −120.9 / −120.6 dBm(L90보다 약 1 dB 위), 6-of-8 −111.7, 프래그먼트 Λ̂ −108.1, Z 판정기 −109.9 dBm. ±1.5 dB 안이면 정상(세기당 500패킷이면 한 점 흔들림 약 0.2 dB)</dd></dl>
     <div class="rec"><label for="st-B-H1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-H1"></select><span class="meta" id="mt-B-H1"></span></div><textarea id="nt-B-H1" placeholder="예: 소프트 −116.4, 6-of-8 −112.3, Λ̂ 프래그먼트 −110.0, 위치 99%"></textarea></div></div>
   </article>
 
@@ -721,8 +724,9 @@ R0nm = h0_pfa_analyze('D:/rif5/h0_mp', 'Suggest', false, 'Chip', 'new', 'Profile
     <div class="cmd-box"><pre class="cmd"><code>R1  = h1_pd_analyze('D:/rif5/h1_awgn');
 R1c = h1_pd_analyze('D:/rif5/h1_awgn', 'Moments', 'cir');
 R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
-R1n.pkt.L90, R1.L90, R1c.L90</code></pre></div>
-    <dl class="expect"><dt>합격</dt><dd>원시 샘플 Λ 패킷 L90이 CIR 추정 Λ̂ 패킷보다 나쁘지 않을 것 (Λ −117.6 / Λ̂ −116.7 dBm)</dd><dt>진단</dt><dd>프래그먼트 Λ가 Z 판정기보다 약 0.6 dB 좋음, Λ̂는 raw 대비 손해 1.5~3.5 dB, AWGN 위치 정확도 ≥ 98%</dd></dl>
+R1n.pkt.L90, R1.L90, R1c.L90
+R1n.pkt.L99, R1.L99, R1c.L99                 % L99 (Pd 99%)</code></pre></div>
+    <dl class="expect"><dt>합격</dt><dd>원시 샘플 Λ 패킷 L90이 CIR 추정 Λ̂ 패킷보다 나쁘지 않을 것 (Λ −117.6 / Λ̂ −116.7 dBm). L99도 같은 순서 (Λ −116.7 / Λ̂ −115.7 dBm, 진단)</dd><dt>진단</dt><dd>프래그먼트 Λ가 Z 판정기보다 약 0.6 dB 좋음, Λ̂는 raw 대비 손해 1.5~3.5 dB, AWGN 위치 정확도 ≥ 98%</dd></dl>
     <div class="rec"><label for="st-D-H1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-D-H1"></select><span class="meta" id="mt-D-H1"></span></div><textarea id="nt-D-H1" placeholder="예: Λ −117.3, Λ̂ −116.5"></textarea></div></div>
   </article>
 </section>
@@ -734,7 +738,7 @@ R1n.pkt.L90, R1.L90, R1c.L90</code></pre></div>
     <li>A-3의 <code>true</code> 네 줄과 A-P의 결과. A-W를 했다면 <code>rif_results.json</code></li>
     <li>B-0의 <code>A.drift</code>, <code>A.suggest.Drift</code>, <code>A.layout</code>, <code>A.agc</code>: 이동 후보 확정(결정 5)</li>
     <li>B-CH 확인 결과와 B-H0-4 패킷 표의 꼬리 비율(P = 1e-2 / 1e-3 / 1e-4)·수락 수: 결정 1 유지 판단</li>
-    <li>단계 B의 나머지 표와 그림: <code>h0_pfa_analyze</code>의 "Packet decision" 표, <code>h1_pd_analyze</code>의 패킷 L90</li>
+    <li>단계 B의 나머지 표와 그림: <code>h0_pfa_analyze</code>의 "Packet decision" 표, <code>h1_pd_analyze</code>의 패킷 L90·L99</li>
     <li>C++ 수정 뒤 C-1 표의 값, 그다음 단계 D의 표</li>
   </ol>
   <p class="hint">이 페이지에 적은 메모는 "결과 요약 복사"로 한 번에 옮길 수 있습니다. 공유 기록에 연결된 페이지라면 Claude가 직접 읽을 수도 있습니다.</p>

@@ -468,6 +468,26 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
     </table>
   </div>
 
+  <h3>참고: 길이별 모델 L99 [dBm]</h3>
+  <p class="prose">같은 규칙의 L99(Pd 99%)입니다. L99 부근을 0.5 dB 간격, 세기당 6,000패킷으로 다시 돌렸습니다(<code>model/l99.py</code>, 설계 문서 9.9절). L99도 길이에 따라 L90과 거의 같은 양만큼 옮겨 가므로(규칙별 이동 64 / 128 / 256심볼: −2.9 ~ −3.0 / −5.2 ~ −5.3 / −4.8 ~ −5.2 dB) 세기 이동 규칙은 그대로 둡니다. 합성 시험은 L99를 판정하지 않습니다.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>판정 규칙</th><th class="num">32</th><th class="num">64</th><th class="num">128</th><th class="num">256</th></tr></thead>
+      <tbody>
+        <tr><td>Z 판정기, 프래그먼트</td><td class="num">−109.8</td><td class="num">−112.7</td><td class="num">−115.1</td><td class="num">−114.7</td></tr>
+        <tr><td>Λ, 프래그먼트 1e-3</td><td class="num">−110.6</td><td class="num">−113.5</td><td class="num">−115.9</td><td class="num">−115.5</td></tr>
+        <tr><td>Λ̂, 프래그먼트 1e-3</td><td class="num">−108.1</td><td class="num">−111.1</td><td class="num">−113.3</td><td class="num">−113.1</td></tr>
+        <tr><td>Λ, 1개 설정 10⁻⁶</td><td class="num">−109.0</td><td class="num">−112.0</td><td class="num">−114.3</td><td class="num">−114.0</td></tr>
+        <tr><td>Λ̂, 1개 설정 10⁻⁶</td><td class="num">−104.8</td><td class="num">−107.9</td><td class="num">−110.1</td><td class="num">−110.0</td></tr>
+        <tr><td>Λ, 패킷 AND</td><td class="num">−111.4</td><td class="num">−114.2</td><td class="num">−116.6</td><td class="num">−116.3</td></tr>
+        <tr><td>Λ̂, 패킷 AND</td><td class="num">−110.1</td><td class="num">−113.0</td><td class="num">−115.3</td><td class="num">−115.1</td></tr>
+        <tr><td>Λ, 패킷 soft</td><td class="num">−116.7</td><td class="num">−119.6</td><td class="num">−121.9</td><td class="num">−121.5</td></tr>
+        <tr><td>Λ̂, 패킷 soft</td><td class="num">−115.7</td><td class="num">−118.6</td><td class="num">−120.9</td><td class="num">−120.6</td></tr>
+        <tr><td>Z 판정기, 패킷 AND-8</td><td class="num">−109.0</td><td class="num">−112.0</td><td class="num">−114.2</td><td class="num">−113.9</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <h3>세기 이동 규칙</h3>
   <div class="note">
     <b>한 규칙으로 정함</b>
