@@ -15,7 +15,7 @@
 </script>
 <style>
 /* Layout: 68ch 본문 칼럼 + 최대 1080px 도판. 순서가 곧 논리인 10단계 해설이라 섹션 번호를 쓴다.
-   Color: 파랑 = 제안(Λ), 주황 = 기존 MD 규칙, 청록 = 정규화만(중간 단계). 빨강/초록은 상태(오검출/정상) 전용. */
+   Color: 파랑 = 제안(Λ), 주황 = 기존 Z 판정기, 청록 = 정규화만(중간 단계). 빨강/초록은 상태(오검출/정상) 전용. */
 :root{
   --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
   --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
@@ -223,11 +223,12 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
   <h1>RIF Λ 판정기</h1>
   <p class="lede prose">RIF 프래그먼트를 받았을 때, 맞는 키의 STS가 들어왔는지를 CIR만 보고 판정합니다. 기존 방식은 잡음 바닥을 CIR에서 <strong>추정</strong>했고, 수정 방식은 상관기에 들어간 원시 샘플에서 <strong>계산</strong>합니다. 이 페이지는 그 차이가 왜 결정적인지, 그리고 거리 측정 한 번에 쓰는 프래그먼트를 묶어 어떻게 오수락 10⁻⁶을 지키는지를 처음부터 순서대로 보여 줍니다.</p>
   <dl class="thesis">
-    <div class="wide"><dt>기준</dt><dd>요구사항은 거리 측정 한 번(패킷)의 오수락 <strong>10⁻⁶</strong>(FiRa medium)입니다(9장). 1~8장의 프래그먼트당 1e-3은 MD 문서의 내부 목표로, 패킷 보장의 구성 요소이자 MD 방식과 비교하는 진단 기준입니다.</dd></div>
+    <div class="wide"><dt>기준</dt><dd>요구사항은 거리 측정 한 번(패킷)의 오수락 <strong>10⁻⁶</strong>(FiRa medium)입니다(9장). 1~8장의 프래그먼트당 1e-3은 기존 문서의 내부 목표로, 패킷 보장의 구성 요소이자 Z 판정기와 비교하는 진단 기준입니다.</dd></div>
+    <div class="wide"><dt>용어</dt><dd><strong>원시 샘플 Λ</strong>는 Q·Π 누산기를 넣은 하드웨어의 판정기(MATLAB <code>'Chip', 'new'</code>, 5열 덤프), <strong>CIR 추정 Λ̂</strong>는 지금 하드웨어에서 쓰는 판정기(<code>'Chip', 'fixed'</code>, 2열 덤프), <strong>기존 Z 판정기</strong>는 기존 문서(<code>RIF_CIR_Validity_Detector.md</code>)의 2단 문턱 방식입니다(MATLAB 출력과 그림 범례의 <code>MD rule</code>). 설계 문서와 검증 계획의 "새 칩", "고정 칩", "MD 규칙"이 각각 이 셋입니다.</dd></div>
     <div><dt>문제</dt><dd>중간 세기의 틀린 키(약 −95~−76 dBm)와 멀티패스에서 기존 판정기의 프래그먼트 오검출률이 진단 기준 1e-3의 최대 약 56배까지 올라갑니다. 분포가 조건마다 달라 패킷으로 묶어도 보장이 생기지 않습니다.</dd></div>
     <div><dt>원인</dt><dd>바닥을 위상당 약 10개 탭으로 추정하고, 틀린 키 자기잡음은 복소 평면의 한 직선에 몰려(비원형) 꼬리가 무겁습니다.</dd></div>
-    <div><dt>해결</dt><dd>원시 샘플로 분산 Q와 의사분산 Π를 정확히 계산하고, 백색화한 Λ로 판정합니다. 문턱은 공식 하나로 정해집니다. Q·Π를 누적할 수 없는 고정 칩에서는 CIR에서 추정하는 변형을 씁니다(약 2.5 dB 손해).</dd></div>
-    <div><dt>패킷</dt><dd>거리 측정 한 번에 쓰는 RIF 8개를 묶어 FiRa medium(오수락 10⁻⁶)을 지킵니다. 소프트 결합이면 고정 칩에서도 감도가 프래그먼트 하나로 판정할 때보다 약 7 dB 좋습니다.</dd></div>
+    <div><dt>해결</dt><dd>원시 샘플로 분산 Q와 의사분산 Π를 정확히 계산하고, 백색화한 Λ로 판정합니다. 문턱은 공식 하나로 정해집니다. Q·Π를 누적할 수 없는 지금 하드웨어에서는 CIR에서 추정하는 변형을 씁니다(약 2.5 dB 손해).</dd></div>
+    <div><dt>패킷</dt><dd>거리 측정 한 번에 쓰는 RIF 8개를 묶어 FiRa medium(오수락 10⁻⁶)을 지킵니다. 소프트 결합이면 CIR 추정 Λ̂로도 감도가 프래그먼트 하나로 판정할 때보다 약 7 dB 좋습니다.</dd></div>
   </dl>
   <nav aria-label="목차">
     <ol class="toc">
@@ -238,7 +239,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
       <li><a href="#s5"><span class="n">5</span>백색화 Λ</a></li>
       <li><a href="#s6"><span class="n">6</span>문턱 계산</a></li>
       <li><a href="#s7"><span class="n">7</span>검증 결과</a></li>
-      <li><a href="#s8"><span class="n">8</span>고정 칩 대안</a></li>
+      <li><a href="#s8"><span class="n">8</span>CIR 추정 Λ̂</a></li>
       <li><a href="#s9"><span class="n">9</span>패킷 판정</a></li>
       <li><a href="#s10"><span class="n">10</span>적용 순서</a></li>
     </ol>
@@ -332,9 +333,9 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
 
 <!-- ============================================================ 2 -->
 <section class="sec" id="s2">
-  <div class="sec-head"><span class="sec-no">2</span><h2>기존 판정기 (MD 방식)</h2></div>
+  <div class="sec-head"><span class="sec-no">2</span><h2>기존 판정기 (Z 판정기)</h2></div>
   <div class="prose stack">
-    <p>MD 문서의 판정기는 피크를 바닥으로 나눈 값 Z로 판정하고, 빗의 깊이 D로 바닥의 종류를 가려 문턱을 바꿉니다.</p>
+    <p>기존 문서의 판정기는 피크를 바닥으로 나눈 값 Z로 판정하고, 빗의 깊이 D로 바닥의 종류를 가려 문턱을 바꿉니다.</p>
   </div>
   <div class="eq">F[e]  = mean{ |C[k]|² : k ∈ W_n, k mod 8 = e }      <span class="c">위상당 약 10개 탭</span>
 Z     = max_{k∈W_s} |C[k]|²  /  max_e F[e]
@@ -370,17 +371,17 @@ valid = Z ≥ ( D &lt; 10 dB ? 9.6 dB : 14.4 dB )        <span class="c">열잡�
       </div>
     </div>
     <div class="split">
-      <div class="main"><canvas id="w2-cv" data-h="380" role="img" aria-label="H0 프래그먼트의 D 대 Z 산점도와 MD 결정 경계"></canvas></div>
+      <div class="main"><canvas id="w2-cv" data-h="380" role="img" aria-label="H0 프래그먼트의 D 대 Z 산점도와 Z 판정기 결정 경계"></canvas></div>
       <div class="side">
         <div class="stats" id="w2-stats"></div>
         <div class="legend" style="flex-direction:column;gap:6px">
           <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="3.5" class="mutedf"/></svg>정상 거부된 H0 프래그먼트</span>
-          <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4.5" style="fill:var(--crit)"/></svg>MD 규칙이 valid로 판정 (오검출)</span>
-          <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="inks" style="stroke-width:1.6"/></svg>MD 결정 경계</span>
+          <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4.5" style="fill:var(--crit)"/></svg>Z 판정기가 valid로 판정 (오검출)</span>
+          <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="inks" style="stroke-width:1.6"/></svg>Z 판정기 결정 경계</span>
         </div>
       </div>
     </div>
-    <figcaption>세로선(D = 10 dB)의 왼쪽은 낮은 문턱 9.6 dB, 오른쪽은 높은 문턱 14.4 dB가 적용됩니다. −90~−76 dBm 근처로 옮기면 점들이 아직 D &lt; 10 dB에 머문 채 Z만 위로 크게 퍼지고, 빨간 점이 늘어납니다. 멀티패스로 바꾸면 −40 dBm처럼 강한 틀린 키도 왼쪽(낮은 문턱)으로 밀려옵니다. 같은 프래그먼트들에 수정 방식 Λ와, 고정 칩용 CIR 추정 Λ̂(8장)를 적용한 오검출 수를 오른쪽에 함께 표시합니다.</figcaption>
+    <figcaption>세로선(D = 10 dB)의 왼쪽은 낮은 문턱 9.6 dB, 오른쪽은 높은 문턱 14.4 dB가 적용됩니다. −90~−76 dBm 근처로 옮기면 점들이 아직 D &lt; 10 dB에 머문 채 Z만 위로 크게 퍼지고, 빨간 점이 늘어납니다. 멀티패스로 바꾸면 −40 dBm처럼 강한 틀린 키도 왼쪽(낮은 문턱)으로 밀려옵니다. 같은 프래그먼트들에 수정 방식 Λ와, CIR 추정 Λ̂(8장)를 적용한 오검출 수를 오른쪽에 함께 표시합니다.</figcaption>
   </figure>
 
   <div class="note">
@@ -410,10 +411,10 @@ valid = Z ≥ ( D &lt; 10 dB ? 9.6 dB : 14.4 dB )        <span class="c">열잡�
   <figure class="plate" id="w4">
     <h3>같은 평균 전력일 때 한 탭이 문턱을 넘을 확률</h3>
     <svg class="chart" id="w4-svg" viewBox="0 0 720 340" role="img" aria-label="원형 잡음과 비원형 잡음의 꼬리 확률 비교, 로그 축"></svg>
-    <figcaption>가로축은 문턱을 평균 전력의 배수로 나타낸 값 t입니다. 원형은 P = e^(−t) (자유도 2인 카이제곱), 비원형은 P = erfc(√(t/2)) (자유도 1)입니다. 기존 낮은 문턱 9.6 dB(t = 9.12)에서 비원형 쪽이 <strong id="w4-ratio">약 23배</strong> 더 자주 넘습니다. 잔여 CFO가 프래그먼트 동안 위상을 돌리면 직선이 퍼져 원형에 가까워집니다. MD 측정에서 256심볼(회전 3.3 rad)의 오검출이 0건이었던 이유이고, CFO를 보상하면 그 꼬리는 다시 무거워집니다.</figcaption>
+    <figcaption>가로축은 문턱을 평균 전력의 배수로 나타낸 값 t입니다. 원형은 P = e^(−t) (자유도 2인 카이제곱), 비원형은 P = erfc(√(t/2)) (자유도 1)입니다. 기존 낮은 문턱 9.6 dB(t = 9.12)에서 비원형 쪽이 <strong id="w4-ratio">약 23배</strong> 더 자주 넘습니다. 잔여 CFO가 프래그먼트 동안 위상을 돌리면 직선이 퍼져 원형에 가까워집니다. 기존 문서의 측정에서 256심볼(회전 3.3 rad)의 오검출이 0건이었던 이유이고, CFO를 보상하면 그 꼬리는 다시 무거워집니다.</figcaption>
   </figure>
   <div class="prose stack">
-    <p>이 실패는 프래그먼트 진단 기준(1e-3)에서 본 것입니다. 요구사항인 패킷 기준에서는 MD 방식도 8개 모두 통과로 묶으면 오수락이 p⁸로 작아지지만, 채널에 따라 p가 달라 보장이 없고 감도가 6.7 dB 나쁩니다(9장 "10⁻⁶을 어떻게 확인하나").</p>
+    <p>이 실패는 프래그먼트 진단 기준(1e-3)에서 본 것입니다. 요구사항인 패킷 기준에서는 Z 판정기도 8개 모두 통과로 묶으면 오수락이 p⁸로 작아지지만, 채널에 따라 p가 달라 보장이 없고 감도가 6.7 dB 나쁩니다(9장 "10⁻⁶을 어떻게 확인하나").</p>
   </div>
 </section>
 
@@ -427,7 +428,7 @@ valid = Z ≥ ( D &lt; 10 dB ? 9.6 dB : 14.4 dB )        <span class="c">열잡�
   <div class="eq">E |C[k]|²  =  Σ_n |z_n[k]|²   ≡  Q[k]      <span class="c">분산</span>
 E  C[k]²   =  Σ_n  z_n[k]²    ≡  Π[k]      <span class="c">의사분산: 비원형의 방향과 정도</span></div>
   <div class="prose stack">
-    <p>이 두 식은 채널, CFO, 세기, 간섭의 종류와 관계없이 성립합니다. MD 방식이 잡음 창의 <strong>탭 10개</strong>로 추정하던 바닥이, 상관기에 실제로 들어간 <strong>원시 샘플 M개</strong>(32심볼이면 3,968개)로 계산됩니다. 같은 위상 클래스의 탭은 같은 샘플 집합을 쓰므로, 하드웨어에서는 클래스당 누산기 몇 개면 됩니다.</p>
+    <p>이 두 식은 채널, CFO, 세기, 간섭의 종류와 관계없이 성립합니다. Z 판정기가 잡음 창의 <strong>탭 10개</strong>로 추정하던 바닥이, 상관기에 실제로 들어간 <strong>원시 샘플 M개</strong>(32심볼이면 3,968개)로 계산됩니다. 같은 위상 클래스의 탭은 같은 샘플 집합을 쓰므로, 하드웨어에서는 클래스당 누산기 몇 개면 됩니다.</p>
   </div>
 
   <figure class="plate">
@@ -550,7 +551,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
         <select id="w5-m"><option value="1">없음 (×1)</option><option value="1.5" selected>×1.5</option><option value="2">×2</option></select></div>
     </div>
     <div class="stats" id="w5-out"></div>
-    <figcaption>MD 방식의 9.6/14.4 dB는 몬테카를로로 맞춘 값이라 길이, 채널, CFO가 바뀌면 다시 맞춰야 했습니다. Λ의 문턱은 길이(32~256심볼), PRF, 신호 세기, 채널, CFO와 무관합니다. 신호 창을 두 배로 넓혀도 약 0.25 dB만 올라가므로, 거리 불확실성 때문에 창을 넓혀야 할 때도 부담이 작습니다. 이 계산기는 프래그먼트 하나의 문턱입니다. RIF가 1개인 구성은 Pfa 1e-6을 고르면 그대로 패킷 문턱(36.53)이고, RIF 8개를 묶는 패킷 문턱(소프트 결합 69.61)은 9장에 있습니다.</figcaption>
+    <figcaption>Z 판정기의 9.6/14.4 dB는 몬테카를로로 맞춘 값이라 길이, 채널, CFO가 바뀌면 다시 맞춰야 했습니다. Λ의 문턱은 길이(32~256심볼), PRF, 신호 세기, 채널, CFO와 무관합니다. 신호 창을 두 배로 넓혀도 약 0.25 dB만 올라가므로, 거리 불확실성 때문에 창을 넓혀야 할 때도 부담이 작습니다. 이 계산기는 프래그먼트 하나의 문턱입니다. RIF가 1개인 구성은 Pfa 1e-6을 고르면 그대로 패킷 문턱(36.53)이고, RIF 8개를 묶는 패킷 문턱(소프트 결합 69.61)은 9장에 있습니다.</figcaption>
   </figure>
 </section>
 
@@ -558,30 +559,30 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
 <section class="sec" id="s7">
   <div class="sec-head"><span class="sec-no">7</span><h2>검증 결과</h2></div>
   <div class="prose stack">
-    <p>모든 수치는 MD 측정값(열잡음 통계, L90)을 0.5 dB 이내로 재현하도록 맞춘 통계 모델과, 실제 ±1 시퀀스를 쓰는 파형 모델에서 나왔습니다. dBm은 MD 6장의 환산(−100 dBm에서 펄스당 SNR −11.4 dB)으로 바꾼 근사값입니다.</p>
-    <p>이 장은 프래그먼트 하나의 결과입니다. 그림의 "기준 1e-3"은 프래그먼트 진단 기준(MD 문서의 내부 목표)입니다. 요구사항인 패킷 10⁻⁶에서 중요한 것은 이 점추정보다 Λ의 꼬리가 χ²₂를 따른다는 성질이고, 그 성질 덕분에 9장에서 프래그먼트를 묶은 문턱을 공식으로 정할 수 있습니다.</p>
+    <p>모든 수치는 기존 문서의 측정값(열잡음 통계, L90)을 0.5 dB 이내로 재현하도록 맞춘 통계 모델과, 실제 ±1 시퀀스를 쓰는 파형 모델에서 나왔습니다. dBm은 기존 문서 6장의 환산(−100 dBm에서 펄스당 SNR −11.4 dB)으로 바꾼 근사값입니다.</p>
+    <p>이 장은 프래그먼트 하나의 결과입니다. 그림의 "기준 1e-3"은 프래그먼트 진단 기준(기존 문서의 내부 목표)입니다. 요구사항인 패킷 10⁻⁶에서 중요한 것은 이 점추정보다 Λ의 꼬리가 χ²₂를 따른다는 성질이고, 그 성질 덕분에 9장에서 프래그먼트를 묶은 문턱을 공식으로 정할 수 있습니다.</p>
   </div>
 
   <figure class="plate" id="r1">
     <h3>틀린 키 세기에 따른 오검출률 (32심볼, AWGN, 조건마다 60,000 프래그먼트)</h3>
     <div class="legend">
-      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="s2f"/></svg>MD 규칙 (2단 문턱)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="s2f"/></svg>Z 판정기 (2단 문턱)</span>
       <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="s1f"/></svg>Λ (T = 22.71)</span>
     </div>
-    <svg class="chart" id="r1-svg" viewBox="0 0 760 360" role="img" aria-label="틀린 키 세기에 따른 MD 규칙과 Λ의 프래그먼트당 오검출률"></svg>
-    <figcaption>음영 구간은 D 중앙값이 10 dB 미만이라 MD 규칙이 낮은 문턱(9.6 dB)을 쓰는 세기입니다. MD 규칙은 −84.5~−78.5 dBm에서 3.8e-2~5.6e-2까지 올라가고, 강한 쪽에서도 약 2.4e-3에 머뭅니다. Λ는 전 구간에서 2.5e-4~8.5e-4입니다.</figcaption>
+    <svg class="chart" id="r1-svg" viewBox="0 0 760 360" role="img" aria-label="틀린 키 세기에 따른 Z 판정기와 Λ의 프래그먼트당 오검출률"></svg>
+    <figcaption>음영 구간은 D 중앙값이 10 dB 미만이라 Z 판정기가 낮은 문턱(9.6 dB)을 쓰는 세기입니다. Z 판정기는 −84.5~−78.5 dBm에서 3.8e-2~5.6e-2까지 올라가고, 강한 쪽에서도 약 2.4e-3에 머뭅니다. Λ는 전 구간에서 2.5e-4~8.5e-4입니다.</figcaption>
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r1-tbl"></table></div></details>
   </figure>
 
   <figure class="plate" id="r2">
     <h3>조건별 오검출률: 무엇이 효과를 냈나</h3>
     <div class="legend">
-      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>MD 규칙</span>
+      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>Z 판정기</span>
       <span class="key"><svg viewBox="0 0 16 12"><path d="M8 1.5 L12.5 10 L3.5 10 Z" class="s3f"/></svg>정확한 정규화만 (|C|²/Q, 백색화 없음)</span>
       <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s1f"/></svg>Λ (정규화 + 백색화)</span>
     </div>
     <svg class="chart" id="r2-svg" viewBox="0 0 760 420" role="img" aria-label="9개 H0 조건에서 세 판정 방식의 오검출률 비교"></svg>
-    <figcaption>원시 샘플로 분산을 정확히 계산하기만 하면(삼각형) 중간 세기와 멀티패스에서는 MD 규칙보다 낫지만, 강한 틀린 키에서는 오히려 나쁩니다. 비원형 꼬리가 그대로 남아 틀린 키 조건 전부에서 1.4e-3~8.3e-3로 기준 1e-3을 넘습니다. 백색화까지 해야(사각형) 모든 조건이 기준 아래로 들어옵니다. 두 단계가 모두 필요합니다. 32심볼, 조건마다 60,000 프래그먼트, 왼쪽 끝 표식은 0건입니다.</figcaption>
+    <figcaption>원시 샘플로 분산을 정확히 계산하기만 하면(삼각형) 중간 세기와 멀티패스에서는 Z 판정기보다 낫지만, 강한 틀린 키에서는 오히려 나쁩니다. 비원형 꼬리가 그대로 남아 틀린 키 조건 전부에서 1.4e-3~8.3e-3로 기준 1e-3을 넘습니다. 백색화까지 해야(사각형) 모든 조건이 기준 아래로 들어옵니다. 두 단계가 모두 필요합니다. 32심볼, 조건마다 60,000 프래그먼트, 왼쪽 끝 표식은 0건입니다.</figcaption>
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r2-tbl"></table></div></details>
   </figure>
 
@@ -589,7 +590,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
     <h3>파형 수준 확인 (실제 ±1 STS, 원시 샘플에서 Q·Π 계산, 32심볼, 조건마다 24,000 프래그먼트)</h3>
     <div class="tbl-wrap">
     <table>
-      <thead><tr><th>H0 조건</th><th class="num">탭당 P(Λ ≥ 14) 측정</th><th class="num">이론 e^(−7)</th><th class="num">Λ 오검출</th><th class="num">MD 규칙 오검출</th></tr></thead>
+      <thead><tr><th>H0 조건</th><th class="num">탭당 P(Λ ≥ 14) 측정</th><th class="num">이론 e^(−7)</th><th class="num">Λ 오검출</th><th class="num">Z 판정기 오검출</th></tr></thead>
       <tbody>
         <tr><td>열잡음</td><td class="num">8.90e-4</td><td class="num">9.12e-4</td><td class="num">12건 (5.0e-4)</td><td class="num">21건 (8.8e-4)</td></tr>
         <tr><td>틀린 키 −82.5 dBm</td><td class="num">9.24e-4</td><td class="num">9.12e-4</td><td class="num">8건 (3.3e-4)</td><td class="num">1,234건 (5.1e-2)</td></tr>
@@ -604,12 +605,12 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
     <h3>감도: 90% 검출 레벨 L90 (왼쪽일수록 좋음)</h3>
     <div class="legend">
       <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s1f"/></svg>Λ (Pfa 보장)</span>
-      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>MD 규칙 (Pfa 보장 안 됨)</span>
-      <span class="key"><svg viewBox="0 0 16 12"><path d="M8 1.5 L12.5 10 L3.5 10 Z" class="s3f"/></svg>MD를 안전한 단일 문턱 15.5 dB로 올린 경우</span>
-      <span class="key"><svg viewBox="0 0 16 12"><line x1="8" y1="0" x2="8" y2="12" class="inks" stroke-width="2"/></svg>점수 방식 (MD 문서 환산값, 세그먼트 하나, 참고)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>Z 판정기 (Pfa 보장 안 됨)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><path d="M8 1.5 L12.5 10 L3.5 10 Z" class="s3f"/></svg>Z 판정기를 안전한 단일 문턱 15.5 dB로 올린 경우</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="8" y1="0" x2="8" y2="12" class="inks" stroke-width="2"/></svg>점수 방식 (기존 문서 환산값, 세그먼트 하나, 참고)</span>
     </div>
     <svg class="chart" id="r3-svg" viewBox="0 0 760 290" role="img" aria-label="RIF 길이별 L90 감도 비교"></svg>
-    <figcaption>프래그먼트 하나의 감도입니다. Λ는 Pfa를 보장하면서도 MD 규칙보다 약 0.6 dB 좋습니다. MD 방식에서 프래그먼트 1e-3을 지키려고 문턱을 하나로 올리면 약 5.3 dB를 잃습니다. 점수 방식 대비 여유는 32/64/128/256심볼에서 +3.0/+5.5/+7.4/+6.8 dB입니다(참고: 점수 방식 값은 MD 문서가 세그먼트 하나 기준으로 환산한 값입니다. 실제 일반 모드는 8개 프래그먼트의 전체 평균으로 판정하고, SemiSyncOnlyMode에서는 동작하지 않습니다. <a href="score.html">STS 점수 판정</a> 참고. 같은 패킷 오수락에서의 비교는 그 페이지 5장). Λ와 MD 값은 모델 값이며 모델은 MD 실측보다 약 0.5 dB 비관적입니다.</figcaption>
+    <figcaption>프래그먼트 하나의 감도입니다. Λ는 Pfa를 보장하면서도 Z 판정기보다 약 0.6 dB 좋습니다. Z 판정기에서 프래그먼트 1e-3을 지키려고 문턱을 하나로 올리면 약 5.3 dB를 잃습니다. 점수 방식 대비 여유는 32/64/128/256심볼에서 +3.0/+5.5/+7.4/+6.8 dB입니다(참고: 점수 방식 값은 기존 문서가 세그먼트 하나 기준으로 환산한 값입니다. 실제 일반 모드는 8개 프래그먼트의 전체 평균으로 판정하고, SemiSyncOnlyMode에서는 동작하지 않습니다. <a href="score.html">STS 점수 판정</a> 참고. 같은 패킷 오수락에서의 비교는 그 페이지 5장). Λ와 Z 판정기 값은 모델 값이며 모델은 기존 문서의 실측보다 약 0.5 dB 비관적입니다.</figcaption>
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r3-tbl"></table></div></details>
   </figure>
 
@@ -619,10 +620,10 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
       <div class="main stack" style="flex-basis:360px">
         <div class="ctl-label">Pd와 95% 신뢰구간 · AWGN · 세기당 10,002개</div>
         <div class="legend">
-          <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="s2f"/></svg>MD 규칙</span>
+          <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="s2f"/></svg>Z 판정기</span>
           <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="s1f"/></svg>Λ</span>
         </div>
-        <svg class="chart" id="r4a" viewBox="0 0 520 330" role="img" aria-label="맞는 키 세기에 따른 MD 규칙과 Λ의 검출 확률과 95% 신뢰구간"></svg>
+        <svg class="chart" id="r4a" viewBox="0 0 520 330" role="img" aria-label="맞는 키 세기에 따른 Z 판정기와 Λ의 검출 확률과 95% 신뢰구간"></svg>
       </div>
       <div class="main stack" style="flex-basis:360px">
         <div class="ctl-label">검출 위치 정확도 · Λ 검출 중 피크가 첫 경로(127) ± 2탭인 비율</div>
@@ -634,7 +635,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
         <svg class="chart" id="r4b" viewBox="0 0 520 330" role="img" aria-label="세기와 채널에 따른 Λ 검출의 위치 정확도"></svg>
       </div>
     </div>
-    <figcaption>왼쪽: 세로 막대가 95% Clopper-Pearson 신뢰구간이며, 표본이 많아 대부분 표식보다 짧습니다(값은 마우스를 올리거나 표로 보기). −118~−110 dBm에서 두 판정기의 구간이 겹치지 않아 Λ가 MD 규칙보다 검출을 잘한다는 차이가 통계적으로 분명합니다. L90은 MD −111.3, Λ −112.0 dBm입니다. 오른쪽: AWGN에서는 검출된 프래그먼트의 피크가 거의 항상 진짜 위치에 있습니다(감도 아래에서도 98% 이상). 잡음 탭이 문턱을 넘는 일은 Pfa 수준으로 드물기 때문입니다. 멀티패스에서는 가장 센 경로가 첫 경로가 아닌 경우가 있어, 신호가 강해도 위치 정확도가 τrms 10 ns에서 약 97%, 확산이 우세한 τrms 20 ns에서 약 61%에 머뭅니다. 판정(valid)이 맞아도 피크 위치를 ToA로 쓰면 안 되고 첫 경로 탐색이 따로 필요합니다. 멀티패스의 세기는 LOS 경로 기준이라 총 수신 에너지는 더 큽니다(멀티패스는 세기당 4,002개). 같은 지표를 <code>h1_pd_analyze</code>가 시뮬레이터 덤프에서 계산합니다.</figcaption>
+    <figcaption>왼쪽: 세로 막대가 95% Clopper-Pearson 신뢰구간이며, 표본이 많아 대부분 표식보다 짧습니다(값은 마우스를 올리거나 표로 보기). −118~−110 dBm에서 두 판정기의 구간이 겹치지 않아 Λ가 Z 판정기보다 검출을 잘한다는 차이가 통계적으로 분명합니다. L90은 Z 판정기 −111.3, Λ −112.0 dBm입니다. 오른쪽: AWGN에서는 검출된 프래그먼트의 피크가 거의 항상 진짜 위치에 있습니다(감도 아래에서도 98% 이상). 잡음 탭이 문턱을 넘는 일은 Pfa 수준으로 드물기 때문입니다. 멀티패스에서는 가장 센 경로가 첫 경로가 아닌 경우가 있어, 신호가 강해도 위치 정확도가 τrms 10 ns에서 약 97%, 확산이 우세한 τrms 20 ns에서 약 61%에 머뭅니다. 판정(valid)이 맞아도 피크 위치를 ToA로 쓰면 안 되고 첫 경로 탐색이 따로 필요합니다. 멀티패스의 세기는 LOS 경로 기준이라 총 수신 에너지는 더 큽니다(멀티패스는 세기당 4,002개). 같은 지표를 <code>h1_pd_analyze</code>가 시뮬레이터 덤프에서 계산합니다.</figcaption>
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r4-tbl"></table></div></details>
   </figure>
 
@@ -651,7 +652,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
 
 <!-- ============================================================ 8 -->
 <section class="sec" id="s8">
-  <div class="sec-head"><span class="sec-no">8</span><h2>고정 칩 대안: CIR만으로 Λ 추정</h2></div>
+  <div class="sec-head"><span class="sec-no">8</span><h2>CIR 추정 Λ̂: 누산기 없이 CIR만으로 Λ 추정</h2></div>
   <div class="prose stack">
     <p>Λ는 프래그먼트마다 원시 샘플의 Q와 Π를 누적해야 합니다. 이미 만들어진 칩에는 그 누산기를 더할 수 없습니다. 그래도 펌웨어가 프래그먼트별 CIR(256탭, 복소)을 읽을 수 있다면, Q와 Π를 <strong>CIR에서 추정</strong>해 같은 백색화를 할 수 있습니다.</p>
     <p>근거는 4장의 구조입니다. H0에서 탭 k = 127 + 8m + e의 값은 펄스 모양 g(e)에 독립인 랜덤 합 X<sub>m</sub>을 곱한 것이라, <strong>같은 위상 e의 탭은 위치(m)와 상관없이 같은 분포</strong>를 따르고 서로 독립입니다. 그래서 신호 창 밖에 있는 같은 위상의 탭들이, 신호 창 안 그 위상 탭들의 Q와 Π를 재는 표본이 됩니다. 수식을 CIR 그림으로 따라가는 설명은 <a href="lamhat.html">Λ̂ 판정기 원리</a>에 있습니다.</p>
@@ -664,7 +665,7 @@ H0에서  P( Λ ≥ t ) = e^(−t/2)          <span class="c">조건과 무관�
       <span class="key"><svg viewBox="0 0 16 12"><rect x="6" y="0" width="4" height="12" class="s1f"/></svg>같은 위상의 판정 탭 (신호 창 안 8개, 피크 127 포함)</span>
       <span class="key"><svg viewBox="0 0 16 12"><rect x="6" y="3" width="4" height="9" class="mutedf" style="fill-opacity:.45"/></svg>다른 위상의 탭 (각자 자기 위상으로 같은 계산)</span>
     </div>
-    <figcaption>8개 위상마다 같은 계산을 합니다. 신호 창 밖 199탭을 쓰면 위상당 24~25개 표본이 생깁니다. MD 방식의 잡음 창(16–96, 81탭)만 쓰면 위상당 약 10개라 추정이 크게 흔들립니다.</figcaption>
+    <figcaption>8개 위상마다 같은 계산을 합니다. 신호 창 밖 199탭을 쓰면 위상당 24~25개 표본이 생깁니다. Z 판정기의 잡음 창(16–96, 81탭)만 쓰면 위상당 약 10개라 추정이 크게 흔들립니다.</figcaption>
   </figure>
 
   <div class="eq">Q̂_e = mean |C[k]|²,   Π̂_e = mean C[k]²        <span class="c">k ∉ W_s, k mod 8 = e  (n_e ≈ 25)</span>
@@ -680,31 +681,31 @@ H0에서  P(Λ̂ ≥ t) = (1 + t/n)^(−(n−1)/2)        <span class="c">Hotell
   <figure class="plate" id="w6">
     <h3>추정에 쓰는 탭 수와 감도 손해</h3>
     <svg class="chart" id="w6-svg" viewBox="0 0 720 330" role="img" aria-label="위상당 추정 탭 수에 따른 문턱 상승과 시뮬레이션 L90 손해"></svg>
-    <figcaption>곡선은 공식으로 계산한 문턱 상승(원시 샘플 Λ 대비)입니다. ×는 시뮬레이션에서 잰 L90 손해로, 곡선과 거의 겹칩니다. 문턱이 오른 만큼 감도를 잃는다는 뜻입니다. MD 잡음 창만 쓰면(n ≈ 10) 약 7 dB, 신호 창 밖 전체를 쓰면(n ≈ 25) 약 2.4 dB입니다. CIR이 더 길면 n이 늘어 손해가 줄어듭니다. 같은 패킷의 여러 프래그먼트에서 Q̂·Π̂를 모으는 방법은 모델로 확인해 보니, Pfa를 지키는 문턱에서 오히려 0.4~1.4 dB 나빴습니다(<a href="pooled.html">Λ̂ 모멘트 모으기</a>).</figcaption>
+    <figcaption>곡선은 공식으로 계산한 문턱 상승(원시 샘플 Λ 대비)입니다. ×는 시뮬레이션에서 잰 L90 손해로, 곡선과 거의 겹칩니다. 문턱이 오른 만큼 감도를 잃는다는 뜻입니다. 기존 잡음 창 W_n만 쓰면(n ≈ 10) 약 7 dB, 신호 창 밖 전체를 쓰면(n ≈ 25) 약 2.4 dB입니다. CIR이 더 길면 n이 늘어 손해가 줄어듭니다. 같은 패킷의 여러 프래그먼트에서 Q̂·Π̂를 모으는 방법은 모델로 확인해 보니, Pfa를 지키는 문턱에서 오히려 0.4~1.4 dB 나빴습니다(<a href="pooled.html">Λ̂ 모멘트 모으기</a>).</figcaption>
   </figure>
 
   <figure class="plate" id="r5">
     <h3>H0 오검출률: CIR 추정 Λ̂도 모든 조건에서 기준 1e-3 아래 (32심볼, 조건당 30,000)</h3>
     <div class="legend">
-      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>MD 규칙</span>
+      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>Z 판정기</span>
       <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="hollow1" style="stroke-width:1.6"/></svg>Λ̂ (CIR 추정, 신호 창 밖 전체)</span>
       <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s1f"/></svg>Λ (원시 샘플 Q·Π)</span>
     </div>
-    <svg class="chart" id="r5-svg" viewBox="0 0 760 420" role="img" aria-label="9개 H0 조건에서 MD 규칙, CIR 추정 Λ, 원시 샘플 Λ의 오검출률"></svg>
-    <figcaption>CIR에서 추정해도 오검출률은 원시 샘플 Λ와 같은 수준(최대 7.3e-4)입니다. 같은 조건에서 MD 규칙은 최대 5.1e-2입니다. 고정 칩에서 바꾸는 것은 펌웨어 연산뿐이고, Pfa 보장은 그대로 얻습니다. 왼쪽 끝 표식은 0건입니다.</figcaption>
+    <svg class="chart" id="r5-svg" viewBox="0 0 760 420" role="img" aria-label="9개 H0 조건에서 Z 판정기, CIR 추정 Λ̂, 원시 샘플 Λ의 오검출률"></svg>
+    <figcaption>CIR에서 추정해도 오검출률은 원시 샘플 Λ와 같은 수준(최대 7.3e-4)입니다. 같은 조건에서 Z 판정기는 최대 5.1e-2입니다. 지금 하드웨어에서 바꾸는 것은 펌웨어 연산뿐이고, Pfa 보장은 그대로 얻습니다. 왼쪽 끝 표식은 0건입니다.</figcaption>
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r5-tbl"></table></div></details>
   </figure>
 
   <figure class="plate" id="r6">
     <h3>H1 검출 확률 (32심볼, AWGN, 세기당 6,000)</h3>
     <div class="legend">
-      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="s1f"/></svg>Λ (원시 샘플)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="s1f"/></svg>원시 샘플 Λ</span>
       <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s dash" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="hollow1" style="stroke-width:1.5"/></svg>Λ̂ (CIR 추정, 전체)</span>
-      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="s2f"/></svg>MD 규칙 (Pfa 보장 없음)</span>
-      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="muteds dash" stroke-width="2"/><path d="M8 1.5 L12.5 10 L3.5 10 Z" class="mutedf"/></svg>Λ̂ (CIR 추정, MD 잡음 창만)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="s2f"/></svg>Z 판정기 (Pfa 보장 없음)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="muteds dash" stroke-width="2"/><path d="M8 1.5 L12.5 10 L3.5 10 Z" class="mutedf"/></svg>Λ̂ (CIR 추정, 기존 잡음 창 W_n만)</span>
     </div>
     <svg class="chart" id="r6-svg" viewBox="0 0 760 340" role="img" aria-label="맞는 키 세기에 따른 네 판정 방식의 검출 확률"></svg>
-    <figcaption id="r6-cap">L90: Λ −112.0, MD 규칙 −111.3, Λ̂(전체) −109.6, Λ̂(MD 잡음 창) −105.2 dBm. Λ̂는 원시 샘플 Λ보다 약 2.5 dB 나쁘고, Pfa 보장이 없는 MD 규칙보다는 약 1.7 dB 나쁩니다. 하지만 MD 방식을 안전한 단일 문턱(15.5 dB)으로 올린 경우(−106.0)보다는 약 3.6 dB 좋습니다.</figcaption>
+    <figcaption id="r6-cap">L90: Λ −112.0, Z 판정기 −111.3, Λ̂(전체) −109.6, Λ̂(기존 잡음 창 W_n만) −105.2 dBm. Λ̂는 원시 샘플 Λ보다 약 2.5 dB 나쁘고, Pfa 보장이 없는 Z 판정기보다는 약 1.7 dB 나쁩니다. 하지만 Z 판정기를 안전한 단일 문턱(15.5 dB)으로 올린 경우(−106.0)보다는 약 3.6 dB 좋습니다.</figcaption>
     <details><summary>표로 보기</summary><div class="tbl-wrap"><table id="r6-tbl"></table></div></details>
   </figure>
 
@@ -713,13 +714,13 @@ H0에서  P(Λ̂ ≥ t) = (1 + t/n)^(−(n−1)/2)        <span class="c">Hotell
     <div class="tbl-wrap"><table class="guide">
       <thead><tr><th>칩 상황</th><th>판정 방식</th><th>필요한 것</th><th class="num">패킷 L90 (RIF 8개, 10⁻⁶)</th><th class="num">프래그먼트 L90 (1e-3)</th><th>Pfa 보장</th></tr></thead>
       <tbody>
-        <tr><td>새 칩 / RTL 수정 가능</td><td>Λ (원시 샘플 Q·Π)</td><td>위상별 누산기 3 × 8, 입력 샘플당 곱 3개</td><td class="num">−117.6 dBm</td><td class="num">−112.0 dBm</td><td>있음</td></tr>
-        <tr class="pick"><td>고정 칩, CIR 읽기 가능</td><td>Λ̂ (CIR 추정, 신호 창 밖 전체)</td><td>펌웨어 연산 (제곱합 2종, 신호 창 57탭 비교)</td><td class="num">−116.7 dBm</td><td class="num">−109.6 dBm</td><td>있음</td></tr>
-        <tr><td>고정 칩, 현행 유지</td><td>MD 규칙 (두 단계 문턱)</td><td>없음</td><td class="num">−110.0 dBm (8개 모두 통과)</td><td class="num">−111.3 dBm</td><td>없음 (프래그먼트 최대 5.6e-2)</td></tr>
-        <tr><td>고정 칩, 현행을 안전하게</td><td>MD 단일 문턱 15.5 dB</td><td>문턱 변경</td><td class="num">–</td><td class="num">−106.0 dBm</td><td>프래그먼트만</td></tr>
+        <tr><td>누산기 추가 (RTL 수정 가능)</td><td>Λ (원시 샘플 Q·Π)</td><td>위상별 누산기 3 × 8, 입력 샘플당 곱 3개</td><td class="num">−117.6 dBm</td><td class="num">−112.0 dBm</td><td>있음</td></tr>
+        <tr class="pick"><td>지금 하드웨어, CIR 읽기 가능</td><td>Λ̂ (CIR 추정, 신호 창 밖 전체)</td><td>펌웨어 연산 (제곱합 2종, 신호 창 57탭 비교)</td><td class="num">−116.7 dBm</td><td class="num">−109.6 dBm</td><td>있음</td></tr>
+        <tr><td>지금 하드웨어, 현행 유지</td><td>Z 판정기 (두 단계 문턱)</td><td>없음</td><td class="num">−110.0 dBm (8개 모두 통과)</td><td class="num">−111.3 dBm</td><td>없음 (프래그먼트 최대 5.6e-2)</td></tr>
+        <tr><td>지금 하드웨어, 현행을 안전하게</td><td>Z 판정기 단일 문턱 15.5 dB</td><td>문턱 변경</td><td class="num">–</td><td class="num">−106.0 dBm</td><td>프래그먼트만</td></tr>
       </tbody>
     </table></div>
-    <figcaption>고정 칩에서 Pfa를 보장하는 방법 중에서는 Λ̂가 가장 좋습니다. 패킷 기준에서는 8개 소프트 결합으로 원시 샘플 Λ와의 차이가 0.9 dB로 줄어듭니다(9장). MD 단일 문턱의 패킷 감도는 계산하지 않았습니다. 확인할 전제는 두 가지입니다. 첫째, 신호 창 밖 탭이 H0에서 신호 창 안과 같은 분포여야 합니다(CIR 양 끝의 누적 경계 효과나 16비트 포화가 없어야 함). 둘째, H1에서 멀티패스 꼬리가 신호 창 밖까지 이어지면 Q̂가 커져 Pd가 조금 떨어집니다(Pfa에는 영향 없음). 둘 다 지금 있는 2열 덤프로 확인할 수 있습니다.</figcaption>
+    <figcaption>지금 하드웨어에서 Pfa를 보장하는 방법 중에서는 Λ̂가 가장 좋습니다. 패킷 기준에서는 8개 소프트 결합으로 원시 샘플 Λ와의 차이가 0.9 dB로 줄어듭니다(9장). Z 판정기 단일 문턱의 패킷 감도는 계산하지 않았습니다. 확인할 전제는 두 가지입니다. 첫째, 신호 창 밖 탭이 H0에서 신호 창 안과 같은 분포여야 합니다(CIR 양 끝의 누적 경계 효과나 16비트 포화가 없어야 함). 둘째, H1에서 멀티패스 꼬리가 신호 창 밖까지 이어지면 Q̂가 커져 Pd가 조금 떨어집니다(Pfa에는 영향 없음). 둘 다 지금 있는 2열 덤프로 확인할 수 있습니다.</figcaption>
   </figure>
 </section>
 
@@ -727,8 +728,8 @@ H0에서  P(Λ̂ ≥ t) = (1 + t/n)^(−(n−1)/2)        <span class="c">Hotell
 <section class="sec" id="s9">
   <div class="sec-head"><span class="sec-no">9</span><h2>패킷 판정: FiRa medium 기준 (요구사항)</h2></div>
   <div class="prose stack">
-    <p>지금까지는 프래그먼트 하나를 판정했습니다. 실제 거리 측정 한 번에는 한 수신기가 RIF 프래그먼트 <strong>8개</strong>(NumRIF = 4)를 쓰고, 보안 요구도 측정 단위로 정해집니다. FiRa 인증의 medium 보안 수준은 측정 한 번의 오수락을 <strong>10⁻⁶</strong> 이하로 요구합니다(high는 2⁻⁴⁸). 이 판정기의 요구사항은 이 패킷 목표입니다(2026-10-15 결정). MD 문서의 프래그먼트당 1e-3은 구성 요소이자 진단 기준으로 남습니다. 10⁻⁶은 측정 1회당으로 적용했고(보수적 해석), FiRa 원문은 회원 전용이라 직접 확인하지 못해 그것을 인용한 논문의 수치를 씁니다.</p>
-    <p>STS는 매 심볼 바뀌므로, 맞는 키가 없는 신호에서는 8개 프래그먼트의 Λ가 서로 독립인 χ²₂입니다. 그래서 8개를 어떻게 묶든 문턱을 공식으로 정할 수 있습니다. 묶는 방식은 Λ(새 칩)와 Λ̂(고정 칩)에 똑같이 적용됩니다.</p>
+    <p>지금까지는 프래그먼트 하나를 판정했습니다. 실제 거리 측정 한 번에는 한 수신기가 RIF 프래그먼트 <strong>8개</strong>(NumRIF = 4)를 쓰고, 보안 요구도 측정 단위로 정해집니다. FiRa 인증의 medium 보안 수준은 측정 한 번의 오수락을 <strong>10⁻⁶</strong> 이하로 요구합니다(high는 2⁻⁴⁸). 이 판정기의 요구사항은 이 패킷 목표입니다(2026-10-15 결정). 기존 문서의 프래그먼트당 1e-3은 구성 요소이자 진단 기준으로 남습니다. 10⁻⁶은 측정 1회당으로 적용했고(보수적 해석), FiRa 원문은 회원 전용이라 직접 확인하지 못해 그것을 인용한 논문의 수치를 씁니다.</p>
+    <p>STS는 매 심볼 바뀌므로, 맞는 키가 없는 신호에서는 8개 프래그먼트의 Λ가 서로 독립인 χ²₂입니다. 그래서 8개를 어떻게 묶든 문턱을 공식으로 정할 수 있습니다. 묶는 방식은 원시 샘플 Λ와 CIR 추정 Λ̂에 똑같이 적용됩니다.</p>
   </div>
 
   <div class="eq">S[k] = Σ<sub>f=1..8</sub> Λ<sub>f</sub>[k + round(d·(f−1))]      <span class="c">소프트 결합: 탭별 합, d = 피크 이동 후보 [탭/프래그먼트]</span>
@@ -749,8 +750,8 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
         <button type="button" data-sc="h0n" aria-pressed="false">신호 없음</button>
       </div>
       <div class="seg" role="group" aria-label="칩" id="w7-chip">
-        <button type="button" data-chip="c" aria-pressed="true">고정 칩 (Λ̂)</button>
-        <button type="button" data-chip="x" aria-pressed="false">새 칩 (Λ)</button>
+        <button type="button" data-chip="c" aria-pressed="true">CIR 추정 Λ̂</button>
+        <button type="button" data-chip="x" aria-pressed="false">원시 샘플 Λ</button>
       </div>
       <button type="button" class="btn" id="w7-new">새 패킷</button>
     </div>
@@ -769,8 +770,8 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
     <h3>패킷 검출 확률: 판정 방식별 (32심볼, AWGN, 세기당 4,000패킷)</h3>
     <div class="controls">
       <div class="seg" role="group" aria-label="칩" id="r8-chip">
-        <button type="button" data-chip="c" aria-pressed="true">고정 칩 (Λ̂)</button>
-        <button type="button" data-chip="x" aria-pressed="false">새 칩 (Λ)</button>
+        <button type="button" data-chip="c" aria-pressed="true">CIR 추정 Λ̂</button>
+        <button type="button" data-chip="x" aria-pressed="false">원시 샘플 Λ</button>
       </div>
     </div>
     <div class="legend" id="r8-legend"></div>
@@ -782,7 +783,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
   <figure class="plate">
     <h3>"하나라도 공격받으면 폐기"를 어떻게 구현하나</h3>
     <div class="tbl-wrap"><table class="guide">
-      <thead><tr><th>판정 방식</th><th>패킷 오수락</th><th class="num">L90 고정 칩 (Λ̂)</th><th class="num">L90 새 칩 (Λ)</th><th>한 프래그먼트 공격</th></tr></thead>
+      <thead><tr><th>판정 방식</th><th>패킷 오수락</th><th class="num">L90 CIR 추정 Λ̂</th><th class="num">L90 원시 샘플 Λ</th><th>한 프래그먼트 공격</th></tr></thead>
       <tbody>
         <tr><td>이전 기준 (프래그먼트 하나, 1e-3)</td><td>보장 없음</td><td class="num">−109.6</td><td class="num">−112.0</td><td>–</td></tr>
         <tr><td>프래그먼트마다 1e-3 판정, 8개 모두 통과</td><td>약 10⁻²⁴</td><td class="num">−108.2</td><td class="num">−110.6</td><td>이른 가짜 피크는 못 잡음</td></tr>
@@ -813,7 +814,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
     <figure class="plate main" style="flex-basis:400px">
       <h3>RIF 1개 설정 (프래그먼트 10⁻⁶)</h3>
       <div class="tbl-wrap"><table>
-        <thead><tr><th class="num">길이</th><th class="num">Λ̂ (고정 칩)</th><th class="num">Λ (새 칩)</th><th class="num">점수 방식</th></tr></thead>
+        <thead><tr><th class="num">길이</th><th class="num">CIR 추정 Λ̂</th><th class="num">원시 샘플 Λ</th><th class="num">점수 방식</th></tr></thead>
         <tbody>
           <tr><td class="num">32</td><td class="num">−106.1</td><td class="num">−110.2</td><td class="num">−108.9</td></tr>
           <tr><td class="num">64</td><td class="num">−109.1</td><td class="num">−113.2</td><td class="num">−109.4</td></tr>
@@ -821,7 +822,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
           <tr><td class="num">256</td><td class="num">−111.1</td><td class="num">−115.2</td><td class="num">−110.0</td></tr>
         </tbody>
       </table></div>
-      <figcaption>L90 [dBm]. 결합할 프래그먼트가 없으면 문턱을 프래그먼트 하나에서 10⁻⁶에 맞춰야 해서 Λ는 1.8 dB, Λ̂는 3.4 dB를 잃습니다. 고정 칩 32심볼은 일반 모드 점수 방식(MD 문서 환산값, 세그먼트 하나)보다 나빠, 1개 설정에서는 64심볼 이상을 권합니다. 10⁻⁶은 프래그먼트 꼬리를 세 자릿수 외삽해야 확인되고, 프래그먼트끼리 비교하는 일관성 검사도 할 수 없습니다.</figcaption>
+      <figcaption>L90 [dBm]. 결합할 프래그먼트가 없으면 문턱을 프래그먼트 하나에서 10⁻⁶에 맞춰야 해서 Λ는 1.8 dB, Λ̂는 3.4 dB를 잃습니다. CIR 추정 Λ̂ 32심볼은 일반 모드 점수 방식(기존 문서 환산값, 세그먼트 하나)보다 나빠, 1개 설정에서는 64심볼 이상을 권합니다. 10⁻⁶은 프래그먼트 꼬리를 세 자릿수 외삽해야 확인되고, 프래그먼트끼리 비교하는 일관성 검사도 할 수 없습니다.</figcaption>
     </figure>
   </div>
 
@@ -835,7 +836,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
       <dt>소프트 합</dt><dd>탭별 합의 꼬리가 χ²₁₆을 따름: P(S ≥ t) / P(χ²₁₆ ≥ t) = 0.72~1.05 (t = 10~30). 패킷 오수락은 대개 프래그먼트마다 중간 크기의 값 8개가 쌓여 생기므로, 측정 가능한 범위의 확인이 문턱 부근까지 대부분 결정합니다.</dd>
       <dt>독립성</dt><dd>같은 패킷 프래그먼트 쌍이 함께 넘는 비율이 p²와 같음(비율 0.7~1.2). 합성 덤프의 쌍 상관은 0.000 (n = 1,984). 세기가 다른 조건을 그냥 합쳐 상관을 구하면 평균 차이 때문에 0.19 같은 가짜 상관이 나오므로, 조건마다 평균을 빼고 모읍니다.</dd>
       <dt>같은 채널 멀티패스 (첫 검증 항목)</dt><dd>실제 패킷처럼 8개가 같은 채널(τrms 20 ns, 확산 우세)을 겪으면 소프트 합의 꼬리 비율이 깊어질수록 조금 올라갑니다: Λ 1.01~1.23, Λ̂ 0.87~1.11 (P = 1e-2~1e-4, 조건당 6,000패킷). 프래그먼트마다 채널이 다르면 Λ 1.00~1.02, Λ̂ 0.69~1.02입니다. 같은 채널 모델에서 Λ̂ 소프트 결합이 9,990패킷 중 1건을 받아들였습니다(10⁻⁶이면 기대 0.01건, 우연히 나올 확률 약 1%). 한 건이라 결론을 낼 수 없으므로 LLS 같은 채널 덤프로 P = 1e-4까지 확인하는 것이 첫 검증 항목입니다. 비율이 1.3을 넘거나 깊어질수록 계속 커지면 기준을 다시 봅니다.</dd>
-      <dt>MD 규칙</dt><dd>중간 세기에서 프래그먼트 5.1e-2 → 8개 모두 통과로 묶으면 독립 가정에서 약 5e-11. 같은 채널을 공유하는 멀티패스에서는 채널마다 p가 달라 평균 8.5e-9이지만, 가장 나쁜 채널(p = 0.175)은 8.8e-7로 한계(p = 0.178)에 거의 닿습니다. 모델에서 본 채널 밖의 더 나쁜 채널을 공식으로 막을 수 없어 보장이 없고, 감도도 −110.0 dBm으로 Λ̂ 소프트 결합보다 6.7 dB 나쁩니다. Z의 분포가 조건마다 달라 소프트 결합도 쓸 수 없습니다.</dd>
+      <dt>Z 판정기</dt><dd>중간 세기에서 프래그먼트 5.1e-2 → 8개 모두 통과로 묶으면 독립 가정에서 약 5e-11. 같은 채널을 공유하는 멀티패스에서는 채널마다 p가 달라 평균 8.5e-9이지만, 가장 나쁜 채널(p = 0.175)은 8.8e-7로 한계(p = 0.178)에 거의 닿습니다. 모델에서 본 채널 밖의 더 나쁜 채널을 공식으로 막을 수 없어 보장이 없고, 감도도 −110.0 dBm으로 Λ̂ 소프트 결합보다 6.7 dB 나쁩니다. Z의 분포가 조건마다 달라 소프트 결합도 쓸 수 없습니다.</dd>
     </dl>
   </figure>
 
@@ -844,7 +845,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
     <div class="tbl-wrap"><table class="guide">
       <thead><tr><th>옵션</th><th>값</th><th>뜻</th></tr></thead>
       <tbody>
-        <tr><td><code>'Chip'</code></td><td><code>'fixed'</code> / <code>'new'</code></td><td>고정 칩: CIR에서 Q̂·Π̂ 추정 (Λ̂, 2열 덤프 가능). 새 칩: 원시 샘플 Q·Π (Λ, 5열 덤프)</td></tr>
+        <tr><td><code>'Chip'</code></td><td><code>'fixed'</code> / <code>'new'</code></td><td><code>'fixed'</code> = CIR 추정 Λ̂: CIR에서 Q̂·Π̂ 추정 (2열 덤프 가능). <code>'new'</code> = 원시 샘플 Λ: 원시 샘플 Q·Π (5열 덤프)</td></tr>
         <tr><td><code>'Profile'</code></td><td><code>'fira-medium'</code> / <code>'md'</code></td><td>기준을 한 번에 설정. <code>'fira-medium'</code> = <code>'Combine','soft'</code> + <code>'PfaTarget',1e-6</code>(요구사항). <code>'md'</code>(기본)는 기존 동작(프래그먼트 표만). 직접 준 옵션이 우선</td></tr>
         <tr><td><code>'Combine'</code></td><td><code>'soft'</code> · <code>'and'</code> · <code>'kofn'</code> · <code>'strict'</code> · <code>'single'</code> · <code>'none'</code></td><td>패킷 판정 방식. <code>'none'</code>(<code>'md'</code> 프로파일의 기본)은 프래그먼트 단위만</td></tr>
         <tr><td><code>'FragPerPacket'</code></td><td>8 (1이면 RIF 1개 설정)</td><td>같은 프레임의 프래그먼트를 이 개수로 묶음</td></tr>
@@ -872,7 +873,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
       <rect class="bx" x="296" y="54" width="220" height="92" rx="8"/>
       <text x="406" y="82" text-anchor="middle" class="m">rif_cir_analyze.m</text>
       <text x="406" y="104" text-anchor="middle">프래그먼트별 Λ, κ</text>
-      <text x="406" y="126" text-anchor="middle" class="sub">2열이면 MD + κ ('cir'이면 Λ̂)</text>
+      <text x="406" y="126" text-anchor="middle" class="sub">2열이면 Z 판정기 + κ ('cir'이면 Λ̂)</text>
       <path class="ar" d="M518 86 L560 86 L560 44 L600 44" marker-end="url(#ah4)"/>
       <path class="ar" d="M518 114 L560 114 L560 156 L600 156" marker-end="url(#ah4)"/>
       <rect class="bx" x="604" y="10" width="286" height="70" rx="8"/>
@@ -880,7 +881,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
       <text x="747" y="60" text-anchor="middle" class="sub">패킷·탭 꼬리 비율 ≈ 1</text>
       <rect class="bx" x="604" y="120" width="286" height="70" rx="8"/>
       <text x="747" y="148" text-anchor="middle" class="m">h1_pd_analyze.m</text>
-      <text x="747" y="170" text-anchor="middle" class="sub">패킷 L90, MD 대 Λ</text>
+      <text x="747" y="170" text-anchor="middle" class="sub">패킷 L90, Z 판정기 대 Λ</text>
     </svg>
     </div>
     <figcaption>MATLAB 패치는 저장소의 <code>lambda_patch/</code>에 있습니다(원본 두 스크립트의 수정판과 새 <code>h1_pd_analyze.m</code>). 2열 덤프를 넣어도 동작하므로 C++ 수정 전에 1단계부터 시작할 수 있습니다. 설계와 C++ 계약은 <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>에 정리했습니다.</figcaption>
@@ -889,13 +890,13 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
   <div class="prose stack">
     <h3>단계</h3>
     <ol>
-      <li><strong>MATLAB 패치 단독 시험:</strong> <code>lambda_patch/test/gen_synthetic_dumps.m</code>으로 파형 모델 덤프를 5열과 2열로 각각 만들고, <code>run_synthetic_test.m</code>으로 확인합니다(5열 94개, 2열 49개 항목, 마지막 단계는 FiRa medium 기준의 패킷 판정). 두 세트를 교차 비교해 MD·κ·Λ̂ 결과가 정확히 같은지도 봅니다. C++ 수정 없이 MATLAB 쪽 동작을 먼저 검증할 수 있습니다(아래 그림).</li>
-      <li><strong>지금, 기존 2열 덤프로:</strong> κ(비원형 지수)를 확인하고, <code>run_h0.sh</code>에 중간 세기(c32_m70~m100, 2~3 dB 간격)를 추가해 MD 규칙의 실패를 실제 시뮬레이터에서 재현합니다.</li>
+      <li><strong>MATLAB 패치 단독 시험:</strong> <code>lambda_patch/test/gen_synthetic_dumps.m</code>으로 파형 모델 덤프를 5열과 2열로 각각 만들고, <code>run_synthetic_test.m</code>으로 확인합니다(5열 94개, 2열 49개 항목, 마지막 단계는 FiRa medium 기준의 패킷 판정). 두 세트를 교차 비교해 Z 판정기·κ·Λ̂ 결과가 정확히 같은지도 봅니다. C++ 수정 없이 MATLAB 쪽 동작을 먼저 검증할 수 있습니다(아래 그림).</li>
+      <li><strong>지금, 기존 2열 덤프로:</strong> κ(비원형 지수)를 확인하고, <code>run_h0.sh</code>에 중간 세기(c32_m70~m100, 2~3 dB 간격)를 추가해 Z 판정기의 실패를 실제 시뮬레이터에서 재현합니다.</li>
       <li><strong>C++:</strong> 상관기와 같은 루프, 같은 샘플로 Q와 Π를 누적해 덤프를 5열로 늘립니다(아래 코드).</li>
-      <li><strong>H0 검증 (프래그먼트):</strong> <code>h0_pfa_analyze(root, 'Suggest', false)</code>. MD 표와 Λ 표가 함께 나옵니다. 탭 꼬리 비율은 패킷 문턱 공식의 전제이고, 프래그먼트 Pfa는 진단입니다.</li>
+      <li><strong>H0 검증 (프래그먼트):</strong> <code>h0_pfa_analyze(root, 'Suggest', false)</code>. Z 판정기 표와 Λ 표가 함께 나옵니다. 탭 꼬리 비율은 패킷 문턱 공식의 전제이고, 프래그먼트 Pfa는 진단입니다.</li>
       <li><strong>H1 감도:</strong> <code>h1_pd_analyze(rootH1)</code>로 Pd와 95% 신뢰구간, 검출 위치 정확도(피크가 기대 탭 ± 2 이내인 비율), L90/L99를 비교합니다.</li>
       <li><strong>HW 근사:</strong> <code>'PerClass', true</code>로 클래스당 누산기 8개면 충분한지 확인합니다.</li>
-      <li><strong>고정 칩:</strong> Q·Π 누산기를 넣을 수 없으면 <code>'Moments', 'cir'</code>로 CIR 추정 Λ̂를 씁니다. C++ 수정 없이 지금의 2열 덤프로 H0 Pfa와 H1 L90을 바로 확인할 수 있습니다(8장).</li>
+      <li><strong>지금 하드웨어:</strong> Q·Π 누산기를 넣을 수 없으면 <code>'Moments', 'cir'</code>로 CIR 추정 Λ̂를 씁니다. C++ 수정 없이 지금의 2열 덤프로 H0 Pfa와 H1 L90을 바로 확인할 수 있습니다(8장).</li>
       <li><strong>패킷 전제 확인:</strong> <code>check_packet_assumptions</code>로 LLS 덤프의 프레임 구성(프레임당 RIF 8개), 피크 이동 기울기, AGC 레벨 변화, 라운딩, 프래그먼트 간 독립성을 봅니다. 피크 이동 후보(<code>'Drift'</code>)도 여기서 정해집니다.</li>
       <li><strong>패킷 판정 (합격 기준):</strong> <code>'Chip', 'fixed'</code>(지금) 또는 <code>'new'</code>(나중)와 <code>'Profile', 'fira-medium'</code>으로 H0 근거(꼬리 비율, 독립성)와 H1 패킷 L90을 확인합니다. 첫 확인은 같은 채널 멀티패스 덤프의 꼬리 비율입니다. RIF 1개 설정은 <code>'FragPerPacket', 1</code>입니다(9장).</li>
     </ol>
@@ -925,17 +926,17 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
       <rect class="bx" x="494" y="14" width="230" height="80" rx="8"/>
       <text x="609" y="36" text-anchor="middle" class="m">run_synthetic_test</text>
       <text x="609" y="58" text-anchor="middle">10단계 94개 항목</text>
-      <text x="609" y="80" text-anchor="middle" class="sub">MD·κ·Λ·Λ̂·PerClass·형식 검사</text>
+      <text x="609" y="80" text-anchor="middle" class="sub">Z 판정기·κ·Λ·Λ̂·PerClass·형식 검사</text>
       <rect class="bx" x="494" y="136" width="230" height="80" rx="8"/>
       <text x="609" y="158" text-anchor="middle" class="m">run_synthetic_test</text>
       <text x="609" y="180" text-anchor="middle">6단계 49개 항목</text>
-      <text x="609" y="202" text-anchor="middle" class="sub">MD·κ·Λ̂ (Q·Π가 없어 Λ는 생략)</text>
+      <text x="609" y="202" text-anchor="middle" class="sub">Z 판정기·κ·Λ̂ (Q·Π가 없어 Λ는 생략)</text>
       <path class="ar" d="M726 54 L744 54 L744 108 L760 108" marker-end="url(#ah5)"/>
       <path class="ar" d="M726 176 L744 176 L744 122 L760 122" marker-end="url(#ah5)"/>
       <rect class="bx-new" x="764" y="75" width="126" height="80" rx="8"/>
       <text x="827" y="97" text-anchor="middle">교차 확인</text>
       <text x="827" y="119" text-anchor="middle" class="m">isequal</text>
-      <text x="827" y="141" text-anchor="middle" class="sub">MD·κ·Λ̂ 결과 동일</text>
+      <text x="827" y="141" text-anchor="middle" class="sub">Z 판정기·κ·Λ̂ 결과 동일</text>
     </svg>
     </div>
     <div class="tbl-wrap"><table class="guide">
@@ -944,15 +945,15 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
         <tr><td>만드는 명령</td><td><code>gen_synthetic_dumps('D:/rif_test5')</code></td><td><code>gen_synthetic_dumps('D:/rif_test2', 'Cols', 2)</code></td></tr>
         <tr><td>폴더</td><td>h0, h0_mp20, h1, h0_2col, scale_test, mixed_test</td><td>h0, h0_mp20, h1</td></tr>
         <tr><td>자동 확인 (<code>run_synthetic_test</code>)</td><td>10단계 94개 항목 (마지막 단계는 패킷 판정)</td><td>6단계 49개 항목 (열 수 자동 인식)</td></tr>
-        <tr><td>MD 규칙 Pfa (−120 / −88 / −82 / −40 dBm)</td><td>0.1 / 1.0 / 5.2 / 0.2%</td><td>5열과 같음</td></tr>
+        <tr><td>Z 판정기 Pfa (−120 / −88 / −82 / −40 dBm)</td><td>0.1 / 1.0 / 5.2 / 0.2%</td><td>5열과 같음</td></tr>
         <tr><td>κ 중앙값 (같은 순서)</td><td>0.38 / 0.57 / 0.82 / 0.98</td><td>5열과 같음</td></tr>
         <tr><td>Λ (원시 샘플 Q·Π) Pfa</td><td>0 ~ 0.1%</td><td>계산 안 함 (Q·Π 없음)</td></tr>
         <tr class="pick"><td>Λ̂ (CIR 추정, <code>'Moments', 'cir'</code>) Pfa</td><td>0 ~ 0.2%</td><td>5열과 같음</td></tr>
-        <tr><td>H1 L90 (32심볼)</td><td>MD −111.2, Λ −112.3, Λ̂ −109.7 dBm</td><td>MD −111.2, Λ̂ −109.7 dBm</td></tr>
+        <tr><td>H1 L90 (32심볼)</td><td>Z 판정기 −111.2, Λ −112.3, Λ̂ −109.7 dBm</td><td>Z 판정기 −111.2, Λ̂ −109.7 dBm</td></tr>
         <tr><td>PerClass, 스케일 오류, 형식 혼합 검사</td><td>확인</td><td>해당 없음 (5열 전용)</td></tr>
       </tbody>
     </table></div>
-    <figcaption>수치는 미리 만든 <code>synthetic_dumps/</code>(Python 파형 모델)의 값입니다. MATLAB에서 만든 세트는 난수가 달라 값이 조금 다르며, 자동 확인의 기대 범위는 그 흔들림을 감안했습니다. MATLAB에서 같은 프리셋으로 만든 5열과 2열 세트는 시드가 같아 CIR이 같으므로, MD·κ·Λ̂ 결과는 근사가 아니라 정확히 같아야 합니다. 하나라도 다르면 덤프 읽기나 형식 처리에 문제가 있는 것입니다. 2열 세트는 현재 LLS 덤프와 형식이 같아서, LLS 덤프를 받기 전에 분석 명령과 결과 표를 미리 연습해 볼 수 있습니다. 단계별 덤프 세트와 합격 기준은 <code>lambda_patch/TEST_PLAN.md</code>에 있습니다.</figcaption>
+    <figcaption>수치는 미리 만든 <code>synthetic_dumps/</code>(Python 파형 모델)의 값입니다. MATLAB에서 만든 세트는 난수가 달라 값이 조금 다르며, 자동 확인의 기대 범위는 그 흔들림을 감안했습니다. MATLAB에서 같은 프리셋으로 만든 5열과 2열 세트는 시드가 같아 CIR이 같으므로, Z 판정기·κ·Λ̂ 결과는 근사가 아니라 정확히 같아야 합니다. 하나라도 다르면 덤프 읽기나 형식 처리에 문제가 있는 것입니다. 2열 세트는 현재 LLS 덤프와 형식이 같아서, LLS 덤프를 받기 전에 분석 명령과 결과 표를 미리 연습해 볼 수 있습니다. 단계별 덤프 세트와 합격 기준은 <code>lambda_patch/TEST_PLAN.md</code>에 있습니다.</figcaption>
   </figure>
 
   <figure class="plate" id="r7">
@@ -968,9 +969,9 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
 
     <h4 class="sub-h">H0 오검출률 (틀린 키)</h4>
     <div class="legend">
-      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>MD 규칙</span>
+      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>Z 판정기</span>
       <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s1f"/></svg>Λ (원시 샘플 Q·Π, 5열만)</span>
-      <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="hollow1" style="stroke-width:1.6"/></svg>Λ̂ (CIR 추정)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="hollow1" style="stroke-width:1.6"/></svg>CIR 추정 Λ̂</span>
     </div>
     <div class="pair">
       <div><div class="pair-t" id="r7-h0a-t"></div><svg class="chart" id="r7-h0a" role="img" aria-label="첫 번째 세트의 H0 조건별 오검출률"></svg></div>
@@ -979,9 +980,9 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
 
     <h4 class="sub-h">H1 검출 확률 (맞는 키, 95% 신뢰구간)</h4>
     <div class="legend">
-      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="s2f"/></svg>MD 규칙</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s2s" stroke-width="2"/><circle cx="8" cy="6" r="3.5" class="s2f"/></svg>Z 판정기</span>
       <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="s1f"/></svg>Λ (5열만)</span>
-      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s dash" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="hollow1" style="stroke-width:1.5"/></svg>Λ̂ (CIR 추정)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s dash" stroke-width="2"/><rect x="4.5" y="2.5" width="7" height="7" class="hollow1" style="stroke-width:1.5"/></svg>CIR 추정 Λ̂</span>
     </div>
     <div class="pair">
       <div><div class="pair-t" id="r7-h1a-t"></div><svg class="chart" id="r7-h1a" role="img" aria-label="첫 번째 세트의 세기별 검출 확률"></svg></div>
@@ -994,7 +995,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
     </div>
     <div class="legend">
       <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s" stroke-width="2"/></svg>Λ (5열만)</span>
-      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s dash" stroke-width="2"/></svg>Λ̂ (CIR 추정)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="s1s dash" stroke-width="2"/></svg>CIR 추정 Λ̂</span>
       <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="muteds" stroke-width="2" stroke-dasharray="2 3"/></svg>기준 e<sup>−t/2</sup></span>
     </div>
     <div class="pair">
@@ -1002,7 +1003,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
       <div><div class="pair-t" id="r7-tb-t"></div><svg class="chart" id="r7-tb" role="img" aria-label="두 번째 세트의 탭 단위 꼬리 확률"></svg></div>
     </div>
 
-    <figcaption id="r7-cap">같은 시드로 만든 5열과 2열 세트를 MATLAB 패치와 같은 계산으로 분석한 결과입니다. 기본으로 보이는 값은 Python 미러(<code>lambda_patch/model/web_results.py</code>)가 <code>synthetic_dumps/</code>와 그 2열 판 <code>synthetic_dumps_2col/</code>에서 계산한 것입니다. 왼쪽과 오른쪽에서 MD 규칙과 Λ̂의 표식과 곡선이 같은 자리에 있으면 2열 처리가 맞게 동작하는 것입니다. 5열 세트에서만 원시 샘플 Λ가 더해지며, 감도(L90)가 Λ̂보다 약 2.6 dB 좋습니다. H0는 조건당 1,000개라 오검출률 1e-3을 판정할 수는 없으므로(0~2건 수준), 처리 경로와 경향을 보는 용도입니다. 꼬리 그림에서 Λ와 Λ̂가 점선 e<sup>−t/2</sup>를 따르면 문턱 공식의 전제가 성립합니다.</figcaption>
+    <figcaption id="r7-cap">같은 시드로 만든 5열과 2열 세트를 MATLAB 패치와 같은 계산으로 분석한 결과입니다. 기본으로 보이는 값은 Python 미러(<code>lambda_patch/model/web_results.py</code>)가 <code>synthetic_dumps/</code>와 그 2열 판 <code>synthetic_dumps_2col/</code>에서 계산한 것입니다. 왼쪽과 오른쪽에서 Z 판정기와 Λ̂의 표식과 곡선이 같은 자리에 있으면 2열 처리가 맞게 동작하는 것입니다. 5열 세트에서만 원시 샘플 Λ가 더해지며, 감도(L90)가 Λ̂보다 약 2.6 dB 좋습니다. H0는 조건당 1,000개라 오검출률 1e-3을 판정할 수는 없으므로(0~2건 수준), 처리 경로와 경향을 보는 용도입니다. 꼬리 그림에서 Λ와 Λ̂가 점선 e<sup>−t/2</sup>를 따르면 문턱 공식의 전제가 성립합니다.</figcaption>
     <figcaption>MATLAB 결과로 바꾸려면 <code>export_web_results(root5, root2, 'rif_results.json')</code>로 JSON을 만든 뒤 위 버튼으로 불러오세요. 파일은 브라우저 안에서만 읽고 어디에도 올리지 않습니다. <code>synthetic_dumps</code>와 <code>synthetic_dumps_2col</code>로 만든 JSON이면 Python 미러와 같은지도 함께 표시합니다. GitHub Pages 판에서는 <code>docs/results/matlab_results.json</code>을 커밋하면 그 결과를 기본으로 보여 줍니다.</figcaption>
     <details><summary>표로 보기</summary>
       <div class="tbl-wrap"><table id="r7-tbl0"></table></div>
@@ -1023,7 +1024,7 @@ H0에서 S ~ χ²₁₆  →  57 · N<sub>d</sub> · P(χ²₁₆ &gt; T) = 10�
           <tr><td>강한 틀린 키, 256심볼</td><td class="num">0.38</td><td class="num">0.10–0.70</td></tr>
         </tbody>
       </table></div>
-      <figcaption>κ = |Σ C²| / Σ |C|², 바닥이 가장 높은 위상의 잡음 창 탭에서 계산. 길이가 늘면 CFO 회전으로 κ가 떨어지고, MD 측정의 Pfa도 같은 순서로 떨어졌습니다.</figcaption>
+      <figcaption>κ = |Σ C²| / Σ |C|², 바닥이 가장 높은 위상의 잡음 창 탭에서 계산. 길이가 늘면 CFO 회전으로 κ가 떨어지고, 기존 문서에서 잰 Pfa도 같은 순서로 떨어졌습니다.</figcaption>
     </figure>
     <figure class="plate main" style="flex-basis:420px">
       <h3>표본 수와 합격 확률</h3>
@@ -1058,7 +1059,7 @@ res5 = run_synthetic_test('D:/rif_test5');         % lambda_patch를 path 맨 �
 gen_synthetic_dumps('D:/rif_test2', 'Cols', 2);    % 같은 시드의 2열 세트 (현재 LLS 형식)
 res2 = run_synthetic_test('D:/rif_test2');         % 열 수 자동 인식, 6단계 49개 항목
 
-% 교차 확인: 2열과 5열의 MD·κ·Λ̂ 결과는 정확히 같아야 함 (세 값 모두 true)
+% 교차 확인: 2열과 5열의 Z 판정기·κ·Λ̂ 결과는 정확히 같아야 함 (세 값 모두 true)
 A = h0_pfa_analyze('D:/rif_test5/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
 B = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);
 [isequal(A.E.k, B.E.k), isequal([A.cond.kappa], [B.cond.kappa]), isequal(A.EL.k, B.EL.k)]
@@ -1067,29 +1068,29 @@ B = h0_pfa_analyze('D:/rif_test2/h0', 'Suggest', false, 'Moments', 'cir', 'Plot'
 export_web_results('D:/rif_test5', 'D:/rif_test2', 'D:/rif_results.json', 'Res5', res5, 'Res2', res2);
 
 addpath('&lt;repo&gt;/lambda_patch', '-begin');      % 시뮬레이터 덤프 분석
-R0   = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false);                     % MD 표 + kappa (+ 5열이면 Λ 표)
+R0   = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false);                     % Z 판정기 표 + kappa (+ 5열이면 Λ 표)
 R0hw = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false, 'PerClass', true);   % HW 근사
 R1   = h1_pd_analyze('&lt;H1 root&gt;');                                         % Pd·95% CI·위치 정확도, L90/L99
 r    = rif_cir_analyze('&lt;폴더&gt;', 'Index', 3, 'Plot', 'detail');              % 프래그먼트 하나 자세히
 
-% 고정 칩: Q·Π를 CIR에서 추정 (2열 덤프도 가능)
+% CIR 추정 Λ̂: Q·Π를 CIR에서 추정 (2열 덤프도 가능)
 R0c  = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false, 'Moments', 'cir');
 R1c  = h1_pd_analyze('&lt;H1 root&gt;', 'Moments', 'cir');
 
-% 패킷 판정 (FiRa medium 10^-6, RIF 8개): 전제 확인 → 고정 칩 소프트 결합
+% 패킷 판정 (FiRa medium 10^-6, RIF 8개): 전제 확인 → CIR 추정 Λ̂ 소프트 결합
 A    = check_packet_assumptions('&lt;강한 H1 root&gt;', '&lt;H0 root&gt;');
 R0p  = h0_pfa_analyze('&lt;H0 root&gt;', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
 R1p  = h1_pd_analyze('&lt;H1 root&gt;', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
-R1n  = h1_pd_analyze('&lt;H1 root, 5열&gt;', 'Chip', 'new', 'Profile', 'fira-medium');          % 새 칩
+R1n  = h1_pd_analyze('&lt;H1 root, 5열&gt;', 'Chip', 'new', 'Profile', 'fira-medium');          % 원시 샘플 Λ
 R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 'single', 'FragPerPacket', 1);</pre>
   </div>
 </section>
 
 <footer class="foot">
-  <p><strong>가정과 한계.</strong> 수치는 통계 모델(MD 5.1장의 빗 프로파일, 펄스당 가우시안 근사)과 파형 모델(이상 펄스, 부동소수점, 단일 안테나, HPRF)에서 나왔습니다. 실제 시뮬레이터의 덤프로 다시 확인해야 합니다. 패킷 10⁻⁶은 FiRa 원문이 아니라 그것을 인용한 논문에서 왔습니다.</p>
+  <p><strong>가정과 한계.</strong> 수치는 통계 모델(기존 문서 5.1장의 빗 프로파일, 펄스당 가우시안 근사)과 파형 모델(이상 펄스, 부동소수점, 단일 안테나, HPRF)에서 나왔습니다. 실제 시뮬레이터의 덤프로 다시 확인해야 합니다. 패킷 10⁻⁶은 FiRa 원문이 아니라 그것을 인용한 논문에서 왔습니다.</p>
   <p>Λ의 보장은 H0 신호가 내 키 시퀀스와 독립일 때 성립합니다. 키를 알거나 일부 아는 공격(재전송, 일부 비트 반전)은 대상이 아니며, 표준이 RIF에 요구하는 ToA 무결성 검증은 별도 과제입니다.</p>
-  <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(MD 방식), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>(패치 설계), <code>lambda_patch/TEST_PLAN.md</code>(검증 계획), <code>lambda_patch/model/</code>(수치를 다시 만드는 Python 스크립트). 2026-10-15 기준(판정 기준을 패킷 10⁻⁶으로 전환).</p>
-  <p>관련 페이지: <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶ 기준으로 바꾼 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(일관성 검사 폐기율 결정 자료), <a href="checklist.html">RIF 검증 체크리스트</a>(직접 돌려 볼 시험과 결과 기록), <a href="length.html">RIF 길이별 합성 시험</a>(합성 시험의 RIF 길이 지원 범위), <a href="length-verify.html">RIF 길이 지원 검증 기록</a>(5·6단계 실행 결과와 수정), <a href="pooled.html">Λ̂ 모멘트 모으기</a>(프래그먼트를 모은 Q̂·Π̂ 추정의 모델 확인), <a href="score.html">STS 점수 판정</a>(기존 일반 모드 방식과 지금 모드에서 못 쓰는 이유), <a href="lamhat.html">Λ̂ 판정기 원리</a>(고정 칩 Λ̂의 수식을 CIR 그림으로 설명), <a href="glr.html">Λ·Λ̂ 우도비 유도</a>(두 판정기가 일반화 우도비인 이유를 그림으로 유도), <a href="seminar.html">RIF 수신 판정 세미나 앱</a>(전체 내용을 장면별 위젯으로 정리한 시연용 앱). 결정 기록: <code>lambda_patch/DECISIONS.md</code>.</p>
+  <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(Z 판정기), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>(패치 설계), <code>lambda_patch/TEST_PLAN.md</code>(검증 계획), <code>lambda_patch/model/</code>(수치를 다시 만드는 Python 스크립트). 2026-10-15 기준(판정 기준을 패킷 10⁻⁶으로 전환).</p>
+  <p>관련 페이지: <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶ 기준으로 바꾼 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(일관성 검사 폐기율 결정 자료), <a href="checklist.html">RIF 검증 체크리스트</a>(직접 돌려 볼 시험과 결과 기록), <a href="length.html">RIF 길이별 합성 시험</a>(합성 시험의 RIF 길이 지원 범위), <a href="length-verify.html">RIF 길이 지원 검증 기록</a>(5·6단계 실행 결과와 수정), <a href="pooled.html">Λ̂ 모멘트 모으기</a>(프래그먼트를 모은 Q̂·Π̂ 추정의 모델 확인), <a href="score.html">STS 점수 판정</a>(기존 일반 모드 방식과 지금 모드에서 못 쓰는 이유), <a href="lamhat.html">Λ̂ 판정기 원리</a>(CIR 추정 Λ̂의 수식을 CIR 그림으로 설명), <a href="glr.html">Λ·Λ̂ 우도비 유도</a>(두 판정기가 일반화 우도비인 이유를 그림으로 유도), <a href="seminar.html">RIF 수신 판정 세미나 앱</a>(전체 내용을 장면별 위젯으로 정리한 시연용 앱). 결정 기록: <code>lambda_patch/DECISIONS.md</code>.</p>
 </footer>
 </div>
 
@@ -1412,7 +1413,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     el('line', {x1: ml, x2: W - mr, y1: Y(0), y2: Y(0), 'class': 'ink2s', 'stroke-width': 1}, svg);
     var thr = 10 * Math.log10(r.D < 10 ? TL : TH);
     el('line', {x1: X(WS0), x2: X(WS1), y1: Y(thr), y2: Y(thr), 'class': 's2s', 'stroke-width': 1.5}, svg);
-    txt(svg, X(WS1) - 4, Y(thr) - 6, 'MD 문턱 ' + thr.toFixed(1) + ' dB', 'lab', 'end');
+    txt(svg, X(WS1) - 4, Y(thr) - 6, 'Z 판정 문턱 ' + thr.toFixed(1) + ' dB', 'lab', 'end');
     var d = '';
     for (k = 0; k < 256; k++) d += (k ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(Math.max(Pdb[k], y0)).toFixed(1);
     el('path', {d: d, 'class': 'line2 inks', style: 'stroke-width:1.25'}, svg);
@@ -1446,14 +1447,14 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     sep();
     row('Z', fmtDb(10 * Math.log10(r.Z)) + ' dB');
     row('D', fmtDb(10 * Math.log10(r.D)) + ' dB');
-    row('MD 문턱', (r.D < 10 ? '9.6 dB (D < 10)' : '14.4 dB (D ≥ 10)'));
-    row('MD 판정', decisionChip(r.md, o.truth));
+    row('Z 판정 문턱', (r.D < 10 ? '9.6 dB (D < 10)' : '14.4 dB (D ≥ 10)'));
+    row('Z 판정', decisionChip(r.md, o.truth));
     sep();
     row('Λmax', r.Lmax.toFixed(2));
     row('Λ 문턱', T_LAM.toFixed(2));
     row('Λ 판정', decisionChip(r.lv, o.truth));
     sep();
-    row('Λ̂ (CIR 추정)', r.Lc.toFixed(2) + ' · 고정 칩용');
+    row('CIR 추정 Λ̂', r.Lc.toFixed(2));
     row('Λ̂ 판정', decisionChip(r.lc, o.truth));
     sep();
     row('κ', r.kappa.toFixed(2) + (r.kappa > 0.8 ? ' (비원형)' : r.kappa < 0.6 ? ' (원형에 가까움)' : ''));
@@ -1566,9 +1567,9 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
       var c2 = document.createElement('span'); c2.className = 's'; c2.textContent = s; d.appendChild(c2);
       st.appendChild(d);
     }
-    stat('MD 규칙 오검출', fmtE(w2Data.kMD / n), w2Data.kMD.toLocaleString() + ' / ' + n.toLocaleString() + ' 프래그먼트');
+    stat('Z 판정기 오검출', fmtE(w2Data.kMD / n), w2Data.kMD.toLocaleString() + ' / ' + n.toLocaleString() + ' 프래그먼트');
     stat('Λ 오검출 (같은 프래그먼트)', w2Data.kL ? fmtE(w2Data.kL / n) : '0', w2Data.kL + ' / ' + n.toLocaleString() + ' · 프래그먼트 기준 1e-3');
-    stat('Λ̂ 오검출 (고정 칩용, CIR 추정)', w2Data.kC ? fmtE(w2Data.kC / n) : '0', w2Data.kC + ' / ' + n.toLocaleString() + ' · 8장');
+    stat('CIR 추정 Λ̂ 오검출', w2Data.kC ? fmtE(w2Data.kC / n) : '0', w2Data.kC + ' / ' + n.toLocaleString() + ' · 8장');
     stat('D < 10 dB 비율', Math.round(100 * w2Data.lowD / n) + '%', '낮은 문턱 9.6 dB가 적용된 비율');
   }
   var w2pow = document.getElementById('w2-pow'), w2powv = document.getElementById('w2-pow-v');
@@ -1800,7 +1801,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
       marker(svg, 'sq', X(s.dBm), Y(Math.log10(Math.max(s.kL / s.n, 1e-5))), 's1f');
     });
     var pk = SWEEP[9];
-    txt(svg, X(pk.dBm) + 8, Y(Math.log10(pk.kMD / pk.n)) - 10, 'MD 규칙 ' + fmtE(pk.kMD / pk.n), 'labs', 'start');
+    txt(svg, X(pk.dBm) + 8, Y(Math.log10(pk.kMD / pk.n)) - 10, 'Z 판정기 ' + fmtE(pk.kMD / pk.n), 'labs', 'start');
     var ls = SWEEP[SWEEP.length - 1];
     txt(svg, X(ls.dBm) - 6, Y(Math.log10(ls.kL / ls.n)) + 20, 'Λ', 'labs', 'end');
     var xh = el('line', {x1: 0, x2: 0, y1: mt, y2: H - mb, 'class': 'xh', visibility: 'hidden'}, svg);
@@ -1809,14 +1810,14 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
       var bb = svg.getBoundingClientRect(), sx = (ev.clientX - bb.left) / bb.width * W, best = SWEEP[0], bd = 1e9;
       SWEEP.forEach(function (s) { var dd = Math.abs(X(s.dBm) - sx); if (dd < bd) { bd = dd; best = s; } });
       xh.setAttribute('x1', X(best.dBm)); xh.setAttribute('x2', X(best.dBm)); xh.setAttribute('visibility', 'visible');
-      showTip(ev, [{key: keySvg('circle', 's2f'), v: fmtE(best.kMD / best.n), l: 'MD 규칙 · ' + best.kMD + '건'},
+      showTip(ev, [{key: keySvg('circle', 's2f'), v: fmtE(best.kMD / best.n), l: 'Z 판정기 · ' + best.kMD + '건'},
                    {key: keySvg('sq', 's1f'), v: fmtE(best.kL / best.n), l: 'Λ · ' + best.kL + '건'},
                    {v: best.D.toFixed(1) + ' dB', l: 'D 중앙값'}], minus(best.dBm) + ' dBm · n = 60,000');
     });
     hit.addEventListener('pointerleave', function () { xh.setAttribute('visibility', 'hidden'); hideTip(); });
     var tb = document.getElementById('r1-tbl'); clear(tb);
     var hd = tb.createTHead().insertRow();
-    ['세기 (dBm)', 'D 중앙값 (dB)', 'MD 오검출', 'Λ 오검출'].forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
+    ['세기 (dBm)', 'D 중앙값 (dB)', 'Z 판정기 오검출', 'Λ 오검출'].forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
     var bd2 = tb.createTBody();
     SWEEP.forEach(function (s) {
       var r = bd2.insertRow();
@@ -1841,7 +1842,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
       var y = mt + rowH * i + rowH / 2;
       el('line', {x1: ml, x2: W - mr, y1: y + rowH / 2, y2: y + rowH / 2, 'class': 'gl'}, svg);
       txt(svg, ml - 12, y + 4, c.label, 'lab', 'end');
-      var v = [['kMD', 'circle', 's2f', 'MD 규칙'], ['kZq', 'tri', 's3f', '정규화만'], ['kL', 'sq', 's1f', 'Λ']];
+      var v = [['kMD', 'circle', 's2f', 'Z 판정기'], ['kZq', 'tri', 's3f', '정규화만'], ['kL', 'sq', 's1f', 'Λ']];
       var xs = v.map(function (a) { return X(Math.log10(Math.max(c[a[0]], 0.6) / c.n)); });
       el('line', {x1: Math.min.apply(null, xs), x2: Math.max.apply(null, xs), y1: y, y2: y, 'class': 'axl', 'stroke-width': 1}, svg);
       v.forEach(function (a, j) { marker(svg, a[1], Math.max(xs[j], ml + 4), y, a[2]); });
@@ -1853,7 +1854,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     });
     var tb = document.getElementById('r2-tbl'); clear(tb);
     var hd = tb.createTHead().insertRow();
-    ['조건', 'MD 규칙', '정규화만', 'Λ'].forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
+    ['조건', 'Z 판정기', '정규화만', 'Λ'].forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
     var bd2 = tb.createTBody();
     CONDS.forEach(function (c) {
       var r = bd2.insertRow(), c0 = r.insertCell(); c0.textContent = c.full;
@@ -1885,15 +1886,15 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
       var hit = el('rect', {x: ml, y: y - rowH / 2, width: W - ml - mr, height: rowH, 'class': 'hit'}, svg);
       hit.addEventListener('pointermove', function (ev) {
         showTip(ev, [{key: keySvg('sq', 's1f'), v: minus(s.lam.toFixed(2)) + ' dBm', l: 'Λ'},
-                     {key: keySvg('dot', 's2f'), v: minus(s.md.toFixed(2)) + ' dBm', l: 'MD 규칙'},
-                     {key: keySvg('tri', 's3f'), v: minus(s.safe.toFixed(2)) + ' dBm', l: 'MD 안전 단일 문턱'},
+                     {key: keySvg('dot', 's2f'), v: minus(s.md.toFixed(2)) + ' dBm', l: 'Z 판정기'},
+                     {key: keySvg('tri', 's3f'), v: minus(s.safe.toFixed(2)) + ' dBm', l: 'Z 판정기 안전 단일 문턱'},
                      {key: keySvg('tick', 'inks'), v: minus(s.score.toFixed(1)) + ' dBm', l: '점수 방식 (실측)'}], s.N + '심볼 L90');
       });
       hit.addEventListener('pointerleave', hideTip);
     });
     var tb = document.getElementById('r3-tbl'); clear(tb);
     var hd = tb.createTHead().insertRow();
-    ['길이', 'Λ', 'MD 규칙', 'MD 안전 단일', '점수 방식', 'Λ − 점수 방식'].forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
+    ['길이', 'Λ', 'Z 판정기', 'Z 판정기 안전 단일', '점수 방식', 'Λ − 점수 방식'].forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
     var bd2 = tb.createTBody();
     SENS.forEach(function (s) {
       var r = bd2.insertRow(), c0 = r.insertCell(); c0.textContent = s.N + '심볼';
@@ -1933,14 +1934,14 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     });
     var a = H1AW[4];
     txt(svg, X(a[0]) - 10, Y(a[6] / a[1]) - 8, 'Λ', 'labs', 'end');
-    txt(svg, X(a[0]) + 10, Y(a[2] / a[1]) + 18, 'MD 규칙', 'labs', 'start');
+    txt(svg, X(a[0]) + 10, Y(a[2] / a[1]) + 18, 'Z 판정기', 'labs', 'start');
     var xh = el('line', {x1: 0, x2: 0, y1: mt, y2: H - mb, 'class': 'xh', visibility: 'hidden'}, svg);
     var hit = el('rect', {x: ml, y: mt, width: W - ml - mr, height: H - mt - mb, 'class': 'hit'}, svg);
     hit.addEventListener('pointermove', function (ev) {
       var bb = svg.getBoundingClientRect(), sx = (ev.clientX - bb.left) / bb.width * W, best = H1AW[0], bd = 1e9;
       H1AW.forEach(function (r) { var dd = Math.abs(X(r[0]) - sx); if (dd < bd) { bd = dd; best = r; } });
       xh.setAttribute('x1', X(best[0])); xh.setAttribute('x2', X(best[0])); xh.setAttribute('visibility', 'visible');
-      showTip(ev, [{key: keySvg('dot', 's2f'), v: (best[2] / best[1]).toFixed(4), l: 'MD [' + best[4].toFixed(4) + ', ' + best[5].toFixed(4) + ']'},
+      showTip(ev, [{key: keySvg('dot', 's2f'), v: (best[2] / best[1]).toFixed(4), l: 'Z 판정기 [' + best[4].toFixed(4) + ', ' + best[5].toFixed(4) + ']'},
                    {key: keySvg('sq', 's1f'), v: (best[6] / best[1]).toFixed(4), l: 'Λ [' + best[8].toFixed(4) + ', ' + best[9].toFixed(4) + ']'},
                    {v: pct(best[7] / Math.max(best[6], 1)), l: 'Λ 검출 중 위치 정확'}], minus(best[0]) + ' dBm · n = ' + best[1].toLocaleString());
     });
@@ -1994,7 +1995,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     /* table view */
     var tb = document.getElementById('r4-tbl'); clear(tb);
     var hd = tb.createTHead().insertRow();
-    ['채널', '세기 (dBm)', 'n', 'Pd MD [95% CI]', 'Pd Λ [95% CI]', '위치 정확도 MD', '위치 정확도 Λ'].forEach(function (h, i) {
+    ['채널', '세기 (dBm)', 'n', 'Pd Z 판정기 [95% CI]', 'Pd Λ [95% CI]', '위치 정확도 Z 판정기', '위치 정확도 Λ'].forEach(function (h, i) {
       var th = document.createElement('th'); th.textContent = h; if (i > 1) th.className = 'num'; hd.appendChild(th);
     });
     var body = tb.createTBody();
@@ -2057,7 +2058,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
       for (var j = 0; j < pts.length - 1; j++) if (pts[j][1] < 0.9 && pts[j + 1][1] >= 0.9) return pts[j][0] + (0.9 - pts[j][1]) / (pts[j + 1][1] - pts[j][1]);
       return NaN;
     };
-    var Lx = L90(3), sims = [[10, L90(5) - Lx, 'MD 잡음 창만 (81탭)'], [25, L90(4) - Lx, '신호 창 밖 전체 (199탭)']];
+    var Lx = L90(3), sims = [[10, L90(5) - Lx, '기존 잡음 창 W_n만 (81탭)'], [25, L90(4) - Lx, '신호 창 밖 전체 (199탭)']];
     sims.forEach(function (sm) {
       var x = X(lx(sm[0])), yy = Y(sm[1]);
       el('path', {d: 'M' + (x - 6) + ' ' + (yy - 6) + ' L' + (x + 6) + ' ' + (yy + 6) + ' M' + (x - 6) + ' ' + (yy + 6) + ' L' + (x + 6) + ' ' + (yy - 6), 'class': 'inks', 'stroke-width': 2.2, fill: 'none'}, svg);
@@ -2089,7 +2090,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     el('line', {x1: X(-3), x2: X(-3), y1: mt, y2: H - mb, 'class': 'ink2s', 'stroke-width': 1.2}, svg);
     txt(svg, X(-3) + 5, H - mb - 6, '기준 1e-3', 'lab', 'start');
     txt(svg, (ml + W - mr) / 2, H - 6, '프래그먼트당 오검출률 (로그)', 'axt', 'middle');
-    var ser = [['kMD', 'circle', 's2f', 'MD 규칙'], ['kC', 'sqo', '', 'Λ̂ (CIR 추정)'], ['kL', 'sq', 's1f', 'Λ (원시 샘플)']];
+    var ser = [['kMD', 'circle', 's2f', 'Z 판정기'], ['kC', 'sqo', '', 'CIR 추정 Λ̂'], ['kL', 'sq', 's1f', '원시 샘플 Λ']];
     CIRH0.forEach(function (c, i) {
       var y = mt + rowH * i + rowH / 2;
       el('line', {x1: ml, x2: W - mr, y1: y + rowH / 2, y2: y + rowH / 2, 'class': 'gl'}, svg);
@@ -2107,7 +2108,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     });
     var tb = document.getElementById('r5-tbl'); clear(tb);
     var hd = tb.createTHead().insertRow();
-    ['조건', 'MD 규칙', 'Λ̂ (CIR, 전체)', 'Λ̂ (CIR, MD 잡음 창)', 'Λ (원시 샘플)'].forEach(function (h, i) {
+    ['조건', 'Z 판정기', 'Λ̂ (CIR, 전체)', 'Λ̂ (CIR, 기존 잡음 창 W_n만)', '원시 샘플 Λ'].forEach(function (h, i) {
       var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th);
     });
     var bd = tb.createTBody();
@@ -2130,10 +2131,10 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     el('line', {x1: ml, x2: W - mr, y1: H - mb, y2: H - mb, 'class': 'axl'}, svg);
     txt(svg, (ml + W - mr) / 2, H - 6, '맞는 키 수신 세기 (dBm, 모델 환산)', 'axt', 'middle');
     txt(svg, 14, ym, '검출 확률 Pd', 'axt', 'middle').setAttribute('transform', 'rotate(-90 14 ' + ym + ')');
-    var ser = [{k: 3, line: 's1s', mk: 'sq', mc: 's1f', name: 'Λ (원시 샘플)'},
+    var ser = [{k: 3, line: 's1s', mk: 'sq', mc: 's1f', name: '원시 샘플 Λ'},
                {k: 4, line: 's1s dash', mk: 'sqo', mc: '', name: 'Λ̂ (CIR, 전체)'},
-               {k: 2, line: 's2s', mk: 'circle', mc: 's2f', name: 'MD 규칙'},
-               {k: 5, line: 'muteds dash', mk: 'tri', mc: 'mutedf', name: 'Λ̂ (CIR, MD 잡음 창)'}];
+               {k: 2, line: 's2s', mk: 'circle', mc: 's2f', name: 'Z 판정기'},
+               {k: 5, line: 'muteds dash', mk: 'tri', mc: 'mutedf', name: 'Λ̂ (CIR, 기존 잡음 창 W_n만)'}];
     var L90 = {};
     ser.forEach(function (s) {
       var d = '', pts = CIRH1.map(function (r) { return [r[0], r[s.k] / r[1]]; });
@@ -2159,7 +2160,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     hit.addEventListener('pointerleave', function () { xh.setAttribute('visibility', 'hidden'); hideTip(); });
     var tb = document.getElementById('r6-tbl'); clear(tb);
     var hd = tb.createTHead().insertRow();
-    ['세기 (dBm)', 'n', 'Λ (원시 샘플)', 'Λ̂ (CIR, 전체)', 'MD 규칙', 'Λ̂ (CIR, MD 잡음 창)'].forEach(function (h, i) {
+    ['세기 (dBm)', 'n', '원시 샘플 Λ', 'Λ̂ (CIR, 전체)', 'Z 판정기', 'Λ̂ (CIR, 기존 잡음 창 W_n만)'].forEach(function (h, i) {
       var th = document.createElement('th'); th.textContent = h; th.className = 'num'; hd.appendChild(th);
     });
     var body = tb.createTBody();
@@ -2180,10 +2181,10 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
      a JSON from lambda_patch/test/export_web_results.m (MATLAB) has the same layout and replaces it */
   var SYN = {"source":"python-mirror","created":"2026-10-07 16:43","tool":"lambda_patch/model/web_results.py","T_Lam":22.712543309849703,"sets":[{"label":"5열","cols":5,"root":"synthetic_dumps","checks":null,"tailT":[0.0,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.0,4.25,4.5,4.75,5.0,5.25,5.5,5.75,6.0,6.25,6.5,6.75,7.0,7.25,7.5,7.75,8.0,8.25,8.5,8.75,9.0,9.25,9.5,9.75,10.0,10.25,10.5,10.75,11.0,11.25,11.5,11.75,12.0,12.25,12.5,12.75,13.0,13.25,13.5,13.75,14.0,14.25,14.5,14.75,15.0,15.25,15.5,15.75,16.0,16.25,16.5,16.75,17.0,17.25,17.5,17.75,18.0,18.25,18.5,18.75,19.0,19.25,19.5,19.75,20.0,20.25,20.5,20.75,21.0,21.25,21.5,21.75,22.0,22.25,22.5,22.75,23.0,23.25,23.5,23.75,24.0,24.25,24.5,24.75,25.0,25.25,25.5,25.75,26.0,26.25,26.5,26.75,27.0,27.25,27.5,27.75,28.0,28.25,28.5,28.75,29.0,29.25,29.5,29.75,30.0,30.25,30.5,30.75,31.0,31.25,31.5,31.75,32.0,32.25,32.5,32.75,33.0,33.25,33.5,33.75,34.0,34.25,34.5,34.75,35.0,35.25,35.5,35.75,36.0,36.25,36.5,36.75,37.0,37.25,37.5,37.75,38.0,38.25,38.5,38.75,39.0,39.25,39.5,39.75,40.0],"h0":[{"ch":"awgn","len":32,"dBm":-120,"n":1000,"kMD":1,"kL":1,"kC":0,"kappa":0.38320782635567263,"Dmed":3.516564287173476,"nTapL":57000,"tailL":[57000,50319,44457,39360,34737,30559,26969,23827,21001,18574,16385,14429,12698,11182,9820,8681,7622,6733,5948,5232,4619,4062,3596,3196,2855,2507,2230,1954,1735,1510,1348,1189,1050,926,808,708,620,549,484,432,388,337,296,266,238,214,188,159,147,131,117,92,85,81,68,57,51,44,37,35,34,27,25,21,21,18,17,16,11,11,10,9,9,9,9,7,6,5,4,3,2,2,2,2,2,2,2,2,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"nTapC":57000,"tailC":[57000,50275,44408,39191,34581,30570,27015,23816,20945,18508,16315,14351,12660,11188,9868,8716,7662,6755,5967,5255,4642,4098,3585,3199,2847,2488,2202,1966,1744,1511,1334,1171,1037,926,809,730,633,555,479,410,355,311,283,244,213,179,152,134,115,101,91,81,73,63,59,53,44,40,34,28,26,24,21,17,15,12,10,9,8,7,5,4,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-88,"n":1000,"kMD":10,"kL":0,"kC":2,"kappa":0.5691167268737942,"Dmed":4.838659447750231,"nTapL":57000,"tailL":[57000,50341,44431,39227,34608,30568,26979,23811,21014,18570,16429,14508,12764,11319,10027,8837,7785,6935,6101,5351,4725,4158,3647,3240,2836,2492,2213,1967,1748,1557,1358,1210,1060,946,823,717,629,545,484,423,379,333,295,261,221,199,178,155,138,117,102,88,77,64,55,48,43,38,36,33,30,25,22,18,14,13,13,11,9,9,8,7,6,6,6,5,5,4,4,3,3,2,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"nTapC":57000,"tailC":[57000,50291,44336,39198,34676,30550,27017,23780,20951,18477,16451,14486,12785,11303,9998,8750,7742,6841,6030,5318,4688,4156,3686,3257,2857,2509,2230,1953,1741,1527,1357,1198,1056,933,844,737,653,570,497,438,390,342,298,264,236,218,199,182,167,149,130,116,103,90,81,72,64,58,53,47,36,32,27,21,18,18,17,13,11,9,9,7,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,2,2,2,2,2,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-82,"n":1000,"kMD":52,"kL":1,"kC":0,"kappa":0.8242741605548093,"Dmed":8.511563684193412,"nTapL":57000,"tailL":[57000,50253,44290,39013,34385,30328,26802,23728,20936,18406,16234,14291,12644,11193,9939,8777,7748,6820,5952,5244,4632,4083,3619,3203,2825,2486,2212,1974,1741,1534,1384,1241,1068,937,827,748,659,587,514,467,402,350,304,270,228,194,171,151,135,118,105,95,84,75,66,60,48,42,38,35,31,28,22,18,16,15,12,11,8,7,6,6,6,6,6,5,4,4,3,3,3,3,3,3,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"nTapC":57000,"tailC":[57000,50238,44322,39013,34374,30359,26806,23729,20983,18577,16403,14518,12769,11250,9890,8761,7676,6743,5911,5192,4562,4063,3604,3216,2874,2533,2226,1976,1743,1541,1375,1209,1060,923,816,712,628,566,489,443,382,340,306,280,249,219,196,170,150,133,116,101,91,83,71,59,52,45,39,35,29,25,22,19,17,15,13,10,9,8,8,6,6,5,5,5,5,4,3,3,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-40,"n":1000,"kMD":2,"kL":0,"kC":0,"kappa":0.9770829255807878,"Dmed":24.571539463693526,"nTapL":57000,"tailL":[57000,50181,44186,39208,34451,30380,26858,23733,20931,18481,16363,14458,12755,11242,9972,8685,7684,6811,6073,5399,4816,4307,3863,3447,3007,2690,2416,2164,1922,1680,1482,1309,1167,1014,904,778,663,565,506,453,399,369,318,290,265,242,209,187,177,158,144,132,116,99,88,75,65,54,50,48,45,43,36,30,27,12,10,7,7,7,4,3,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"nTapC":57000,"tailC":[57000,49973,43791,38667,33950,29717,26064,22831,20050,17727,15619,13679,11995,10569,9333,8195,7238,6335,5580,4898,4332,3819,3426,3032,2690,2381,2101,1887,1676,1513,1352,1198,1032,899,787,685,587,505,422,358,298,255,221,194,172,151,138,120,106,94,87,81,69,63,53,43,34,26,19,12,8,4,4,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"mp20","len":32,"dBm":-40,"n":1000,"kMD":50,"kL":0,"kC":0,"kappa":0.6918283504948362,"Dmed":6.514147021487572,"nTapL":57000,"tailL":[57000,50088,44050,38879,34294,30199,26623,23517,20771,18340,16103,14182,12505,11039,9771,8599,7622,6711,5932,5197,4545,4000,3529,3110,2776,2458,2168,1945,1716,1507,1331,1137,997,877,760,667,608,525,476,408,364,328,278,231,204,173,151,135,117,102,87,72,62,53,44,42,37,34,29,26,23,18,15,14,11,9,8,5,4,4,4,3,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"nTapC":57000,"tailC":[57000,50246,44441,39407,34836,30740,27156,23992,21274,18904,16685,14759,13046,11542,10185,9014,7954,7036,6149,5429,4764,4213,3714,3261,2884,2526,2229,1965,1748,1553,1372,1206,1072,960,855,758,689,589,510,450,398,347,313,264,225,190,163,135,116,93,76,62,59,53,44,41,41,32,31,29,22,19,17,16,13,11,10,8,7,6,6,3,3,3,3,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"h1":[{"len":32,"dBm":-116,"n":200,"MD":[27,27,0.09088710175487791,0.1903091726833982],"L":[36,36,0.12936892834838964,0.2403810968840071],"C":[12,12,0.03138395389347033,0.1024618313083239]},{"len":32,"dBm":-115,"n":200,"MD":[51,51,0.19614081520043664,0.3212753966387193],"L":[70,70,0.28407067032290734,0.42045062247799203],"C":[17,17,0.05029591863024038,0.13260516582955134]},{"len":32,"dBm":-114,"n":200,"MD":[87,87,0.36521706916961993,0.5067387921875266],"L":[113,113,0.49326120781244165,0.6347829308303474],"C":[35,35,0.1250244107737024,0.23488397063020916]},{"len":32,"dBm":-113,"n":200,"MD":[123,122,0.5437613072168246,0.6827754746371322],"L":[156,155,0.7161387526864564,0.8353639386882148],"C":[69,69,0.2793654759715303,0.4153072390103879]},{"len":32,"dBm":-112,"n":200,"MD":[176,176,0.8267276488358644,0.9215797520036373],"L":[190,190,0.9099724622986245,0.9757658345278908],"C":[102,102,0.4385217225621352,0.5811774847945139]},{"len":32,"dBm":-111,"n":200,"MD":[181,181,0.8556233600231364,0.9418303902748792],"L":[193,193,0.9292190016489981,0.9858144741015806],"C":[128,128,0.5692860539812541,0.7064952791088326]},{"len":32,"dBm":-110,"n":200,"MD":[196,196,0.9495863909100815,0.9945244341204436],"L":[199,199,0.9724581015427822,0.999873418972133],"C":[174,174,0.8153476694765693,0.9132916472314245]},{"len":32,"dBm":-109,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":[200,200,0.9817246596448526,1.0],"C":[195,195,0.9426256488731308,0.9918338338091572]},{"len":32,"dBm":-108,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":[200,200,0.9817246596448526,1.0],"C":[197,197,0.956791718082268,0.9968958923784463]},{"len":32,"dBm":-107,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":[200,200,0.9817246596448526,1.0],"C":[200,200,0.9817246596448526,1.0]},{"len":32,"dBm":-106,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":[200,200,0.9817246596448526,1.0],"C":[200,200,0.9817246596448526,1.0]}],"L90":{"MD":-111.2,"L":-112.29411764705883,"C":-109.71428571428571}},{"label":"2열","cols":2,"root":"synthetic_dumps_2col","checks":null,"tailT":[0.0,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.0,4.25,4.5,4.75,5.0,5.25,5.5,5.75,6.0,6.25,6.5,6.75,7.0,7.25,7.5,7.75,8.0,8.25,8.5,8.75,9.0,9.25,9.5,9.75,10.0,10.25,10.5,10.75,11.0,11.25,11.5,11.75,12.0,12.25,12.5,12.75,13.0,13.25,13.5,13.75,14.0,14.25,14.5,14.75,15.0,15.25,15.5,15.75,16.0,16.25,16.5,16.75,17.0,17.25,17.5,17.75,18.0,18.25,18.5,18.75,19.0,19.25,19.5,19.75,20.0,20.25,20.5,20.75,21.0,21.25,21.5,21.75,22.0,22.25,22.5,22.75,23.0,23.25,23.5,23.75,24.0,24.25,24.5,24.75,25.0,25.25,25.5,25.75,26.0,26.25,26.5,26.75,27.0,27.25,27.5,27.75,28.0,28.25,28.5,28.75,29.0,29.25,29.5,29.75,30.0,30.25,30.5,30.75,31.0,31.25,31.5,31.75,32.0,32.25,32.5,32.75,33.0,33.25,33.5,33.75,34.0,34.25,34.5,34.75,35.0,35.25,35.5,35.75,36.0,36.25,36.5,36.75,37.0,37.25,37.5,37.75,38.0,38.25,38.5,38.75,39.0,39.25,39.5,39.75,40.0],"h0":[{"ch":"awgn","len":32,"dBm":-120,"n":1000,"kMD":1,"kL":null,"kC":0,"kappa":0.38320782635567263,"Dmed":3.516564287173476,"nTapL":0,"tailL":null,"nTapC":57000,"tailC":[57000,50275,44408,39191,34581,30570,27015,23816,20945,18508,16315,14351,12660,11188,9868,8716,7662,6755,5967,5255,4642,4098,3585,3199,2847,2488,2202,1966,1744,1511,1334,1171,1037,926,809,730,633,555,479,410,355,311,283,244,213,179,152,134,115,101,91,81,73,63,59,53,44,40,34,28,26,24,21,17,15,12,10,9,8,7,5,4,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-88,"n":1000,"kMD":10,"kL":null,"kC":2,"kappa":0.5691167268737942,"Dmed":4.838659447750231,"nTapL":0,"tailL":null,"nTapC":57000,"tailC":[57000,50291,44336,39198,34676,30550,27017,23780,20951,18477,16451,14486,12785,11303,9998,8750,7742,6841,6030,5318,4688,4156,3686,3257,2857,2509,2230,1953,1741,1527,1357,1198,1056,933,844,737,653,570,497,438,390,342,298,264,236,218,199,182,167,149,130,116,103,90,81,72,64,58,53,47,36,32,27,21,18,18,17,13,11,9,9,7,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,2,2,2,2,2,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-82,"n":1000,"kMD":52,"kL":null,"kC":0,"kappa":0.8242741605548093,"Dmed":8.511563684193412,"nTapL":0,"tailL":null,"nTapC":57000,"tailC":[57000,50238,44322,39013,34374,30359,26806,23729,20983,18577,16403,14518,12769,11250,9890,8761,7676,6743,5911,5192,4562,4063,3604,3216,2874,2533,2226,1976,1743,1541,1375,1209,1060,923,816,712,628,566,489,443,382,340,306,280,249,219,196,170,150,133,116,101,91,83,71,59,52,45,39,35,29,25,22,19,17,15,13,10,9,8,8,6,6,5,5,5,5,4,3,3,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"awgn","len":32,"dBm":-40,"n":1000,"kMD":2,"kL":null,"kC":0,"kappa":0.9770829255807878,"Dmed":24.571539463693526,"nTapL":0,"tailL":null,"nTapC":57000,"tailC":[57000,49973,43791,38667,33950,29717,26064,22831,20050,17727,15619,13679,11995,10569,9333,8195,7238,6335,5580,4898,4332,3819,3426,3032,2690,2381,2101,1887,1676,1513,1352,1198,1032,899,787,685,587,505,422,358,298,255,221,194,172,151,138,120,106,94,87,81,69,63,53,43,34,26,19,12,8,4,4,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"ch":"mp20","len":32,"dBm":-40,"n":1000,"kMD":50,"kL":null,"kC":0,"kappa":0.6918283504948362,"Dmed":6.514147021487572,"nTapL":0,"tailL":null,"nTapC":57000,"tailC":[57000,50246,44441,39407,34836,30740,27156,23992,21274,18904,16685,14759,13046,11542,10185,9014,7954,7036,6149,5429,4764,4213,3714,3261,2884,2526,2229,1965,1748,1553,1372,1206,1072,960,855,758,689,589,510,450,398,347,313,264,225,190,163,135,116,93,76,62,59,53,44,41,41,32,31,29,22,19,17,16,13,11,10,8,7,6,6,3,3,3,3,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"h1":[{"len":32,"dBm":-116,"n":200,"MD":[27,27,0.09088710175487791,0.1903091726833982],"L":null,"C":[12,12,0.03138395389347033,0.1024618313083239]},{"len":32,"dBm":-115,"n":200,"MD":[51,51,0.19614081520043664,0.3212753966387193],"L":null,"C":[17,17,0.05029591863024038,0.13260516582955134]},{"len":32,"dBm":-114,"n":200,"MD":[87,87,0.36521706916961993,0.5067387921875266],"L":null,"C":[35,35,0.1250244107737024,0.23488397063020916]},{"len":32,"dBm":-113,"n":200,"MD":[123,122,0.5437613072168246,0.6827754746371322],"L":null,"C":[69,69,0.2793654759715303,0.4153072390103879]},{"len":32,"dBm":-112,"n":200,"MD":[176,176,0.8267276488358644,0.9215797520036373],"L":null,"C":[102,102,0.4385217225621352,0.5811774847945139]},{"len":32,"dBm":-111,"n":200,"MD":[181,181,0.8556233600231364,0.9418303902748792],"L":null,"C":[128,128,0.5692860539812541,0.7064952791088326]},{"len":32,"dBm":-110,"n":200,"MD":[196,196,0.9495863909100815,0.9945244341204436],"L":null,"C":[174,174,0.8153476694765693,0.9132916472314245]},{"len":32,"dBm":-109,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":null,"C":[195,195,0.9426256488731308,0.9918338338091572]},{"len":32,"dBm":-108,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":null,"C":[197,197,0.956791718082268,0.9968958923784463]},{"len":32,"dBm":-107,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":null,"C":[200,200,0.9817246596448526,1.0]},{"len":32,"dBm":-106,"n":200,"MD":[200,200,0.9817246596448526,1.0],"L":null,"C":[200,200,0.9817246596448526,1.0]}],"L90":{"MD":-111.2,"L":null,"C":-109.71428571428571}}]};
   var R7 = {data: null, src: '', cond: -1};
-  var R7H0 = [{k: 'kMD', mk: 'circle', mc: 's2f', key: 'dot', name: 'MD 규칙', dy: -8},
-              {k: 'kL', mk: 'sq', mc: 's1f', key: 'sq', name: 'Λ (원시 샘플)', dy: 0},
-              {k: 'kC', mk: 'sqo', mc: '', key: 'sq', name: 'Λ̂ (CIR 추정)', dy: 8}];
-  var R7H1 = [{k: 'MD', line: 's2s', mk: 'circle', mc: 's2f', key: 'dot', ws: 's2s', name: 'MD 규칙', dx: -4},
+  var R7H0 = [{k: 'kMD', mk: 'circle', mc: 's2f', key: 'dot', name: 'Z 판정기', dy: -8},
+              {k: 'kL', mk: 'sq', mc: 's1f', key: 'sq', name: '원시 샘플 Λ', dy: 0},
+              {k: 'kC', mk: 'sqo', mc: '', key: 'sq', name: 'CIR 추정 Λ̂', dy: 8}];
+  var R7H1 = [{k: 'MD', line: 's2s', mk: 'circle', mc: 's2f', key: 'dot', ws: 's2s', name: 'Z 판정기', dx: -4},
               {k: 'L', line: 's1s', mk: 'sq', mc: 's1f', key: 'sq', ws: 's1s', name: 'Λ', dx: 0},
               {k: 'C', line: 's1s dash', mk: 'sqo', mc: '', key: 'sq', ws: 's1s', name: 'Λ̂', dx: 4}];
   function r7SetName(s) { return s.cols === 5 ? '5열 세트' : s.cols === 2 ? '2열 세트' : String(s.label || '세트'); }
@@ -2403,7 +2404,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     var S = r7Sets();
     if (S.length === 2) {
       var c = r7Compare(S[0], S[1]);
-      [['MD 오검출 수', c.md, 'H0 조건'], ['κ 중앙값', c.kap, 'H0 조건'], ['Λ̂ 오검출 수', c.c, 'H0 조건'], ['H1 검출 수 (MD, Λ̂)', c.h1, 'H1 세기']].forEach(function (t) {
+      [['Z 판정기 오검출 수', c.md, 'H0 조건'], ['κ 중앙값', c.kap, 'H0 조건'], ['Λ̂ 오검출 수', c.c, 'H0 조건'], ['H1 검출 수 (Z 판정기, Λ̂)', c.h1, 'H1 세기']].forEach(function (t) {
         var ok = t[1][0] === t[1][1];
         tile(t[0] + ': ' + r7SetName(S[0]).replace(' 세트', '') + ' 대 ' + r7SetName(S[1]).replace(' 세트', ''), ok ? '같음' : '다름',
              t[2] + ' ' + t[1][1] + '개 중 ' + t[1][0] + '개 같음', ok ? 'ok' : 'ng');
@@ -2428,7 +2429,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     var S = r7Sets();
     var tb = document.getElementById('r7-tbl0'); clear(tb);
     var hd = tb.createTHead().insertRow(), cols = ['H0 조건', 'n'];
-    S.forEach(function (s) { var nm = r7SetName(s).replace(' 세트', ''); cols.push('MD ' + nm, 'Λ ' + nm, 'Λ̂ ' + nm, 'κ ' + nm); });
+    S.forEach(function (s) { var nm = r7SetName(s).replace(' 세트', ''); cols.push('Z 판정기 ' + nm, 'Λ ' + nm, 'Λ̂ ' + nm, 'κ ' + nm); });
     cols.forEach(function (h, i) { var th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hd.appendChild(th); });
     var bd = tb.createTBody();
     S[0].h0.forEach(function (r) {
@@ -2444,7 +2445,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     });
     var tb1 = document.getElementById('r7-tbl1'); clear(tb1);
     var hd1 = tb1.createTHead().insertRow(), cols1 = ['H1 세기 (dBm)', 'n'];
-    S.forEach(function (s) { var nm = r7SetName(s).replace(' 세트', ''); cols1.push('Pd MD ' + nm, 'Pd Λ ' + nm, 'Pd Λ̂ ' + nm); });
+    S.forEach(function (s) { var nm = r7SetName(s).replace(' 세트', ''); cols1.push('Pd Z 판정기 ' + nm, 'Pd Λ ' + nm, 'Pd Λ̂ ' + nm); });
     cols1.forEach(function (h) { var th = document.createElement('th'); th.textContent = h; th.className = 'num'; hd1.appendChild(th); });
     var bd1 = tb1.createTBody();
     var rows = S[0].h1.slice().sort(function (a, b) { return a.dBm - b.dBm; });
@@ -2800,11 +2801,11 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
         var p = r8Pts(s, chip).filter(function (q) { return q[0] === best; })[0];
         if (p) rows.push({key: keySvg(s.key, s.key === 'line' ? 'ink2s' : (s.mc || 's1f')), v: p[1].toFixed(3), l: s.name});
       });
-      showTip(ev, rows, minus(best) + ' dBm · ' + (chip === 'c' ? '고정 칩 Λ̂' : '새 칩 Λ'));
+      showTip(ev, rows, minus(best) + ' dBm · ' + (chip === 'c' ? 'CIR 추정 Λ̂' : '원시 샘플 Λ'));
     });
     hit.addEventListener('pointerleave', function () { xh.setAttribute('visibility', 'hidden'); hideTip(); });
     var cap = document.getElementById('r8-cap');
-    cap.textContent = 'L90 (' + (chip === 'c' ? '고정 칩 Λ̂' : '새 칩 Λ') + '): ' + R8SER.map(function (s) {
+    cap.textContent = 'L90 (' + (chip === 'c' ? 'CIR 추정 Λ̂' : '원시 샘플 Λ') + '): ' + R8SER.map(function (s) {
       return s.name.split(':')[0].split(' (')[0] + ' ' + (isNaN(L[s.k]) ? '–' : minus(L[s.k].toFixed(1)));
     }).join(' · ') + ' dBm. 소프트 합은 프래그먼트 하나하나가 약한 세기에서도 8개의 증거를 모아 판정하므로, ' +
       '이전 기준(프래그먼트 하나)보다 약 ' + (L.cur - L.soft).toFixed(1) + ' dB 좋습니다. 프래그먼트마다 1e-3으로 판정해 8개 모두를 요구하면 오히려 이전 기준보다 나빠집니다. ' +

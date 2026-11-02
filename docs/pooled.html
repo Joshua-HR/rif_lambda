@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Λ̂ 모멘트 모으기</title>
-<meta name="description" content="고정 칩 Λ̂의 Q̂·Π̂를 패킷의 1·2·4·8개 프래그먼트에서 모아 추정할 때, RIF 길이 32~256심볼에서의 Pfa와 소프트 패킷 감도를 통계 모델로 확인한 결과">
+<meta name="description" content="CIR 추정 Λ̂의 Q̂·Π̂를 패킷의 1·2·4·8개 프래그먼트에서 모아 추정할 때, RIF 길이 32~256심볼에서의 Pfa와 소프트 패킷 감도를 통계 모델로 확인한 결과">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
 <!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
@@ -161,7 +161,7 @@ tr.grp td{border-top:2px solid var(--axis)}
 <header class="hero">
   <span class="eyebrow">lambda_patch · 통계 모델 · 2026-10-22</span>
   <h1>프래그먼트를 모아 Λ̂의 잡음 통계를 추정하면</h1>
-  <p class="lede">고정 칩의 Λ̂는 신호 창 밖 탭으로 빗 위상마다 Q̂·Π̂를 추정합니다. 한 프래그먼트에는 위상당 25개뿐이라, 패킷의 K개 프래그먼트에서 모으면 문턱 손해가 줄어들 것으로 기대했습니다. 모델로 확인한 결과는 반대입니다. Pfa를 지키는 문턱으로 모으면 지금처럼 프래그먼트마다 추정하는 방식보다 0.4~1.4 dB 나쁘고, 추정 편향이 전혀 없는 이상적인 경우에도 이득은 0.4~0.6 dB입니다. 지금 방식을 유지하는 것을 권합니다.</p>
+  <p class="lede">CIR 추정 Λ̂는 신호 창 밖 탭으로 빗 위상마다 Q̂·Π̂를 추정합니다. 한 프래그먼트에는 위상당 25개뿐이라, 패킷의 K개 프래그먼트에서 모으면 문턱 손해가 줄어들 것으로 기대했습니다. 모델로 확인한 결과는 반대입니다. Pfa를 지키는 문턱으로 모으면 지금처럼 프래그먼트마다 추정하는 방식보다 0.4~1.4 dB 나쁘고, 추정 편향이 전혀 없는 이상적인 경우에도 이득은 0.4~0.6 dB입니다. 지금 방식을 유지하는 것을 권합니다.</p>
   <div class="answer" id="answer">
     <div class="ans"><span class="k">모은 Λ̂, Pfa를 지키는 문턱</span><span class="v bad" id="a1">−0.4 ~ −1.4 dB</span><span class="d">16조합(프래그먼트 1·2·4·8개 × 32·64·128·256심볼) 모두 지금 방식보다 나쁨. 1개는 모을 것이 없어 같음</span></div>
     <div class="ans"><span class="k">이상적으로 모았을 때의 최대 이득</span><span class="v" id="a2">+0.4 ~ +0.6 dB</span><span class="d">위상 맞춤에서 생기는 편향이 없다고 칠 때(φ = 1). 원시 샘플 Λ와의 남은 차이는 2개 1.7~1.9, 8개 0.3~0.5 dB</span></div>
@@ -181,7 +181,7 @@ tr.grp td{border-top:2px solid var(--axis)}
 <section id="s1">
   <div class="sec-head"><span class="no">1 · 무엇을 모으나</span><h2>위상당 25개 탭의 추정 손해</h2></div>
   <div class="prose stack">
-    <p>Λ̂는 탭마다 Q(잡음 세기)와 Π(비원형 성분)로 정규화한 통계입니다. 고정 칩에는 Q·Π 누산기가 없어, 신호 창 W<sub>s</sub>(119~175) 밖의 199개 탭을 빗 위상(8개)별로 나눠 Q̂·Π̂를 추정합니다. 위상마다 표본이 24~25개라 추정 잡음이 크고, 같은 Pfa를 지키려면 문턱이 원시 샘플 Λ보다 높아집니다(Hotelling T², 설계 문서 8.2절).</p>
+    <p>Λ̂는 탭마다 Q(잡음 세기)와 Π(비원형 성분)로 정규화한 통계입니다. 지금 하드웨어에는 Q·Π 누산기가 없어, 신호 창 W<sub>s</sub>(119~175) 밖의 199개 탭을 빗 위상(8개)별로 나눠 Q̂·Π̂를 추정합니다. 위상마다 표본이 24~25개라 추정 잡음이 크고, 같은 Pfa를 지키려면 문턱이 원시 샘플 Λ보다 높아집니다(Hotelling T², 설계 문서 8.2절).</p>
     <p>한 패킷에는 RIF 프래그먼트가 K개(1·2·4·8) 있습니다. 같은 채널과 같은 세기를 겪는다면, K개의 바깥 탭을 모아 위상당 25·K개로 추정할 수 있습니다. 아래 곡선은 프래그먼트 하나의 판정(Pfa 1e-3)에서 표본 수가 늘 때 문턱 손해가 어떻게 줄어드는지 보여 줍니다.</p>
   </div>
   <figure class="plate" style="margin:0">
@@ -470,17 +470,17 @@ s = l₁ + l₂ ~ χ²₂N 와 r = l₂/l₁ 이 독립이므로  S = N(1 + r)/s
   <div class="sec-head"><span class="no">6 · 결론과 남은 일</span><h2>프래그먼트마다 추정하는 지금 방식을 유지</h2></div>
   <div class="prose stack">
     <ul>
-      <li><strong>결론:</strong> Pfa를 지키며 모으면 16조합 모두 지금 방식보다 0.4~1.4 dB 나쁩니다. 고정 칩 Λ̂는 지금처럼 프래그먼트마다 추정하고 Λ_eq로 바꿔 소프트 결합합니다.</li>
+      <li><strong>결론:</strong> Pfa를 지키며 모으면 16조합 모두 지금 방식보다 0.4~1.4 dB 나쁩니다. CIR 추정 Λ̂는 지금처럼 프래그먼트마다 추정하고 Λ_eq로 바꿔 소프트 결합합니다.</li>
       <li><strong>다시 볼 조건:</strong> 회전을 편향 없이 정하는 방법을 찾아 모든 H0 조건에서 φ를 손익분기(2개 약 0.8, 4개 약 0.65, 8개 약 0.5) 위로 올린다면, 최대 0.4~0.6 dB를 얻을 수 있습니다. 회전 추정에 쓰는 위상과 모으는 위상을 나누는 방식은 32심볼·8개 시험에서 열잡음은 좋아졌지만 중간 세기(틀린 키 −82.5, −76.5 dBm)에서 φ가 더 작았습니다.</li>
       <li><strong>모으기의 전제:</strong> 패킷의 프래그먼트가 같은 채널과 같은 세기를 겪어야 하고, AGC 이득을 알아야 합니다. 이득을 보정하지 않으면 설계 φ로도 Pfa가 깨집니다.</li>
-      <li><strong>모델의 범위:</strong> 통계 모델(<code>medium_level.py</code>와 같은 탭 모델)이고 MATLAB 패치에는 넣지 않았습니다. H1은 AWGN과 이동 0만 봤습니다. 원시 샘플 Λ(새 칩)와의 남은 차이는 2개 2.2~2.4 dB, 4개 1.2~1.5 dB, 8개 0.9 dB입니다.</li>
+      <li><strong>모델의 범위:</strong> 통계 모델(<code>medium_level.py</code>와 같은 탭 모델)이고 MATLAB 패치에는 넣지 않았습니다. H1은 AWGN과 이동 0만 봤습니다. 원시 샘플 Λ와의 남은 차이는 2개 2.2~2.4 dB, 4개 1.2~1.5 dB, 8개 0.9 dB입니다.</li>
     </ul>
   </div>
 </section>
 
 <footer class="foot">
   <p>재현: <code>lambda_patch/model/pooled_moments.py</code> (<code>h0 6000 11</code>, <code>h0 6000 22</code>, <code>h1 1500</code>, <code>post</code>, <code>phi</code>, 6코어 약 30분). 결과: <code>model/results/pooled_moments.json</code>. 프래그먼트 수와 길이마다 같은 8프래그먼트 패킷의 앞 K개를 씁니다.</p>
-  <p>관련 페이지: <a href="index.html#s8">RIF Λ 판정기 8장</a>(고정 칩 Λ̂), <a href="lamhat.html">Λ̂ 판정기 원리</a>(수식과 CIR 그림), <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶), <a href="checklist.html">RIF 검증 체크리스트</a>.</p>
+  <p>관련 페이지: <a href="index.html#s8">RIF Λ 판정기 8장</a>(CIR 추정 Λ̂), <a href="lamhat.html">Λ̂ 판정기 원리</a>(수식과 CIR 그림), <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶), <a href="checklist.html">RIF 검증 체크리스트</a>.</p>
 </footer>
 </div>
 
@@ -573,7 +573,7 @@ s = l₁ + l₂ ~ χ²₂N 와 r = l₂/l₁ 이 독립이므로  S = N(1 + r)/s
       el('circle', {cx: x(q[0]), cy: y(v), r: 5.5, fill: q[2], stroke: 'var(--surface)', 'stroke-width': 2}, svg);
       el('text', {x: x(q[0]) + 9, y: y(v) - 9, 'class': 'lab'}, svg, q[1] + ' ' + v.toFixed(2) + ' dB');
     });
-    var v10 = rise(10); el('text', {x: x(10) + 8, y: y(v10) + 4, 'class': 'lab'}, svg, 'n = 10 (MD 잡음 창만) ' + v10.toFixed(1) + ' dB');
+    var v10 = rise(10); el('text', {x: x(10) + 8, y: y(v10) + 4, 'class': 'lab'}, svg, 'n = 10 (기존 잡음 창 W_n만) ' + v10.toFixed(1) + ' dB');
   })();
 
   /* ---------------------------------------------------------------- 2 naive vs aligned tail ratios (K = 8, 32 symbols) */

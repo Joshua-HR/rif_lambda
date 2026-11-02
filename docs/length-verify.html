@@ -183,7 +183,7 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
       <thead><tr><th>브랜치</th><th>커밋</th><th>내용</th></tr></thead>
       <tbody>
         <tr><td>master</td><td class="mono">88aa575</td><td>1단계: Python 생성기에 <code>--N</code>, <code>--ppm</code>, 이동량, 세기 이동, 생성 조건 파일</td></tr>
-        <tr><td>master</td><td class="mono">1908194</td><td>2단계: 미러 <code>expect_synthetic.py</code>, 모델 L90·MD 통계·이동 확인, 범위 표 생성기</td></tr>
+        <tr><td>master</td><td class="mono">1908194</td><td>2단계: 미러 <code>expect_synthetic.py</code>, 모델 L90·Z 판정기 통계·이동 확인, 범위 표 생성기</td></tr>
         <tr><td>master</td><td class="mono">47483ef</td><td>체크리스트 A-L32, A-LN</td></tr>
         <tr><td>length-support</td><td class="mono">1f8ea03</td><td>3·4단계: <code>gen_synthetic_dumps</code>, <code>run_synthetic_test</code>, <code>synthetic_expect.m</code></td></tr>
         <tr><td>length-support</td><td class="mono">9ac6f6b · 2c8fbac</td><td>5·6단계 실행 스크립트 <code>regress_length32</code>, <code>regress_lengths</code></td></tr>
@@ -209,10 +209,10 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
       <div class="read"><b>읽는 법</b><span>모든 규칙이 길이에 따라 거의 같은 양(0.2 dB 안)만큼 낮은 세기 쪽으로 옮겨 갑니다. 256심볼이 128심볼보다 덜 옮겨 가는 것은 잔여 CFO 0.25 ppm이 긴 누적 동안 위상을 돌려 피크를 깎기 때문입니다. 그래서 세트의 H1 세기를 S = 0 / −3 / −5 / −5 dB만큼 옮기고, L90 범위도 규칙별로 옮겼습니다.</span></div>
     </figure>
     <figure class="plate">
-      <h3>MD 규칙 H0 오검출률은 길이가 길수록 줄어듭니다</h3>
+      <h3>Z 판정기 H0 오검출률은 길이가 길수록 줄어듭니다</h3>
       <div class="legend" id="lg-md"></div>
-      <svg class="ch" id="c-md" viewBox="0 0 520 300" role="img" aria-label="H0 조건별 MD 규칙 오검출률과 32심볼 −82 dBm 범위"></svg>
-      <div class="read"><b>읽는 법</b><span>열잡음만 있는 −120 dBm은 그대로이고, 틀린 키 신호가 섞인 조건은 길이가 길수록 줄어듭니다. 256심볼의 −82 dBm(0.011)은 32심볼 범위(색 띠, 0.028–0.078) 밑입니다. 그래서 MD 규칙 통계는 길이별 모델 값으로 범위를 옮겼습니다. MD 규칙은 판정기가 아니라 비교 기준선입니다.</span></div>
+      <svg class="ch" id="c-md" viewBox="0 0 520 300" role="img" aria-label="H0 조건별 Z 판정기 오검출률과 32심볼 −82 dBm 범위"></svg>
+      <div class="read"><b>읽는 법</b><span>열잡음만 있는 −120 dBm은 그대로이고, 틀린 키 신호가 섞인 조건은 길이가 길수록 줄어듭니다. 256심볼의 −82 dBm(0.011)은 32심볼 범위(색 띠, 0.028–0.078) 밑입니다. 그래서 Z 판정기 통계는 길이별 모델 값으로 범위를 옮겼습니다. Z 판정기는 판정기가 아니라 비교 기준선입니다.</span></div>
     </figure>
     <figure class="plate">
       <h3>κ(비원형성)는 CFO 비원형 계수를 따라 내려갑니다</h3>
@@ -224,7 +224,7 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
       <h3>이동 탐색이 이동량과 관계없이 검출을 되살립니다</h3>
       <div class="legend" id="lg-dr"></div>
       <svg class="ch" id="c-dr" viewBox="0 0 520 300" role="img" aria-label="이동량별 패킷 Pd, 탐색 없이와 탐색 후"></svg>
-      <div class="read"><b>읽는 법</b><span>고정 칩, 약한 이동 폴더, 패킷 100개 기준입니다. 탐색 없이는 이동량이 클수록 Pd가 떨어지고(1.2탭에서 0.02–0.04), 탐색 후에는 모든 길이에서 0.96–1.00입니다. 이동 Pd 판정은 0.25–1.2탭에서 하한 0.85로 판정합니다.</span></div>
+      <div class="read"><b>읽는 법</b><span>CIR 추정 Λ̂, 약한 이동 폴더, 패킷 100개 기준입니다. 탐색 없이는 이동량이 클수록 Pd가 떨어지고(1.2탭에서 0.02–0.04), 탐색 후에는 모든 길이에서 0.96–1.00입니다. 이동 Pd 판정은 0.25–1.2탭에서 하한 0.85로 판정합니다.</span></div>
     </figure>
   </div>
 </section>
@@ -281,7 +281,7 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
   <div class="sec-head"><span class="sec-no">5</span><h2>64심볼 전체 세트: −40 dBm 조건의 Λ̂ 꼬리가 길이에 따라 바뀌었습니다</h2></div>
   <div class="term"><span class="bad">N64 FAIL N 64, 5 columns, full set</span>  93 / 94 checks OK; CHECK cir h0: largest tail ratio t=10 = 1.307   <span class="dim">(범위 0.7 .. 1.3)</span>
 <span class="bad">N64 FAIL N 64, 2 columns, full set</span>  48 / 49 checks OK; CHECK 2col h0 cir: largest tail ratio t=10 = 1.307   <span class="dim">(같은 CIR이라 같은 값)</span></div>
-  <p class="prose">이 판정은 Λ̂(CIR에서 Q·Π를 추정한 고정 칩 판정기)로 잡음만 있을 때, 탭마다 Λ̂ ≥ 10인 비율을 χ²₂의 기대값 e⁻⁵로 나눈 값입니다. H0 네 조건 중 가장 큰 값을 봅니다. 1에 가까워야 정상이고, 범위 0.7–1.3은 32심볼에서 쓰던 값입니다.</p>
+  <p class="prose">이 판정은 CIR 추정 Λ̂(CIR에서 Q·Π를 추정하는 판정기)로 잡음만 있을 때, 탭마다 Λ̂ ≥ 10인 비율을 χ²₂의 기대값 e⁻⁵로 나눈 값입니다. H0 네 조건 중 가장 큰 값을 봅니다. 1에 가까워야 정상이고, 범위 0.7–1.3은 32심볼에서 쓰던 값입니다.</p>
   <div class="grid2">
     <figure class="plate">
       <h3>조건별 Λ̂ 꼬리 비율 (Python 기준 세트, ±1σ)</h3>
@@ -360,7 +360,7 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
 </section>
 
 <footer class="foot">
-  <p>그래프 수치: <code>lambda_patch/model/results/</code>의 <code>length_l90.json</code>(통계 모델 L90), <code>length_h0md.json</code>(MD 규칙 H0 모델), <code>expect_n*.json</code>(Python 기준 세트의 κ), <code>drift_check.json</code>(이동 확인), <code>expect_spread.json</code>(bootstrap 퍼짐). 범위는 length-support의 <code>test/synthetic_expect.m</code>입니다. 조건별 Λ̂ 꼬리와 1.3 초과 확률은 같은 기준 세트의 2,000번 bootstrap(2026-10-21)이고, 예산 판정 실패 확률은 이항 분포와 Clopper-Pearson 95% 상한으로 계산했습니다. MATLAB 값은 실행 요약 표에서 옮겼습니다.</p>
+  <p>그래프 수치: <code>lambda_patch/model/results/</code>의 <code>length_l90.json</code>(통계 모델 L90), <code>length_h0md.json</code>(Z 판정기 H0 모델), <code>expect_n*.json</code>(Python 기준 세트의 κ), <code>drift_check.json</code>(이동 확인), <code>expect_spread.json</code>(bootstrap 퍼짐). 범위는 length-support의 <code>test/synthetic_expect.m</code>입니다. 조건별 Λ̂ 꼬리와 1.3 초과 확률은 같은 기준 세트의 2,000번 bootstrap(2026-10-21)이고, 예산 판정 실패 확률은 이항 분포와 Clopper-Pearson 95% 상한으로 계산했습니다. MATLAB 값은 실행 요약 표에서 옮겼습니다.</p>
   <p>관련 페이지: <a href="length.html">RIF 길이별 합성 시험</a>, <a href="checklist.html">RIF 검증 체크리스트</a>, <a href="index.html">RIF Λ 판정기</a>.</p>
 </footer>
 </div>
@@ -422,7 +422,7 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
 
   /* ---------------- pipeline diagram */
   (function () {
-    var b = [[20, 20, '기준 세트 (Python)', 'gen_dumps.py --N', '32·64·128·256, 5열·2열'], [250, 20, '판정 값 94/49', 'expect_synthetic.py', '+ 모델: L90, MD, 이동'], [480, 20, '퍼짐', 'expect_spread.py', 'H0 꼬리·상관 19종'], [710, 20, '범위 표', 'build_expect.py', '→ synthetic_expect.m'],
+    var b = [[20, 20, '기준 세트 (Python)', 'gen_dumps.py --N', '32·64·128·256, 5열·2열'], [250, 20, '판정 값 94/49', 'expect_synthetic.py', '+ 모델: L90, Z 판정기, 이동'], [480, 20, '퍼짐', 'expect_spread.py', 'H0 꼬리·상관 19종'], [710, 20, '범위 표', 'build_expect.py', '→ synthetic_expect.m'],
              [20, 150, '세트 생성 (MATLAB)', 'gen_synthetic_dumps', "'N', 'Sco', 생성 조건 파일"], [250, 150, '세트 읽기', 'run_synthetic_test', 'N, Ppm, 이동량, Scale'], [480, 150, '판정', 'synthetic_expect(N)', '+ CFO·이동·Scale 규칙'], [710, 150, '실행 묶음', 'regress_length32 / _lengths', 'PASS/FAIL 표']];
     var s = '<defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--ink-2)"/></marker></defs>';
     b.forEach(function (x, i) {
@@ -440,7 +440,7 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
   })();
 
   /* ---------------- section 2 */
-  var RULES = [['md1', 'MD 규칙 (프래그먼트)', 'var(--s2)'], ['cur_x', 'Λ 프래그먼트 1e-3', 'var(--s1)'], ['cur_c', 'Λ̂ 프래그먼트 1e-3', 'var(--s3)'], ['soft_c', 'Λ̂ 패킷 soft', 'var(--s4)']];
+  var RULES = [['md1', 'Z 판정기 (프래그먼트)', 'var(--s2)'], ['cur_x', 'Λ 프래그먼트 1e-3', 'var(--s1)'], ['cur_c', 'Λ̂ 프래그먼트 1e-3', 'var(--s3)'], ['soft_c', 'Λ̂ 패킷 soft', 'var(--s4)']];
   var l90s = RULES.map(function (r) { var v = DATA.l90[r[0]]; return {name: r[1], color: r[2], v: v.map(function (x) { return x - v[0]; })}; });
   l90s.push({name: 'CFO 공식', color: 'var(--ink-2)', dash: '6 4', v: DATA.formula, mk: false, width: 1.6});
   legend($('lg-l90'), l90s.map(function (s) { return {name: s.name, color: s.color, dash: s.dash, dot: s.mk !== false}; }));
@@ -449,7 +449,7 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
   var MDC = [['-120 dBm', '−120 dBm (열잡음)', 'var(--muted)'], ['-88 dBm', '−88 dBm', 'var(--s3)'], ['-82 dBm', '−82 dBm', 'var(--s2)'], ['-40 dBm', '−40 dBm', 'var(--s4)'], ['mp20 -40 dBm', '멀티패스 −40 dBm', 'var(--s1)']];
   var mds = MDC.map(function (c) { return {name: c[1], color: c[2], v: DATA.h0md[c[0]].map(function (x) { return x * 100; })}; });
   legend($('lg-md'), mds.map(function (s) { return {name: s.name, color: s.color}; }).concat([{name: '32심볼 −82 dBm 범위', color: 'var(--band)', band: true}]));
-  chart($('c-md'), {yMin: 0, yMax: 8, ticks: [0, 2, 4, 6, 8], yLab: 'MD 규칙 오검출률 [%]', bands: [{lo: 2.8, hi: 7.8, fill: 'var(--band)'}], series: mds});
+  chart($('c-md'), {yMin: 0, yMax: 8, ticks: [0, 2, 4, 6, 8], yLab: 'Z 판정기 오검출률 [%]', bands: [{lo: 2.8, hi: 7.8, fill: 'var(--band)'}], series: mds});
 
   var KP = [['120', '−120 dBm', 'var(--muted)'], ['88', '−88 dBm', 'var(--s3)'], ['82', '−82 dBm', 'var(--s2)'], ['40', '−40 dBm', 'var(--s4)']];
   var kps = KP.map(function (c) { return {name: c[1], color: c[2], v: DATA.kappa[c[0]]}; });
@@ -465,7 +465,7 @@ select:focus-visible,a:focus-visible{outline:2px solid var(--s1);outline-offset:
     drs.push({name: '이동 ' + (D === '0.2496' ? '0.25' : D) + '탭, 탐색 후', color: DCOL[D], v: rows.map(function (r) { return r.fix; })});
   });
   legend($('lg-dr'), drs.map(function (s) { return {name: s.name, color: s.color, dash: s.dash}; }));
-  chart($('c-dr'), {yMin: 0, yMax: 1.05, ticks: [0, 0.2, 0.4, 0.6, 0.8, 1.0], yLab: '패킷 Pd (고정 칩)', fmtY: function (v) { return v.toFixed(1); }, hl: [{y: 0.85, label: '판정 하한 0.85', color: 'var(--good)'}], series: drs});
+  chart($('c-dr'), {yMin: 0, yMax: 1.05, ticks: [0, 0.2, 0.4, 0.6, 0.8, 1.0], yLab: '패킷 Pd (CIR 추정 Λ̂)', fmtY: function (v) { return v.toFixed(1); }, hl: [{y: 0.85, label: '판정 하한 0.85', color: 'var(--good)'}], series: drs});
 
   /* ---------------- section 3: comparison bars */
   function bars(svg, rows, total) {

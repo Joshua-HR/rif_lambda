@@ -15,7 +15,7 @@
 </script>
 <style>
 /* Layout: RIF Λ 판정기 해설 페이지와 같은 체계(68ch 본문 + 1080px 도판). 검사 정의 → 결과 → 요약 → 해석 순서라 섹션 번호를 쓴다.
-   Color: 파랑 = 제안(Λ), 주황 = 기존 MD 규칙, 청록 = 정규화만(중간 단계). 빨강/초록은 상태(오검출/정상) 전용. */
+   Color: 파랑 = 제안(Λ), 주황 = 기존 Z 판정기, 청록 = 정규화만(중간 단계). 빨강/초록은 상태(오검출/정상) 전용. */
 :root{
   --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
   --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
@@ -273,7 +273,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
         <tr><td>(참고) 검사 없음</td><td>F = 0</td><td>소프트 결합만</td></tr>
       </tbody>
     </table></div>
-    <figcaption>안 1~3은 패킷의 신호 크기를 소프트 합에서 추정해 문턱을 정합니다. 이 페이지는 추정이 정확하다고 놓고 계산했습니다. 신호 세기는 "소프트 결합 L90 대비 [dB]"로 나타냅니다. RIF 8개 고정 칩이면 0 dB가 약 −116.7 dBm입니다.</figcaption>
+    <figcaption>안 1~3은 패킷의 신호 크기를 소프트 합에서 추정해 문턱을 정합니다. 이 페이지는 추정이 정확하다고 놓고 계산했습니다. 신호 세기는 "소프트 결합 L90 대비 [dB]"로 나타냅니다. RIF 8개 CIR 추정 Λ̂이면 0 dB가 약 −116.7 dBm입니다.</figcaption>
   </figure>
 </section>
 
@@ -336,14 +336,14 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
   <figure class="plate">
     <h3>시뮬레이션과의 대조 (고정 하한, RIF 8개, 세기당 3,000패킷)</h3>
     <div class="tbl-wrap"><table class="guide">
-      <thead><tr><th>검사</th><th class="num">L90 손해, 고정 칩 (Λ̂)</th><th class="num">L90 손해, 새 칩 (Λ)</th></tr></thead>
+      <thead><tr><th>검사</th><th class="num">L90 손해, CIR 추정 Λ̂</th><th class="num">L90 손해, 원시 샘플 Λ</th></tr></thead>
       <tbody>
         <tr><td>F = 1 (안 1의 감도 부근)</td><td class="num">0.2 dB</td><td class="num">0.3 dB</td></tr>
         <tr><td>F = 2</td><td class="num">0.5 dB</td><td class="num">0.9 dB</td></tr>
         <tr><td>F = 4 (안 4)</td><td class="num">1.7 dB</td><td class="num">2.3 dB</td></tr>
       </tbody>
     </table></div>
-    <figcaption>신호 창 57탭과 고정 칩의 잡음 추정까지 넣은 통계 모델(<code>policy_k8.py</code>) 결과입니다. 위 요약표의 이상 모델 값과 경향이 같고, 크기는 새 칩 쪽이 이상 모델에 더 가깝습니다.</figcaption>
+    <figcaption>신호 창 57탭과 CIR 추정 Λ̂의 잡음 추정까지 넣은 통계 모델(<code>policy_k8.py</code>) 결과입니다. 위 요약표의 이상 모델 값과 경향이 같고, 크기는 원시 샘플 Λ 쪽이 이상 모델에 더 가깝습니다.</figcaption>
   </figure>
 </section>
 
@@ -378,7 +378,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
       <li>이상 모델입니다. 신호 탭 하나만 보고, 프래그먼트끼리 신호 세기가 같으며, 안 1~3이 쓰는 신호 크기를 정확히 안다고 놓았습니다. 실제로는 소프트 합에서 추정하므로 문턱이 조금 흔들립니다.</li>
       <li>최종 검출 확률은 소프트 합 통과와 검사 통과를 독립으로 곱했습니다. 시뮬레이션(3장 아래 표)과 경향은 같습니다.</li>
       <li>빈 프래그먼트 검사만 계산했습니다. 이른 가짜 피크 검사와 피크 위치 검사는 아직 만들지 않았고, 같은 원리로 문턱을 정하게 됩니다.</li>
-      <li>dBm 환산은 RIF 8개 고정 칩의 소프트 결합 L90(−116.7 dBm)을 0 dB로 둔 근사입니다. RIF 개수와 칩에 따라 기준점이 바뀝니다.</li>
+      <li>dBm 환산은 RIF 8개 CIR 추정 Λ̂의 소프트 결합 L90(−116.7 dBm)을 0 dB로 둔 근사입니다. RIF 개수와 칩에 따라 기준점이 바뀝니다.</li>
     </ul>
   </div>
 </section>

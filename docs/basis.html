@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RIF 판정 기준 전환</title>
-<meta name="description" content="MD 문서의 프래그먼트 1e-3 기준을 FiRa medium(거리 측정 1회당 10⁻⁶) 기준으로 바꾼 근거(2026-10-15 결정 1): 개념, 수식, 대화형 그래프">
+<meta name="description" content="기존 문서의 프래그먼트 1e-3 기준을 FiRa medium(거리 측정 1회당 10⁻⁶) 기준으로 바꾼 근거(2026-10-15 결정 1): 개념, 수식, 대화형 그래프">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
 <!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
@@ -15,7 +15,7 @@
 </script>
 <style>
 /* Layout: RIF Λ 판정기 해설 페이지와 같은 체계(68ch 본문 + 1080px 도판). 개념 → 수식 → 효과 → 검증 → 영향 순서라 섹션 번호를 쓴다.
-   Color: 파랑 = 제안(Λ), 주황 = 기존 MD 규칙, 청록 = 정규화만(중간 단계). 빨강/초록은 상태(오검출/정상) 전용. */
+   Color: 파랑 = 제안(Λ), 주황 = 기존 Z 판정기, 청록 = 정규화만(중간 단계). 빨강/초록은 상태(오검출/정상) 전용. */
 :root{
   --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
   --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
@@ -225,11 +225,11 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
 <header class="hero">
   <span class="eyebrow">검토 문서 · 2026-10-15 결정 1로 적용 · IEEE 802.15.4ab MMS RIF</span>
   <h1>RIF 판정 기준 전환</h1>
-  <p class="lede prose">지금의 판정기는 MD 문서가 정한 <strong>프래그먼트 하나당 오검출 1e-3</strong>을 목표로 설계되어 있습니다. 이 페이지는 그 기조를 FiRa 인증의 medium 보안 수준, 곧 <strong>거리 측정 한 번당 오수락 10⁻⁶</strong>으로 바꾸면 무엇이 달라지는지를 개념부터 차례로 보여 줍니다.</p>
+  <p class="lede prose">지금의 판정기는 기존 문서가 정한 <strong>프래그먼트 하나당 오검출 1e-3</strong>을 목표로 설계되어 있습니다. 이 페이지는 그 기조를 FiRa 인증의 medium 보안 수준, 곧 <strong>거리 측정 한 번당 오수락 10⁻⁶</strong>으로 바꾸면 무엇이 달라지는지를 개념부터 차례로 보여 줍니다.</p>
   <dl class="thesis">
     <div><dt>지금</dt><dd>RIF 프래그먼트 하나를 판정하고, 잡음만 있을 때 잘못 받아들일 확률을 1e-3 이하로 둡니다. 근거는 내부 목표입니다.</dd></div>
     <div><dt>제안</dt><dd>한 수신기가 거리 측정 한 번에 쓰는 RIF 8개(NumRIF = 4)를 묶어 판정하고, 잘못 받아들일 확률을 10⁻⁶ 이하로 둡니다.</dd></div>
-    <div><dt>효과</dt><dd>고정 칩 감도가 −109.6 dBm에서 −116.7 dBm으로 좋아지고, 검증은 셀 수 있는 근거(꼬리, 독립성)로 바뀝니다.</dd></div>
+    <div><dt>효과</dt><dd>CIR 추정 Λ̂ 감도가 −109.6 dBm에서 −116.7 dBm으로 좋아지고, 검증은 셀 수 있는 근거(꼬리, 독립성)로 바뀝니다.</dd></div>
     <div><dt>남은 확인</dt><dd>FiRa 원문 정의, RIF 1개 설정을 실제로 쓰는지, 점수 방식의 패킷 기준, 같은 채널 멀티패스에서의 깊은 꼬리.</dd></div>
   </dl>
   <div class="note">
@@ -246,7 +246,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
       <li><a href="#b4"><span class="n">4</span>묶으면 왜 좋아지나</a></li>
       <li><a href="#b5"><span class="n">5</span>시뮬레이션 결과</a></li>
       <li><a href="#b6"><span class="n">6</span>10⁻⁶ 확인 방법</a></li>
-      <li><a href="#b7"><span class="n">7</span>MD 평가의 변화</a></li>
+      <li><a href="#b7"><span class="n">7</span>Z 판정기 평가의 변화</a></li>
       <li><a href="#b8"><span class="n">8</span>바뀌는 범위</a></li>
     </ol>
   </nav>
@@ -264,7 +264,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
       <defs><marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
       <text x="20" y="26" class="m">거리 측정 1회 (패킷) = RIF 프래그먼트 8개, 1 ms 간격</text>
       <g id="b1-boxes"></g>
-      <text x="20" y="160" class="m">지금 (MD 문서)</text>
+      <text x="20" y="160" class="m">지금 (기존 문서)</text>
       <text x="20" y="180" class="sub">프래그먼트마다 판정, 각각 오검출 ≤ 1e-3</text>
       <text x="20" y="214" class="m newt">제안 (FiRa medium)</text>
       <text x="20" y="234" class="sub">8개를 묶어 한 번 판정, 패킷 오수락 ≤ 10⁻⁶</text>
@@ -282,7 +282,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
     <h3>용어</h3>
     <dl class="gloss">
       <dt>H0 / H1</dt><dd>H0는 맞는 키의 신호가 없는 경우(잡음만, 또는 다른 키의 신호), H1은 맞는 키의 신호가 있는 경우입니다.</dd>
-      <dt>Λ, Λ̂</dt><dd>탭 하나의 판정 통계량. 새 칩은 원시 샘플로 잡음 크기를 계산한 Λ, 고정 칩은 CIR에서 잡음 크기를 추정한 Λ̂를 씁니다. 둘 다 H0에서 χ²₂ 분포를 따르도록 만든 값입니다.</dd>
+      <dt>Λ, Λ̂</dt><dd>탭 하나의 판정 통계량. 원시 샘플 Λ는 원시 샘플로 잡음 크기를 계산하고, CIR 추정 Λ̂는 CIR에서 잡음 크기를 추정합니다. 둘 다 H0에서 χ²₂ 분포를 따르도록 만든 값입니다.</dd>
       <dt>오검출 (Pfa)</dt><dd>H0인데 "맞는 키가 있다"고 판정할 확률. 지금 기준은 프래그먼트 하나당 이 값을 1e-3 이하로 둡니다.</dd>
       <dt>오수락</dt><dd>H0인데 거리 측정 한 번(패킷)을 받아들일 확률. 제안 기준은 이 값을 10⁻⁶ 이하로 둡니다. FiRa 인증의 medium 수준입니다(high는 2⁻⁴⁸).</dd>
       <dt>문턱 T</dt><dd>통계량이 이 값 이상이면 받아들입니다. 오검출 목표에서 공식으로 계산합니다(3장).</dd>
@@ -300,7 +300,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
   <div class="sec-head"><span class="sec-no">2</span><h2>꼬리: 드문 큰 값이 얼마나 자주 나오나</h2></div>
   <div class="prose stack">
     <p>확률 분포를 그리면 자주 나오는 값이 가운데 몰려 있고, 끝으로 갈수록 확률이 가늘게 줄어듭니다. 이 끝부분을 <strong>꼬리</strong>라고 합니다. 확률 밀도 곡선 아래 넓이는 모두 합쳐 1인데, 통계에서는 이것을 무게 1인 질량을 축 위에 펼쳐 놓은 것으로 봅니다. 먼 끝에 놓인 질량이 기준 분포보다 많으면 <strong>꼬리가 무겁다</strong>고 말합니다.</p>
-    <p>오검출률은 잡음만 있을 때 통계량이 문턱을 넘을 확률, 곧 문턱 너머 꼬리의 넓이입니다. 그래서 꼬리가 기준보다 무거우면 실제 오검출률이 설계값보다 커집니다. 아래 그림에서 잡음이 복소 평면의 한 축으로 몰릴수록(비원형) 꼬리가 무거워지는 모습을 볼 수 있습니다. MD 방식이 틀린 키에서 깨진 이유가 이것이고, Λ의 백색화는 이 몰림을 원형으로 되돌려 꼬리를 기준선(파랑)에 맞춥니다.</p>
+    <p>오검출률은 잡음만 있을 때 통계량이 문턱을 넘을 확률, 곧 문턱 너머 꼬리의 넓이입니다. 그래서 꼬리가 기준보다 무거우면 실제 오검출률이 설계값보다 커집니다. 아래 그림에서 잡음이 복소 평면의 한 축으로 몰릴수록(비원형) 꼬리가 무거워지는 모습을 볼 수 있습니다. Z 판정기가 틀린 키에서 깨진 이유가 이것이고, Λ의 백색화는 이 몰림을 원형으로 되돌려 꼬리를 기준선(파랑)에 맞춥니다.</p>
   </div>
   <div class="eq">원형 잡음 (Λ가 가정하는 분포):   P(Λ ≥ t) = e<sup>−t/2</sup>                <span class="c">χ²₂, t가 2 늘 때마다 e배씩 줄어듦</span>
 분산만으로 정규화한 비원형 잡음:   2|C|²/Q = (1+ρ)·X² + (1−ρ)·Y²     <span class="c">X, Y ~ N(0, 1), ρ = |Π|/Q (0: 원형, 1: 한 축에 몰림)</span>
@@ -328,7 +328,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
       <div class="main"><svg class="chart" id="t1-svg" viewBox="0 0 640 340" role="img" aria-label="비원형 정도에 따른 꼬리 확률"></svg></div>
       <div class="side"><dl class="readout" id="t1-read"></dl></div>
     </div>
-    <figcaption>세로축은 로그 눈금입니다. 두 선 모두 왼쪽 끝(t = 0)에서 1로 시작해 평균이 같지만, ρ를 키우면 주황 선이 기준보다 천천히 내려가 먼 곳에서 크게 벌어집니다. 문턱이 멀수록(1e-3 → 10⁻⁶) 차이도 커집니다. κ는 덤프에서 재는 비원형 지표로 ρ와 같은 뜻입니다. 이 그림은 잡음이 가우시안이라고 본 단순화이며, 실제 MD 판정식과 꼭 같지는 않습니다(MD 문서에서는 탭 하나의 꼬리가 4~10배 무거웠습니다).</figcaption>
+    <figcaption>세로축은 로그 눈금입니다. 두 선 모두 왼쪽 끝(t = 0)에서 1로 시작해 평균이 같지만, ρ를 키우면 주황 선이 기준보다 천천히 내려가 먼 곳에서 크게 벌어집니다. 문턱이 멀수록(1e-3 → 10⁻⁶) 차이도 커집니다. κ는 덤프에서 재는 비원형 지표로 ρ와 같은 뜻입니다. 이 그림은 잡음이 가우시안이라고 본 단순화이며, 실제 Z 판정식과 꼭 같지는 않습니다(기존 문서에서는 탭 하나의 꼬리가 4~10배 무거웠습니다).</figcaption>
   </figure>
 </section>
 
@@ -345,7 +345,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
     <div class="tbl-wrap"><table class="guide">
       <thead><tr><th>기준</th><th>판정 단위</th><th>목표</th><th class="num">탭 하나의 꼬리 확률</th><th class="num">문턱 T</th></tr></thead>
       <tbody>
-        <tr><td>지금 (MD 문서)</td><td>프래그먼트 1개</td><td>1e-3</td><td class="num">1.2e-5</td><td class="num">22.71</td></tr>
+        <tr><td>지금 (기존 문서)</td><td>프래그먼트 1개</td><td>1e-3</td><td class="num">1.2e-5</td><td class="num">22.71</td></tr>
         <tr><td>제안, RIF 1개 설정</td><td>프래그먼트 1개 = 패킷</td><td>10⁻⁶</td><td class="num">1.2e-8</td><td class="num">36.53</td></tr>
         <tr><td>제안, 8개 모두 통과</td><td>패킷 (프래그먼트 문턱)</td><td>10⁻⁶</td><td class="num">2.1e-3</td><td class="num">12.35</td></tr>
         <tr class="pick"><td>제안, 소프트 결합</td><td>패킷 (8개 합, χ²₁₆)</td><td>10⁻⁶</td><td class="num">1.2e-8</td><td class="num">69.61</td></tr>
@@ -404,14 +404,14 @@ H1:  S ~ 비중심 χ²<sub>2K</sub>(K·λ)      평균 2K + K·λ              
 <section class="sec" id="b5">
   <div class="sec-head"><span class="sec-no">5</span><h2>시뮬레이션 결과: 같은 덤프 모델, 두 기준</h2></div>
   <div class="prose stack">
-    <p>4장은 신호 탭 하나만 본 이상 모델입니다. 아래는 신호 창 57탭 전체, CFO, 고정 칩의 잡음 추정까지 넣은 통계 모델로 패킷을 만들어 판정한 결과입니다(32심볼, AWGN, 세기당 4,000패킷). 회색 점선 "지금"만 프래그먼트 1e-3 기준이고, 나머지는 모두 패킷 10⁻⁶을 지키는 방식입니다.</p>
+    <p>4장은 신호 탭 하나만 본 이상 모델입니다. 아래는 신호 창 57탭 전체, CFO, CIR 추정 Λ̂의 잡음 추정까지 넣은 통계 모델로 패킷을 만들어 판정한 결과입니다(32심볼, AWGN, 세기당 4,000패킷). 회색 점선 "지금"만 프래그먼트 1e-3 기준이고, 나머지는 모두 패킷 10⁻⁶을 지키는 방식입니다.</p>
   </div>
   <figure class="plate" id="r1">
     <h3>패킷 검출 확률</h3>
     <div class="controls">
       <div class="seg" role="group" aria-label="칩" id="r1-chip">
-        <button type="button" data-chip="c" aria-pressed="true">고정 칩 (Λ̂)</button>
-        <button type="button" data-chip="x" aria-pressed="false">새 칩 (Λ)</button>
+        <button type="button" data-chip="c" aria-pressed="true">CIR 추정 Λ̂</button>
+        <button type="button" data-chip="x" aria-pressed="false">원시 샘플 Λ</button>
       </div>
     </div>
     <div class="legend" id="r1-legend"></div>
@@ -422,7 +422,7 @@ H1:  S ~ 비중심 χ²<sub>2K</sub>(K·λ)      평균 2K + K·λ              
   <figure class="plate">
     <h3>L90 요약 [dBm]</h3>
     <div class="tbl-wrap"><table class="guide">
-      <thead><tr><th>구성</th><th>기준</th><th class="num">고정 칩 (Λ̂)</th><th class="num">새 칩 (Λ)</th></tr></thead>
+      <thead><tr><th>구성</th><th>기준</th><th class="num">CIR 추정 Λ̂</th><th class="num">원시 샘플 Λ</th></tr></thead>
       <tbody>
         <tr><td>RIF 8개, 프래그먼트마다 판정</td><td>지금: 프래그먼트 1e-3 (패킷 보장 없음)</td><td class="num">−109.6</td><td class="num">−112.0</td></tr>
         <tr class="pick"><td>RIF 8개, 소프트 결합 + 일관성 검사</td><td>제안: 패킷 10⁻⁶</td><td class="num">−116.5</td><td class="num">−117.3</td></tr>
@@ -431,7 +431,7 @@ H1:  S ~ 비중심 χ²<sub>2K</sub>(K·λ)      평균 2K + K·λ              
         <tr><td>RIF 1개 설정 (32심볼)</td><td>제안: 10⁻⁶</td><td class="num">−106.1</td><td class="num">−110.2</td></tr>
       </tbody>
     </table></div>
-    <figcaption>RIF가 8개면 기준을 바꿔도 감도가 7 dB 가까이 좋아집니다. RIF가 1개뿐인 설정은 묶을 증거가 없어서, 목표가 엄격해진 만큼 손해를 봅니다(고정 칩 3.5 dB).</figcaption>
+    <figcaption>RIF가 8개면 기준을 바꿔도 감도가 7 dB 가까이 좋아집니다. RIF가 1개뿐인 설정은 묶을 증거가 없어서, 목표가 엄격해진 만큼 손해를 봅니다(CIR 추정 Λ̂ 3.5 dB).</figcaption>
   </figure>
 </section>
 
@@ -475,29 +475,29 @@ H1:  S ~ 비중심 χ²<sub>2K</sub>(K·λ)      평균 2K + K·λ              
 
 <!-- ============================================================ 7 -->
 <section class="sec" id="b7">
-  <div class="sec-head"><span class="sec-no">7</span><h2>MD 방식의 평가가 어떻게 바뀌나</h2></div>
+  <div class="sec-head"><span class="sec-no">7</span><h2>Z 판정기의 평가가 어떻게 바뀌나</h2></div>
   <div class="prose stack">
-    <p>지금 기준에서 MD 방식이 탈락한 이유는 "중간 세기 틀린 키에서 프래그먼트 오검출이 최대 5.6e-2, 목표의 56배"였습니다. 패킷 기준에서 MD 방식도 8개 모두 통과로 묶으면, 프래그먼트 오검출 p가 8제곱으로 작아집니다. 그래서 탈락 이유가 "Pfa 실패"에서 "보장이 없고, 감도가 나쁘다"로 바뀝니다.</p>
+    <p>지금 기준에서 Z 판정기가 탈락한 이유는 "중간 세기 틀린 키에서 프래그먼트 오검출이 최대 5.6e-2, 목표의 56배"였습니다. 패킷 기준에서 Z 판정기도 8개 모두 통과로 묶으면, 프래그먼트 오검출 p가 8제곱으로 작아집니다. 그래서 탈락 이유가 "Pfa 실패"에서 "보장이 없고, 감도가 나쁘다"로 바뀝니다.</p>
   </div>
-  <div class="eq">MD 방식, 8개 모두 통과:   P<sub>패킷</sub> = E[ p(채널)<sup>8</sup> ]      <span class="c">같은 패킷의 8개는 같은 채널을 공유</span>
+  <div class="eq">Z 판정기, 8개 모두 통과:   P<sub>패킷</sub> = E[ p(채널)<sup>8</sup> ]      <span class="c">같은 패킷의 8개는 같은 채널을 공유</span>
 p⁸ = 10⁻⁶   ⇔   p = 0.178                          <span class="c">한 채널에서 프래그먼트 오검출이 0.178을 넘으면 그 채널은 목표 초과</span></div>
   <figure class="plate" id="m1">
     <h3>프래그먼트 오검출 p와 패킷 오수락 p⁸</h3>
     <div class="legend">
       <span class="key"><svg viewBox="0 0 16 12"><line x1="0" y1="6" x2="16" y2="6" class="inks" stroke-width="2"/></svg>p⁸ (8개 모두 통과)</span>
-      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>MD, 같은 채널 멀티패스 −42.5 dBm: 채널별 p의 분위수</span>
-      <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s3f"/></svg>MD, AWGN 최악 조건 (−82.5 dBm)</span>
+      <span class="key"><svg viewBox="0 0 16 12"><circle cx="8" cy="6" r="4" class="s2f"/></svg>Z 판정기, 같은 채널 멀티패스 −42.5 dBm: 채널별 p의 분위수</span>
+      <span class="key"><svg viewBox="0 0 16 12"><rect x="4" y="2" width="8" height="8" class="s3f"/></svg>Z 판정기, AWGN 최악 조건 (−82.5 dBm)</span>
     </div>
     <svg class="chart" id="m1-svg" viewBox="0 0 760 340" role="img" aria-label="프래그먼트 오검출과 패킷 오수락의 관계"></svg>
-    <figcaption>AWGN에서는 MD 방식도 8개를 묶으면 10⁻⁶ 아래로 크게 내려갑니다. 같은 채널을 공유하는 멀티패스에서는 채널마다 p가 달라, 평균은 8.5e-9이지만 가장 나쁜 채널(p = 0.175)은 8.8e-7로 한계에 거의 닿습니다. 모델에서 본 2,000개 채널 밖의 더 나쁜 채널을 공식으로 막을 방법이 없다는 점이 MD 방식의 약점입니다. 감도도 8개 모두 통과 기준 −110.0 dBm으로, Λ̂ 소프트 결합(−116.7)보다 6.7 dB 나쁩니다.</figcaption>
+    <figcaption>AWGN에서는 Z 판정기도 8개를 묶으면 10⁻⁶ 아래로 크게 내려갑니다. 같은 채널을 공유하는 멀티패스에서는 채널마다 p가 달라, 평균은 8.5e-9이지만 가장 나쁜 채널(p = 0.175)은 8.8e-7로 한계에 거의 닿습니다. 모델에서 본 2,000개 채널 밖의 더 나쁜 채널을 공식으로 막을 방법이 없다는 점이 Z 판정기의 약점입니다. 감도도 8개 모두 통과 기준 −110.0 dBm으로, Λ̂ 소프트 결합(−116.7)보다 6.7 dB 나쁩니다.</figcaption>
   </figure>
   <figure class="plate">
     <div class="tbl-wrap"><table class="guide">
       <thead><tr><th>방식</th><th>지금 기준의 평가</th><th>제안 기준의 평가</th></tr></thead>
       <tbody>
-        <tr><td>MD 규칙</td><td>탈락: 프래그먼트 오검출 최대 5.6e-2</td><td>8개 모두 통과면 모델상 10⁻⁶ 아래. 보장 없음, 채널에 따라 1,000배 변동, 감도 −110.0 dBm, 소프트 결합 불가</td></tr>
-        <tr><td>Λ̂ (고정 칩)</td><td>통과: 오검출 7.3e-4 이하, 감도 −109.6 dBm</td><td>소프트 결합으로 10⁻⁶, 감도 −116.7 dBm. 잡음 추정 가정에 기대므로 깊은 꼬리 확인 필요</td></tr>
-        <tr><td>Λ (새 칩)</td><td>통과: 오검출 8.5e-4 이하, 감도 −112.0 dBm</td><td>소프트 결합으로 10⁻⁶, 감도 −117.6 dBm. 꼬리에 이론 근거가 가장 강함</td></tr>
+        <tr><td>Z 판정기</td><td>탈락: 프래그먼트 오검출 최대 5.6e-2</td><td>8개 모두 통과면 모델상 10⁻⁶ 아래. 보장 없음, 채널에 따라 1,000배 변동, 감도 −110.0 dBm, 소프트 결합 불가</td></tr>
+        <tr><td>CIR 추정 Λ̂</td><td>통과: 오검출 7.3e-4 이하, 감도 −109.6 dBm</td><td>소프트 결합으로 10⁻⁶, 감도 −116.7 dBm. 잡음 추정 가정에 기대므로 깊은 꼬리 확인 필요</td></tr>
+        <tr><td>원시 샘플 Λ</td><td>통과: 오검출 8.5e-4 이하, 감도 −112.0 dBm</td><td>소프트 결합으로 10⁻⁶, 감도 −117.6 dBm. 꼬리에 이론 근거가 가장 강함</td></tr>
       </tbody>
     </table></div>
   </figure>
@@ -512,11 +512,11 @@ p⁸ = 10⁻⁶   ⇔   p = 0.178                          <span class="c">한 �
       <div class="tbl-wrap"><table>
         <thead><tr><th>대상</th><th>내용</th><th class="num">1e-3 표기</th><th>상태</th></tr></thead>
         <tbody>
-          <tr><td>설계 문서</td><td>1장 요구사항을 패킷 10⁻⁶으로, 프래그먼트 문턱 22.71은 구성 요소로, MD 결론 재서술</td><td class="num">15곳</td><td>반영</td></tr>
-          <tr><td>검증 계획</td><td>프래그먼트 판정은 진단으로, MD 패킷 평가와 같은 채널 꼬리 검사 추가, 점수 방식 비교 재정의</td><td class="num">12곳</td><td>반영</td></tr>
+          <tr><td>설계 문서</td><td>1장 요구사항을 패킷 10⁻⁶으로, 프래그먼트 문턱 22.71은 구성 요소로, Z 판정기 결론 재서술</td><td class="num">15곳</td><td>반영</td></tr>
+          <tr><td>검증 계획</td><td>프래그먼트 판정은 진단으로, Z 판정기 패킷 평가와 같은 채널 꼬리 검사 추가, 점수 방식 비교 재정의</td><td class="num">12곳</td><td>반영</td></tr>
           <tr><td>해설 페이지</td><td>첫 요약의 "56배", 2·3·7장의 "목표 1e-3" 선을 "프래그먼트 구성 요소 기준"으로</td><td class="num">25곳</td><td>반영</td></tr>
           <tr><td>MATLAB 도구</td><td>기본값은 유지, 한 번에 설정하는 <code>'Profile', 'fira-medium'</code> 추가</td><td class="num">–</td><td>반영</td></tr>
-          <tr><td>MD 원본</td><td>수정하지 않음. 설계 문서에 기준 대체를 적음</td><td class="num">–</td><td>설계 문서 1.1절</td></tr>
+          <tr><td>기존 문서와 원본 스크립트</td><td>수정하지 않음. 설계 문서에 기준 대체를 적음</td><td class="num">–</td><td>설계 문서 1.1절</td></tr>
         </tbody>
       </table></div>
     </figure>
@@ -524,7 +524,7 @@ p⁸ = 10⁻⁶   ⇔   p = 0.178                          <span class="c">한 �
       <h3>남은 확인</h3>
       <dl class="gloss">
         <dt>FiRa 원문</dt><dd>10⁻⁶이 측정 1회 기준인지, 연속 N회 기준인지. 지금 근거는 FiRa 인증을 인용한 논문입니다.</dd>
-        <dt>RIF 1개 설정</dt><dd>제품에서 실제로 쓰면 그 설정의 고정 칩 감도가 3.5 dB 나빠집니다.</dd>
+        <dt>RIF 1개 설정</dt><dd>제품에서 실제로 쓰면 그 설정의 CIR 추정 Λ̂ 감도가 3.5 dB 나빠집니다.</dd>
         <dt>점수 방식</dt><dd>일반 모드의 점수 방식이 RIF 8개를 어떻게 묶는지 알아야 패킷 단위로 비교할 수 있습니다.</dd>
         <dt>깊은 꼬리</dt><dd>같은 채널 멀티패스 LLS 덤프로 P = 1e-4까지 꼬리 비율을 확인합니다. 1.3을 넘으면 표본을 늘리거나 여유를 키웁니다.</dd>
         <dt>범위</dt><dd>FiRa 오수락은 거리 단축(첫 경로)까지 포함합니다. 이 판정기는 "맞는 키 신호가 있다"를 보장하는 필요조건입니다.</dd>
@@ -533,14 +533,14 @@ p⁸ = 10⁻⁶   ⇔   p = 0.178                          <span class="c">한 �
   </div>
   <div class="note">
     <b>결정 (2026-10-15)</b>
-    <span>패킷 오수락 10⁻⁶을 최상위 요구사항으로 두고 <code>'PfaTarget'</code>으로 바꿀 수 있게 둡니다. 프래그먼트 1e-3 분석은 패킷 근거의 기초이자 MD와의 비교를 위한 진단으로 남깁니다. 위 남은 확인은 "미확정"으로 표시해 두고 진행하며, 같은 채널 멀티패스의 깊은 꼬리가 첫 검증 항목입니다.</span>
+    <span>패킷 오수락 10⁻⁶을 최상위 요구사항으로 두고 <code>'PfaTarget'</code>으로 바꿀 수 있게 둡니다. 프래그먼트 1e-3 분석은 패킷 근거의 기초이자 Z 판정기와의 비교를 위한 진단으로 남깁니다. 위 남은 확인은 "미확정"으로 표시해 두고 진행하며, 같은 채널 멀티패스의 깊은 꼬리가 첫 검증 항목입니다.</span>
   </div>
 </section>
 
 <footer class="foot">
-  <p><strong>수치의 출처.</strong> 4장은 이상 모델(신호 탭 하나, 가우시안 잡음)을 페이지 안에서 계산한 값입니다. 5~7장은 lambda_patch/model의 통계 모델(<code>medium_level.py</code>, <code>policy_k8.py</code>, 같은 채널 시뮬레이션) 결과이며, MATLAB이나 LLS로 아직 확인하지 않았습니다. dBm은 MD 문서의 환산을 쓴 모델 값입니다.</p>
+  <p><strong>수치의 출처.</strong> 4장은 이상 모델(신호 탭 하나, 가우시안 잡음)을 페이지 안에서 계산한 값입니다. 5~7장은 lambda_patch/model의 통계 모델(<code>medium_level.py</code>, <code>policy_k8.py</code>, 같은 채널 시뮬레이션) 결과이며, MATLAB이나 LLS로 아직 확인하지 않았습니다. dBm은 기존 문서의 환산을 쓴 모델 값입니다.</p>
   <p><strong>FiRa 수치.</strong> medium 10⁻⁶, high 2⁻⁴⁸은 <a href="https://arxiv.org/abs/2312.03964">Luo 외, "Secure Ranging with IEEE 802.15.4z HRP UWB" (arXiv 2312.03964)</a> VI-C절이 FiRa Certification Program을 인용한 값입니다. FiRa 원문은 회원 전용이라 직접 확인하지 못했습니다.</p>
-  <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(MD 방식), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code> 9장(패킷 판정), <code>lambda_patch/TEST_PLAN.md</code>. 2026-10-13 기준.</p>
+  <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(Z 판정기), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code> 9장(패킷 판정), <code>lambda_patch/TEST_PLAN.md</code>. 2026-10-13 기준.</p>
   <p>관련 페이지: <a href="index.html">RIF Λ 판정기</a>(전체 해설), <a href="consistency.html">RIF 일관성 검사 비교</a>(결정 6 자료), <a href="checklist.html">RIF 검증 체크리스트</a>(직접 돌려 볼 시험). 결정 기록은 저장소의 <code>lambda_patch/DECISIONS.md</code>에 있습니다.</p>
 </footer>
 </div>
@@ -937,7 +937,7 @@ p⁸ = 10⁻⁶   ⇔   p = 0.178                          <span class="c">한 �
       x: {min: -122.5, max: -103.5, ticks: [-122, -120, -118, -116, -114, -112, -110, -108, -106, -104], fmt: minus, title: '맞는 키 수신 세기 (dBm, 모델 환산)'},
       y: {min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], fmt: function (v) { return v.toFixed(2); }, title: '패킷 검출 확률'},
       series: R1SER, hlines: [{y: 0.9, label: 'Pd 0.9', below: true}],
-      tipTitle: function (x) { return minus(x) + ' dBm · ' + (chip === 'c' ? '고정 칩 Λ̂' : '새 칩 Λ'); }, tipVal: function (v) { return v.toFixed(3); }
+      tipTitle: function (x) { return minus(x) + ' dBm · ' + (chip === 'c' ? 'CIR 추정 Λ̂' : '원시 샘플 Λ'); }, tipVal: function (v) { return v.toFixed(3); }
     });
     document.getElementById('r1-cap').textContent = 'L90: ' + R1SER.map(function (s) { return s.name.split(':')[0].split(' (')[0] + ' ' + (isNaN(s.l90) ? '–' : minus(s.l90.toFixed(1))); }).join(' · ') +
       ' dBm. 같은 덤프 모델에서 기준만 바꾼 결과입니다. 소프트 결합은 지금보다 ' + (R1SER[6].l90 - R1SER[0].l90).toFixed(1) + ' dB 좋고, 프래그먼트마다 1e-3으로 판정해 8개 모두를 요구하는 방식은 지금보다도 나쁩니다.';
@@ -1032,11 +1032,11 @@ p⁸ = 10⁻⁶   ⇔   p = 0.178                          <span class="c">한 �
     var q = [[0.05, '중앙값'], [0.10, '90%'], [0.15, '99%'], [0.175, '최악']];
     lineChart(document.getElementById('m1-svg'), {
       W: 760, H: 340, ml: 62, mr: 20, mt: 14, mb: 46,
-      x: {min: 0.01, max: 0.3, ticks: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3], fmt: function (v) { return v.toFixed(2); }, title: '한 채널에서 MD 프래그먼트 오검출 p'},
+      x: {min: 0.01, max: 0.3, ticks: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3], fmt: function (v) { return v.toFixed(2); }, title: '한 채널에서 Z 판정기 프래그먼트 오검출 p'},
       y: {min: 1e-16, max: 1e-3, log: true, ticks: logTicks(-16, -4, 2), fmt: fmtPow, title: '패킷 오수락 p⁸'},
       series: [{name: 'p⁸', pts: pts, line: 'inks', key: 'line', keyCls: 'inks'},
-               {name: 'MD, 같은 채널 −42.5 dBm', pts: q.map(function (a) { return [a[0], Math.pow(a[0], 8)]; }), noLine: true, line: 's2s', mk: 'circle', mc: 's2f', key: 'dot'},
-               {name: 'MD, AWGN −82.5 dBm', pts: [[0.051, Math.pow(0.051, 8)]], noLine: true, line: 's3s', mk: 'sq', mc: 's3f', key: 'sq'}],
+               {name: 'Z 판정기, 같은 채널 −42.5 dBm', pts: q.map(function (a) { return [a[0], Math.pow(a[0], 8)]; }), noLine: true, line: 's2s', mk: 'circle', mc: 's2f', key: 'dot'},
+               {name: 'Z 판정기, AWGN −82.5 dBm', pts: [[0.051, Math.pow(0.051, 8)]], noLine: true, line: 's3s', mk: 'sq', mc: 's3f', key: 'sq'}],
       hlines: [{y: 1e-6, cls: 'inks', dash: '4 3', label: '목표 10⁻⁶', anchor: 'start'}, {y: 8.46e-9, cls: 'muteds', dash: '2 3', label: '같은 채널 평균 8.5e-9', anchor: 'start', below: true}],
       vlines: [{x: 0.178, dash: '4 3', label: 'p = 0.178', left: true}],
       labels: q.map(function (a) { return {x: a[0], y: Math.pow(a[0], 8), text: a[1], dx: 7, dy: 14, cls: 'lab'}; }),

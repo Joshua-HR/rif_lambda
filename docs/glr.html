@@ -480,7 +480,7 @@ pre.eq{font:13.5px/1.75 var(--f-mono);background:var(--code-bg);color:var(--ink)
     <figcaption>두 가설은 같은 모양의 잡음 구름이 원점에 있느냐, 어딘가로 옮겨졌느냐의 차이입니다. 관측할 수 있는 것은 ◆ 하나뿐이므로, 그 점이 어느 구름에서 나왔을 법한지를 확률 밀도로 견줍니다. 이 비가 우도비입니다. 이 예의 C는 H0 구름의 문턱(보라 점선) 밖에 있어, 잡음만으로는 드문 값입니다.</figcaption>
   </figure>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>기호</th><th>들어가는 값</th><th>Λ (새 칩)</th><th>Λ̂ (고정 칩)</th></tr></thead>
+    <thead><tr><th>기호</th><th>들어가는 값</th><th>원시 샘플 Λ</th><th>CIR 추정 Λ̂</th></tr></thead>
     <tbody>
       <tr><td>C</td><td>판정할 탭의 CIR 값 C[k] 하나 (복소수)</td><td>5열 덤프의 re, im</td><td>2열 덤프의 re, im</td></tr>
       <tr><td>c̲ = [C, C*]</td><td>C와 그 켤레. 실수로 쓰면 x = [Re C, Im C]와 같음 (2장)</td><td>C에서 바로</td><td>같음</td></tr>
@@ -1664,7 +1664,7 @@ p(C | H1, a) = 1/(π√det R̲) · exp(−½ · (c̲ − a̲)ᴴ R̲⁻¹ (c̲ �
 <section id="s5">
   <div class="sec-head"><span class="no">5 · Λ̂: 잡음 통계까지 모를 때</span><h2>C를 잡음으로 설명하려면 잡음 타원이 얼마나 부풀어야 하나</h2></div>
   <div class="prose">
-    <p>고정 칩에는 Q·Π 누산기가 없어 R̲도 모릅니다. 대신 같은 빗 위상의 바깥 탭 y₁ … yₙ(n = 24~25)이 H0 잡음의 표본입니다. 이제 두 가설은 각자 a와 잡음 타원을 가장 그럴듯하게 맞춥니다.</p>
+    <p>지금 하드웨어에는 Q·Π 누산기가 없어 R̲도 모릅니다. 대신 같은 빗 위상의 바깥 탭 y₁ … yₙ(n = 24~25)이 H0 잡음의 표본입니다. 이제 두 가설은 각자 a와 잡음 타원을 가장 그럴듯하게 맞춥니다.</p>
     <p><strong>H1</strong>은 C를 신호로 설명하므로(â = C) C의 잔차가 0이 되고, 잡음 타원은 바깥 탭만으로 정해집니다. <strong>H0</strong>은 C까지 잡음으로 설명해야 하므로, 바깥 탭과 C를 함께 넣어 맞춘 타원이 C 쪽으로 부풉니다. 가우시안의 최대 우도는 맞춘 공분산의 행렬식(타원 넓이의 제곱)에만 달려 있어서, 우도비는 두 행렬식의 비가 됩니다.</p>
   </div>
 <pre class="eq">S  = Σᵢ yᵢ yᵢᵀ   (바깥 탭의 산포 행렬, 실수 2×2),   x = [Re C, Im C]
@@ -1850,7 +1850,7 @@ det(S + x xᵀ) / det S = 1 + xᵀ S⁻¹ x = 1 + T²/n     (행렬식 보조정
 <svg class="ch dg" viewBox="0 0 960 408" role="img" aria-label="대입 예. 맞는 키 −108 dBm과 틀린 키 −40 dBm의 127탭에서 Lambda-hat과 Lambda를 계산하는 순서와 값">
 <defs><marker id="g7a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--axis)"/></marker></defs>
 <text class="t" x="0" y="30">맞는 키 −108 dBm</text>
-<text class="rl" x="0" y="74">Λ̂ 고정 칩</text>
+<text class="rl" x="0" y="74">CIR 추정 Λ̂</text>
 <rect class="node" x="118" y="44" width="136" height="52" rx="7"/>
 <text class="m" x="128" y="66" style="font-size:12px">C = −2.99 + 5.40j</text>
 <text x="128" y="85" style="font-size:11.5px;fill:var(--muted)">|C|² = 15.8 dB</text>
@@ -1870,7 +1870,7 @@ det(S + x xᵀ) / det S = 1 + xᵀ S⁻¹ x = 1 + T²/n     (행렬식 보조정
 <line class="ln" x1="484" y1="70" x2="498" y2="70" marker-end="url(#g7a)"/>
 <line class="ln" x1="604" y1="70" x2="618" y2="70" marker-end="url(#g7a)"/>
 <line class="ln" x1="736" y1="70" x2="750" y2="70" marker-end="url(#g7a)"/>
-<text class="rl" x="0" y="152">Λ 새 칩</text>
+<text class="rl" x="0" y="152">원시 샘플 Λ</text>
 <rect class="node" x="118" y="122" width="136" height="52" rx="7"/>
 <text class="m" x="128" y="144" style="font-size:12px">C = −2.99 + 5.40j</text>
 <text x="128" y="163" style="font-size:11.5px;fill:var(--muted)">|C|² = 15.8 dB</text>
@@ -1883,7 +1883,7 @@ det(S + x xᵀ) / det S = 1 + xᵀ S⁻¹ x = 1 + T²/n     (행렬식 보조정
 <line class="ln" x1="254" y1="148" x2="268" y2="148" marker-end="url(#g7a)"/>
 <line class="ln" x1="484" y1="148" x2="750" y2="148" marker-end="url(#g7a)"/>
 <text class="t" x="0" y="214">틀린 키 −40 dBm</text>
-<text class="rl" x="0" y="258">Λ̂ 고정 칩</text>
+<text class="rl" x="0" y="258">CIR 추정 Λ̂</text>
 <rect class="node" x="118" y="228" width="136" height="52" rx="7"/>
 <text class="m" x="128" y="250" style="font-size:12px">|C|² = 53.0 dB</text>
 <text x="128" y="269" style="font-size:11.5px;fill:var(--muted)">127탭, 위상 7</text>
@@ -1903,7 +1903,7 @@ det(S + x xᵀ) / det S = 1 + xᵀ S⁻¹ x = 1 + T²/n     (행렬식 보조정
 <line class="ln" x1="484" y1="254" x2="498" y2="254" marker-end="url(#g7a)"/>
 <line class="ln" x1="604" y1="254" x2="618" y2="254" marker-end="url(#g7a)"/>
 <line class="ln" x1="736" y1="254" x2="750" y2="254" marker-end="url(#g7a)"/>
-<text class="rl" x="0" y="336">Λ 새 칩</text>
+<text class="rl" x="0" y="336">원시 샘플 Λ</text>
 <rect class="node" x="118" y="306" width="136" height="52" rx="7"/>
 <text class="m" x="128" y="328" style="font-size:12px">|C|² = 53.0 dB</text>
 <text x="128" y="347" style="font-size:11.5px;fill:var(--muted)">127탭, 위상 7</text>
@@ -1925,7 +1925,7 @@ det(S + x xᵀ) / det S = 1 + xᵀ S⁻¹ x = 1 + T²/n     (행렬식 보조정
 <section id="s8">
   <div class="sec-head"><span class="no">8 · 정리</span><h2>같은 질문, 모르는 것의 차이</h2></div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th></th><th>Λ (새 칩)</th><th>Λ̂ (고정 칩)</th></tr></thead>
+    <thead><tr><th></th><th>원시 샘플 Λ</th><th>CIR 추정 Λ̂</th></tr></thead>
     <tbody>
       <tr><td>모르는 것</td><td>a (실수 2개)</td><td>a와 잡음 통계 Q·Π</td></tr>
       <tr><td>쓰는 데이터</td><td>C, 누산기 Q·Π</td><td>C, 같은 위상 바깥 탭 nₑ개</td></tr>
@@ -1941,7 +1941,7 @@ det(S + x xᵀ) / det S = 1 + xᵀ S⁻¹ x = 1 + T²/n     (행렬식 보조정
 
 <footer class="foot">
   <p>출처: 설계 문서 3.2절(Λ 식과 이름), 8.2절(Λ̂, Hotelling 꼬리, 이름). 그림 5·7은 <code>model/pooled_moments.py</code>의 프래그먼트(시드 고정)로, Λ̂ 판정기 원리 페이지 그림과 같은 표본입니다. 그림 1~4·6의 점은 이 페이지를 만들 때 같은 잡음 식으로 뽑은 표본입니다. Λ̂ 우도비 식(행렬식 보조정리)과 2·ln GLR 꼬리는 수치로도 확인했습니다(2026-10-30).</p>
-  <p>관련 페이지: <a href="lamhat.html">Λ̂ 판정기 원리</a>(CIR 그림과 계산 순서), <a href="index.html#s5">RIF Λ 판정기 5장</a>(백색화 Λ), <a href="index.html#s8">8장</a>(고정 칩 Λ̂).</p>
+  <p>관련 페이지: <a href="lamhat.html">Λ̂ 판정기 원리</a>(CIR 그림과 계산 순서), <a href="index.html#s5">RIF Λ 판정기 5장</a>(백색화 Λ), <a href="index.html#s8">8장</a>(CIR 추정 Λ̂).</p>
 </footer>
 </div>
 <script>

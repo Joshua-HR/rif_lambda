@@ -15,7 +15,7 @@
 </script>
 <style>
 /* Layout: RIF Λ 판정기 페이지들과 같은 체계(68ch 본문 + 1080px 도판). 설명 → 직접 넣어 보기 → 원리 → 판정 지도 → 수정 범위 → 순서.
-   Color: 페이지들과 같은 토큰. 주황 = MD 규칙(모델 L90), 청록 = 계산값. 판정 분류 5색은 이 페이지 전용 범주색.
+   Color: 페이지들과 같은 토큰. 주황 = Z 판정기(모델 L90), 청록 = 계산값. 판정 분류 5색은 이 페이지 전용 범주색.
    빨강/초록은 판정 상태(CHECK/OK) 전용. */
 :root{
   --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
@@ -333,7 +333,7 @@ res = chk(res, 'h1: L90 Lambda [dBm]',  R1.L90(1, 2), <span class="hl">-113.5, -
     <div class="legend">
       <span class="key"><svg viewBox="0 0 22 12" aria-hidden="true"><line x1="1" y1="6" x2="21" y2="6" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="4 3"/></svg>CFO가 없을 때: 10·log10((N−1)/31)</span>
       <span class="key"><svg viewBox="0 0 22 12" aria-hidden="true"><line x1="1" y1="6" x2="21" y2="6" stroke="var(--s3)" stroke-width="2"/><circle cx="11" cy="6" r="3.5" fill="var(--s3)"/></svg>CFO 0.25 ppm 반영 계산</span>
-      <span class="key"><svg viewBox="0 0 22 12" aria-hidden="true"><rect x="6" y="1" width="10" height="10" fill="none" stroke="var(--s2)" stroke-width="2"/></svg>모델의 MD 규칙 L90 이동량 (설계 문서 6.4절)</span>
+      <span class="key"><svg viewBox="0 0 22 12" aria-hidden="true"><rect x="6" y="1" width="10" height="10" fill="none" stroke="var(--s2)" stroke-width="2"/></svg>모델의 Z 판정기 L90 이동량 (설계 문서 6.4절)</span>
     </div>
     <div class="scroll-x"><svg id="gain" viewBox="0 0 640 300" role="img" aria-label="32심볼 대비 이득. CFO가 없으면 길이에 비례해 늘지만, CFO를 반영하면 256심볼에서 128심볼보다 줄어든다. 모델 L90 이동량이 CFO 반영 계산과 일치한다."></svg></div>
     <div class="tbl-wrap">
@@ -342,14 +342,14 @@ res = chk(res, 'h1: L90 Lambda [dBm]',  R1.L90(1, 2), <span class="hl">-113.5, -
         <tbody id="cfo-body"></tbody>
       </table>
     </div>
-    <figcaption>계산: 심볼당 위상 φ = 2π × 0.25 ppm × 7987.2 MHz × (512 / 499.2 MHz) = 0.01287 rad, 누적 구간의 총 회전 Φ = φ(N − 1), 피크 진폭 계수 sin(Φ/2)/(Φ/2). 이득 = 10·log10((N−1) × 계수²)을 32심볼 기준으로 뺀 값입니다. 사각형은 모델이 실제로 낸 MD 규칙 L90(−111.34, −114.22, −116.56, −116.19 dBm)의 이동량입니다. 비원형 계수 sin(Φ)/Φ는 같은 회전이 2배로 걸리는 Π(= Σz²) 성분이라, 고전력 H0의 kappa가 길이에 따라 내려가는 이유가 됩니다.</figcaption>
+    <figcaption>계산: 심볼당 위상 φ = 2π × 0.25 ppm × 7987.2 MHz × (512 / 499.2 MHz) = 0.01287 rad, 누적 구간의 총 회전 Φ = φ(N − 1), 피크 진폭 계수 sin(Φ/2)/(Φ/2). 이득 = 10·log10((N−1) × 계수²)을 32심볼 기준으로 뺀 값입니다. 사각형은 모델이 실제로 낸 Z 판정기 L90(−111.34, −114.22, −116.56, −116.19 dBm)의 이동량입니다. 비원형 계수 sin(Φ)/Φ는 같은 회전이 2배로 걸리는 Π(= Σz²) 성분이라, 고전력 H0의 kappa가 길이에 따라 내려가는 이유가 됩니다.</figcaption>
   </figure>
 </section>
 
 <!-- ============================================================ 4 -->
 <section class="sec" id="s4">
   <div class="sec-head"><span class="sec-no">4</span><h2>94개 판정 지도: 무엇이 길이에 따라 바뀌나</h2></div>
-  <p class="prose"><code>run_synthetic_test</code>의 판정을 하나씩 여섯 갈래로 나눴습니다(0단계에서 H0 통계를 Λ 쪽과 MD 규칙 쪽으로 나눔). 칸 하나가 판정 하나이고, 줄이 시험 단계입니다. 칸을 누르면 이름과 32심볼 범위가 나오고, 오른쪽 분류를 누르면 그 분류만 강조됩니다.</p>
+  <p class="prose"><code>run_synthetic_test</code>의 판정을 하나씩 여섯 갈래로 나눴습니다(0단계에서 H0 통계를 Λ 쪽과 Z 판정기 쪽으로 나눔). 칸 하나가 판정 하나이고, 줄이 시험 단계입니다. 칸을 누르면 이름과 32심볼 범위가 나오고, 오른쪽 분류를 누르면 그 분류만 강조됩니다.</p>
   <div class="controls">
     <div class="ctl"><span class="ctl-label" id="setlab">덤프 형식</span>
       <div class="seg" role="group" aria-labelledby="setlab" id="set-seg">
@@ -452,7 +452,7 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
     <table>
       <thead><tr><th>판정 규칙</th><th class="num">32</th><th class="num">64</th><th class="num">128</th><th class="num">256</th></tr></thead>
       <tbody>
-        <tr><td>MD 규칙, 프래그먼트</td><td class="num">−111.3</td><td class="num">−114.2</td><td class="num">−116.5</td><td class="num">−116.2</td></tr>
+        <tr><td>Z 판정기, 프래그먼트</td><td class="num">−111.3</td><td class="num">−114.2</td><td class="num">−116.5</td><td class="num">−116.2</td></tr>
         <tr><td>Λ, 프래그먼트 1e-3</td><td class="num">−112.1</td><td class="num">−114.8</td><td class="num">−117.1</td><td class="num">−116.9</td></tr>
         <tr><td>Λ̂, 프래그먼트 1e-3</td><td class="num">−109.6</td><td class="num">−112.5</td><td class="num">−114.8</td><td class="num">−114.5</td></tr>
         <tr><td>Λ, 1개 설정 10⁻⁶</td><td class="num">−110.2</td><td class="num">−113.1</td><td class="num">−115.4</td><td class="num">−115.1</td></tr>
@@ -461,7 +461,7 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
         <tr><td>Λ̂, 패킷 AND</td><td class="num">−111.3</td><td class="num">−114.2</td><td class="num">−116.4</td><td class="num">−116.1</td></tr>
         <tr><td>Λ, 패킷 soft</td><td class="num">−117.5</td><td class="num">−120.5</td><td class="num">−122.8</td><td class="num">−122.5</td></tr>
         <tr><td>Λ̂, 패킷 soft</td><td class="num">−116.7</td><td class="num">−119.5</td><td class="num">−121.9</td><td class="num">−121.5</td></tr>
-        <tr><td>MD 규칙, 패킷 AND-8</td><td class="num">−110.0</td><td class="num">−112.9</td><td class="num">−115.2</td><td class="num">−114.8</td></tr>
+        <tr><td>Z 판정기, 패킷 AND-8</td><td class="num">−110.0</td><td class="num">−112.9</td><td class="num">−115.2</td><td class="num">−114.8</td></tr>
         <tr><td><strong>규칙별 이동 (32 대비)</strong></td><td class="num">0</td><td class="num">−2.7 ~ −3.0</td><td class="num">−5.1 ~ −5.3</td><td class="num">−4.8 ~ −5.0</td></tr>
         <tr><td><strong>CFO 공식 이동</strong></td><td class="num">0</td><td class="num">−2.90</td><td class="num">−5.19</td><td class="num">−4.89</td></tr>
       </tbody>
@@ -548,14 +548,14 @@ rg.n64.L90md = [...];                <span class="c">% 2단계 모델 계산으�
       <tbody>
         <tr><td><span class="chip"><i style="background:var(--cA)"></i>동작 확인 21 / 10</span></td><td class="why">그대로</td><td class="why">그대로</td><td class="why">그대로</td></tr>
         <tr><td><span class="chip"><i style="background:var(--cB)"></i>H0 Λ 통계 35 / 12</span></td><td class="why">길이별 모델로 확인, 그대로일 것</td><td class="why">그대로 (CFO 무관 설계)</td><td class="why">그대로</td></tr>
-        <tr><td><span class="chip"><i style="background:var(--cM)"></i>H0 MD 규칙 통계 7 / 7</span></td><td class="why">길이별 모델 정답 (2단계에서 의존 여부 확인)</td><td class="why">의존하면 <code>[INFO]</code>, 아니면 그대로</td><td class="why">의존하면 <code>[INFO]</code></td></tr>
+        <tr><td><span class="chip"><i style="background:var(--cM)"></i>H0 Z 판정기 통계 7 / 7</span></td><td class="why">길이별 모델 정답 (2단계에서 의존 여부 확인)</td><td class="why">의존하면 <code>[INFO]</code>, 아니면 그대로</td><td class="why">의존하면 <code>[INFO]</code></td></tr>
         <tr><td><span class="chip"><i style="background:var(--cC)"></i>kappa 6 / 5</span></td><td class="why">길이별 모델 정답</td><td class="why"><code>[INFO]</code></td><td class="why"><code>[INFO]</code></td></tr>
         <tr><td><span class="chip"><i style="background:var(--cD)"></i>H1 dBm 값 12 / 7</span></td><td class="why">길이별 모델 정답, 세기 S만큼 이동</td><td class="why">공식으로 이동</td><td class="why"><code>[INFO]</code></td></tr>
         <tr><td><span class="chip"><i style="background:var(--cE)"></i>H1 차이·정확도 13 / 8</span></td><td class="why">길이별 모델로 확인, 그대로일 것</td><td class="why">그대로</td><td class="why"><code>[INFO]</code></td></tr>
       </tbody>
     </table>
   </div>
-  <p class="prose" style="font-size:14px;color:var(--ink-2)">0단계에서 H0 통계를 둘로 나눴습니다. MD 규칙은 비원형성을 보정하지 않아, 오검출률과 D 중앙값 7개가 kappa처럼 길이와 CFO를 따라 움직일 수 있습니다. Λ 쪽 35개는 측정한 Q·Π로 백색화하므로 CFO에 무관하게 설계돼 있습니다. 이동 판정은 위 이동량 규칙을, Scale은 아래 규칙을 따로 적용합니다.</p>
+  <p class="prose" style="font-size:14px;color:var(--ink-2)">0단계에서 H0 통계를 둘로 나눴습니다. Z 판정기는 비원형성을 보정하지 않아, 오검출률과 D 중앙값 7개가 kappa처럼 길이와 CFO를 따라 움직일 수 있습니다. Λ 쪽 35개는 측정한 Q·Π로 백색화하므로 CFO에 무관하게 설계돼 있습니다. 이동 판정은 위 이동량 규칙을, Scale은 아래 규칙을 따로 적용합니다.</p>
 
   <h3>축소 세트 (<code>'Scale'</code> &lt; 1) 범위 규칙</h3>
   <div class="tbl-wrap">
@@ -610,7 +610,7 @@ SeedBase     = 1000</pre>
 
   <h3>2단계에서 확인할 것</h3>
   <ul class="prose">
-    <li>H0 MD 규칙 통계 7개가 길이(같은 0.25 ppm)와 CFO에 따라 움직이는지</li>
+    <li>H0 Z 판정기 통계 7개가 길이(같은 0.25 ppm)와 CFO에 따라 움직이는지</li>
     <li>H0 Λ 통계와 H1 차이·정확도가 길이에 무관하다는 예상</li>
     <li>이동량 0.6·1.2탭에서 이동 탐색 Pd와 Pd 이득</li>
     <li>이 통계 모델(위 표)과 덤프 기반 Python 계산이 같은 L90을 주는지</li>
@@ -757,7 +757,7 @@ SeedBase     = 1000</pre>
       ['총 회전 Φ [rad]', function (N) { return cfo(N).P.toFixed(2); }],
       ['피크 진폭 계수', function (N) { return cfo(N).amp.toFixed(3); }],
       ['이득 (32 대비) [dB]', function (N) { var g = cfo(N).g - G32; return (g > 0 ? '+' : '') + g.toFixed(2); }],
-      ['모델 MD L90 [dBm]', function (N) { return MODEL_MD[N].toFixed(2); }],
+      ['모델 Z 판정기 L90 [dBm]', function (N) { return MODEL_MD[N].toFixed(2); }],
       ['비원형 계수 sin(Φ)/Φ', function (N) { return cfo(N).pseudo.toFixed(3); }]
     ];
     $('cfo-body').innerHTML = rows.map(function (r) {
@@ -787,7 +787,7 @@ SeedBase     = 1000</pre>
   var CATS = {
     A: {nm: '동작 확인', act: '정답 그대로', d: '값이 정해져 있거나(문턱 22.71, 잡음 탭 24–25, 작업 폴더 2개) 오류·경고가 나는지 보는 판정입니다. 길이를 바꿔도 정답이 같습니다.'},
     B: {nm: 'H0 Λ 통계', act: '그대로일 것, 모델로 확인', d: '잡음만 있을 때 Λ·Λ̂의 오검출률, 꼬리 비율, 상관, 패킷 예산입니다. Λ는 측정한 Q·Π로 백색화하므로 길이와 CFO에 무관하게 설계돼 있습니다. 새 길이에서 모델로 한 번 확인합니다.'},
-    M: {nm: 'H0 MD 규칙 통계', act: '길이·CFO 의존 여부 확인', d: 'MD 규칙의 오검출률과 D 중앙값입니다. MD 규칙은 비원형성을 보정하지 않아, 틀린 키 신호의 비원형성(kappa와 같은 원인)을 따라 길이와 CFO에 따라 달라질 수 있습니다. 2단계 모델로 확인해, 달라지면 kappa처럼 길이별 정답을 쓰고 Ppm이 0.25가 아니면 [INFO]로 둡니다.'},
+    M: {nm: 'H0 Z 판정기 통계', act: '길이·CFO 의존 여부 확인', d: 'Z 판정기의 오검출률과 D 중앙값입니다. Z 판정기는 비원형성을 보정하지 않아, 틀린 키 신호의 비원형성(kappa와 같은 원인)을 따라 길이와 CFO에 따라 달라질 수 있습니다. 2단계 모델로 확인해, 달라지면 kappa처럼 길이별 정답을 쓰고 Ppm이 0.25가 아니면 [INFO]로 둡니다.'},
     C: {nm: 'kappa (비원형성)', act: '길이별 정답 새로', d: 'CIR의 비원형성입니다. CFO 위상 회전이 누적 길이에 비례해 커져 고전력 H0에서 길이가 길수록 내려갈 수 있습니다(3장 표). 길이별 범위를 모델로 정합니다.'},
     D: {nm: 'H1 dBm 위치 값', act: '길이별 정답 새로', d: 'L90처럼 dBm으로 적힌 값이나 정해진 세기에서의 Pd입니다. 길이가 길면 곡선이 낮은 세기 쪽으로 옮겨 가므로, 길이별 범위와 함께 H1 세기 범위·이동 폴더 세기도 새로 정합니다.'},
     E: {nm: 'H1 차이·정확도', act: '그대로일 것, 모델로 확인', d: '두 방식의 L90 차이, 검출 위치 정확도, 이동 추정처럼 곡선이 함께 옮겨 가면 상쇄되는 값입니다. 대체로 그대로일 것으로 보고 모델로 확인합니다.'}
@@ -899,7 +899,7 @@ SeedBase     = 1000</pre>
       add('2col -82 dBm: Lambda-hat computed from the CIR', 1, 1, 'A');
       add('2col -82 dBm: fewest noise taps per phase', 24, 25, 'A');
       add('2col -82 dBm: Lambda-hat false-alarm rate', 0, 0.006, 'B');
-      step('2 H0 MD 규칙');
+      step('2 H0 Z 판정기');
       add('2col h0: raw Lambda skipped (EL empty)', 1, 1, 'A');
       P.forEach(function (p) {
         var t = '2col h0 -' + p + ' dBm';
@@ -941,7 +941,7 @@ SeedBase     = 1000</pre>
       return '<span style="flex:' + cnt[k] + ';background:var(--c' + k + ')"></span>';
     }).join('');
     var change = cnt.C + cnt.D, same = cnt.A, check = cnt.B + cnt.M + cnt.E;
-    $('sumline').innerHTML = L.length + '개 중 <strong>새 정답이 필요한 판정 ' + change + '개</strong>, 모델로 확인할 판정 ' + check + '개(그중 MD 규칙 통계 ' + cnt.M + '개는 달라지면 새 정답), 그대로 쓰는 판정 ' + same + '개.';
+    $('sumline').innerHTML = L.length + '개 중 <strong>새 정답이 필요한 판정 ' + change + '개</strong>, 모델로 확인할 판정 ' + check + '개(그중 Z 판정기 통계 ' + cnt.M + '개는 달라지면 새 정답), 그대로 쓰는 판정 ' + same + '개.';
     var rows = [], last = null, html = '';
     L.forEach(function (c, i) {
       if (c.st !== last) { rows.push({st: c.st, idx: []}); last = c.st; }

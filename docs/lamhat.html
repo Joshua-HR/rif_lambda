@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Λ̂ 판정기 원리</title>
-<meta name="description" content="고정 칩 Λ̂ 판정기의 수식을 CIR 그림으로 설명: 같은 빗 위상의 바깥 탭으로 잡음(열잡음과 틀린 키 신호의 자기잡음)의 세기 Q̂와 모양 Π̂를 추정하고, 추정 잡음의 두꺼운 꼬리를 χ²₂로 바꾸는 이유">
+<meta name="description" content="CIR 추정 Λ̂ 판정기의 수식을 CIR 그림으로 설명: 같은 빗 위상의 바깥 탭으로 잡음(열잡음과 틀린 키 신호의 자기잡음)의 세기 Q̂와 모양 Π̂를 추정하고, 추정 잡음의 두꺼운 꼬리를 χ²₂로 바꾸는 이유">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
 <!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
@@ -136,9 +136,9 @@ tr.grp td{border-top:2px solid var(--axis)}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">고정 칩 판정기 · 수식과 CIR 그림</span>
+  <span class="eyebrow">CIR 추정 Λ̂ 판정기 · 수식과 CIR 그림</span>
   <h1>Λ̂는 같은 위상의 바깥 탭과 견줘 얼마나 튀는지 잽니다</h1>
-  <p class="lede">고정 칩에는 Q·Π 누산기가 없어, 프래그먼트마다 덤프되는 CIR 한 장으로 판정해야 합니다. Λ̂는 신호 창 밖의 탭으로 빗 위상마다 잡음의 세기(Q)와 모양(Π)을 추정하고, 창 안 탭이 그 잡음에 비해 얼마나 튀는지를 잽니다. 그 값을 맞는 키가 없을 때(열잡음뿐이든 틀린 키 신호가 섞였든) 세기와 채널에 관계없이 정확히 χ²₂를 따르도록 바꾸므로, 문턱 하나로 모든 조건에서 오검출을 보장합니다.</p>
+  <p class="lede">지금 하드웨어에는 Q·Π 누산기가 없어, 프래그먼트마다 덤프되는 CIR 한 장으로 판정해야 합니다. Λ̂는 신호 창 밖의 탭으로 빗 위상마다 잡음의 세기(Q)와 모양(Π)을 추정하고, 창 안 탭이 그 잡음에 비해 얼마나 튀는지를 잽니다. 그 값을 맞는 키가 없을 때(열잡음뿐이든 틀린 키 신호가 섞였든) 세기와 채널에 관계없이 정확히 χ²₂를 따르도록 바꾸므로, 문턱 하나로 모든 조건에서 오검출을 보장합니다.</p>
   <div class="facts">
     <span class="fact">CIR <b>256탭</b></span>
     <span class="fact">신호 창 <b>119~175</b> (57탭)</span>
@@ -261,7 +261,7 @@ tr.grp td{border-top:2px solid var(--axis)}
 <text class="rl" x="0" y="464">탭 k</text><text class="rl" x="0" y="34">dB</text>
 </svg>
 <!--/L1--></div>
-    <figcaption>32심볼 프래그먼트 하나의 |C[k]|² (열잡음 기준 dB, 통계 모델 표본). 회색 선이 256탭 전체이고, 위상 7(피크 127탭의 위상)만 점으로 표시했습니다. 파란 점은 신호 창 밖의 바깥 탭으로 잡음 통계를 추정하는 데 쓰고, 주황 원은 창 안에서 판정할 탭입니다. 파란 점선은 그 위상의 바깥 탭 평균 Q̂₇입니다. 위: 맞는 키는 127탭이 Q̂₇보다 크게 튀어 Λ̂가 문턱 22.71을 넘습니다. 아래: 강한 틀린 키는 127탭 전력이 53 dB로 훨씬 크지만, 같은 위상 바깥 탭도 48 dB라 튀지 않습니다(Λ̂ 4.8). 전력만 보면 이 둘을 가르기 어렵고, 이것이 MD 방식이 중간 세기에서 깨지는 이유입니다.</figcaption>
+    <figcaption>32심볼 프래그먼트 하나의 |C[k]|² (열잡음 기준 dB, 통계 모델 표본). 회색 선이 256탭 전체이고, 위상 7(피크 127탭의 위상)만 점으로 표시했습니다. 파란 점은 신호 창 밖의 바깥 탭으로 잡음 통계를 추정하는 데 쓰고, 주황 원은 창 안에서 판정할 탭입니다. 파란 점선은 그 위상의 바깥 탭 평균 Q̂₇입니다. 위: 맞는 키는 127탭이 Q̂₇보다 크게 튀어 Λ̂가 문턱 22.71을 넘습니다. 아래: 강한 틀린 키는 127탭 전력이 53 dB로 훨씬 크지만, 같은 위상 바깥 탭도 48 dB라 튀지 않습니다(Λ̂ 4.8). 전력만 보면 이 둘을 가르기 어렵고, 이것이 Z 판정기가 중간 세기에서 깨지는 이유입니다.</figcaption>
   </figure>
   <h3>빗 위상: 8탭 떨어진 탭끼리 비교하는 이유</h3>
   <div class="prose">
@@ -664,9 +664,9 @@ tr.grp td{border-top:2px solid var(--axis)}
 </section>
 
 <section id="s5">
-  <div class="sec-head"><span class="no">5 · Λ(새 칩)와의 차이</span><h2>같은 식, 다른 잡음 통계</h2></div>
+  <div class="sec-head"><span class="no">5 · 원시 샘플 Λ와의 차이</span><h2>같은 식, 다른 잡음 통계</h2></div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th></th><th>Λ (새 칩)</th><th>Λ̂ (고정 칩, 지금)</th></tr></thead>
+    <thead><tr><th></th><th>원시 샘플 Λ</th><th>CIR 추정 Λ̂ (지금)</th></tr></thead>
     <tbody>
       <tr><td>잡음 통계 Q, Π</td><td>상관기에서 원시 샘플로 누적 (5열 덤프: re, im, Q, ReΠ, ImΠ)</td><td>CIR의 신호 창 밖 탭으로 위상마다 추정 (2열 덤프로 충분)</td></tr>
       <tr><td>판정량</td><td>T²[k] 그대로, H0에서 정확히 χ²₂</td><td>T²[k]를 (nₑ − 1)·ln(1 + T²/nₑ)로 바꿔 χ²₂</td></tr>
