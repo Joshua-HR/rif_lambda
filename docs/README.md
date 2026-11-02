@@ -1,6 +1,6 @@
 # RIF Λ 판정기 해설 페이지 (GitHub Pages)
 
-정적 페이지 열 개입니다. 빌드 과정이 없고, 위젯의 시뮬레이션과 그래프는 브라우저에서 돕니다.
+정적 페이지 열한 개입니다. 빌드 과정이 없고, 위젯의 시뮬레이션과 그래프는 브라우저에서 돕니다.
 
 | 파일 | 내용 |
 |---|---|
@@ -14,14 +14,15 @@
 | `score.html` | STS 점수 판정: 기존 일반 모드의 점수 판정(심볼마다 한 표본 시점의 펄스 128개 부호 일치, 패킷 전체 평균 문턱 12)의 동작과 원리, 신호 유무에 따른 평균 점수 분포, SemiSyncOnlyMode에서 쓸 수 없는 이유 |
 | `glr.html` | Λ·Λ̂ 우도비 유도: 두 판정기가 일반화 우도비(GLR)인 이유를 그림 일곱 장으로 유도. 잡음 타원(Q·Π), 로그 밀도의 차이로 본 GLR, 백색화와 χ²₂, 잡음 통계를 모를 때 부푸는 타원(Λ̂), (n−1)/(n+1) 눈금, 대입 예 |
 | `lamhat.html` | Λ̂ 판정기 원리: 고정 칩 Λ̂의 수식을 CIR 그림으로 설명. 같은 빗 위상의 바깥 탭으로 잡음(열잡음과 틀린 키 신호의 자기잡음)의 세기 Q̂와 모양 Π̂를 추정하는 방법, 복소평면의 문턱 타원, 계산 순서, Hotelling T²를 χ²₂로 바꾸는 이유, Λ와의 차이 |
+| `seminar.html` | RIF 수신 판정 세미나 앱 (시연용): 기존 Z 판정기의 한계 → 원시 샘플 Λ → CIR 추정 Λ̂ → 패킷 판정과 비교 → 검증 현황을 35개 장면과 위젯으로 정리. 상단 막대로 부를 옮기고, "발표 모드"는 한 장면씩 넘기며 보여 줍니다(←/→ 키). 발표용 용어(원시 샘플 Λ, CIR 추정 Λ̂, 기존 Z 판정기)를 쓰며, 다른 페이지들은 아직 예전 용어(새 칩/고정 칩, MD 규칙)를 씁니다 |
 
 페이지들은 바닥글에서 서로 링크됩니다. 결정과 재검토 조건은 `../lambda_patch/DECISIONS.md`에 있습니다.
-`basis.html`, `consistency.html`, `checklist.html`, `length.html`, `length-verify.html`, `pooled.html`, `score.html`, `lamhat.html`, `glr.html`은 작업 폴더의 원본에서 만든 결과물이라 직접 고치지 않습니다.
+`basis.html`, `consistency.html`, `checklist.html`, `length.html`, `length-verify.html`, `pooled.html`, `score.html`, `lamhat.html`, `glr.html`, `seminar.html`은 작업 폴더의 원본에서 만든 결과물이라 직접 고치지 않습니다.
 외부로 나가는 요청은 Google Fonts 하나뿐이며, 사내망에서 막혀도 렌더링을 막지 않고 시스템 글꼴(맑은 고딕 등)로 표시됩니다.
 
 ## 사내 GitHub(GitHub Enterprise) Pages로 게시
 
-1. 이 `docs/` 폴더(HTML 열 개, `.nojekyll`)를 저장소의 게시할 브랜치에 커밋합니다.
+1. 이 `docs/` 폴더(HTML 열한 개, `.nojekyll`)를 저장소의 게시할 브랜치에 커밋합니다.
 2. 저장소 **Settings → Pages → Build and deployment**
    - Source: **Deploy from a branch**
    - Branch: 게시할 브랜치(예: `main`), Folder: **`/docs`** → Save

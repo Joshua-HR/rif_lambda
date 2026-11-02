@@ -1089,7 +1089,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
   <p><strong>가정과 한계.</strong> 수치는 통계 모델(MD 5.1장의 빗 프로파일, 펄스당 가우시안 근사)과 파형 모델(이상 펄스, 부동소수점, 단일 안테나, HPRF)에서 나왔습니다. 실제 시뮬레이터의 덤프로 다시 확인해야 합니다. 패킷 10⁻⁶은 FiRa 원문이 아니라 그것을 인용한 논문에서 왔습니다.</p>
   <p>Λ의 보장은 H0 신호가 내 키 시퀀스와 독립일 때 성립합니다. 키를 알거나 일부 아는 공격(재전송, 일부 비트 반전)은 대상이 아니며, 표준이 RIF에 요구하는 ToA 무결성 검증은 별도 과제입니다.</p>
   <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(MD 방식), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>(패치 설계), <code>lambda_patch/TEST_PLAN.md</code>(검증 계획), <code>lambda_patch/model/</code>(수치를 다시 만드는 Python 스크립트). 2026-10-15 기준(판정 기준을 패킷 10⁻⁶으로 전환).</p>
-  <p>관련 페이지: <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶ 기준으로 바꾼 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(일관성 검사 폐기율 결정 자료), <a href="checklist.html">RIF 검증 체크리스트</a>(직접 돌려 볼 시험과 결과 기록), <a href="length.html">RIF 길이별 합성 시험</a>(합성 시험의 RIF 길이 지원 범위), <a href="length-verify.html">RIF 길이 지원 검증 기록</a>(5·6단계 실행 결과와 수정), <a href="pooled.html">Λ̂ 모멘트 모으기</a>(프래그먼트를 모은 Q̂·Π̂ 추정의 모델 확인), <a href="score.html">STS 점수 판정</a>(기존 일반 모드 방식과 지금 모드에서 못 쓰는 이유), <a href="lamhat.html">Λ̂ 판정기 원리</a>(고정 칩 Λ̂의 수식을 CIR 그림으로 설명), <a href="glr.html">Λ·Λ̂ 우도비 유도</a>(두 판정기가 일반화 우도비인 이유를 그림으로 유도). 결정 기록: <code>lambda_patch/DECISIONS.md</code>.</p>
+  <p>관련 페이지: <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶ 기준으로 바꾼 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(일관성 검사 폐기율 결정 자료), <a href="checklist.html">RIF 검증 체크리스트</a>(직접 돌려 볼 시험과 결과 기록), <a href="length.html">RIF 길이별 합성 시험</a>(합성 시험의 RIF 길이 지원 범위), <a href="length-verify.html">RIF 길이 지원 검증 기록</a>(5·6단계 실행 결과와 수정), <a href="pooled.html">Λ̂ 모멘트 모으기</a>(프래그먼트를 모은 Q̂·Π̂ 추정의 모델 확인), <a href="score.html">STS 점수 판정</a>(기존 일반 모드 방식과 지금 모드에서 못 쓰는 이유), <a href="lamhat.html">Λ̂ 판정기 원리</a>(고정 칩 Λ̂의 수식을 CIR 그림으로 설명), <a href="glr.html">Λ·Λ̂ 우도비 유도</a>(두 판정기가 일반화 우도비인 이유를 그림으로 유도), <a href="seminar.html">RIF 수신 판정 세미나 앱</a>(전체 내용을 장면별 위젯으로 정리한 시연용 앱). 결정 기록: <code>lambda_patch/DECISIONS.md</code>.</p>
 </footer>
 </div>
 
@@ -1419,7 +1419,11 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
     el('circle', {cx: X(r.kpk), cy: Y(Pdb[r.kpk]), r: 4.5, 'class': 'inkf ring'}, svg);
     txt(svg, X(r.kpk) + 8, Y(Pdb[r.kpk]) - 6, 'Z = ' + fmtDb(10 * Math.log10(r.Z)) + ' dB', 'labs', 'start');
     txt(svg, (X(WN0) + X(WN1)) / 2, mt + 16, 'W_n', 'lab', 'middle');
-    txt(svg, (X(WS0) + X(WS1)) / 2, mt + 16, 'W_s', 'lab', 'middle');
+    var zx = X(r.kpk) + 8, zy = Y(Pdb[r.kpk]) - 6, zw = 7.2 * ('Z = ' + fmtDb(10 * Math.log10(r.Z)) + ' dB').length, wsx = (X(WS0) + X(WS1)) / 2, wsa = 'middle';
+    if (zy < mt + 30 && zx < wsx + 12 && zx + zw > wsx - 12) {   /* the Z label would sit on W_s: move W_s to the free end of the band */
+      if (zx - X(WS0) > X(WS1) - (zx + zw)) { wsx = X(WS0) + 6; wsa = 'start'; } else { wsx = X(WS1) - 6; wsa = 'end'; }
+    }
+    txt(svg, wsx, mt + 16, 'W_s', 'lab', wsa);
     /* hover */
     var hit = el('rect', {x: ml, y: mt, width: W - ml - mr, height: H - mb - mt, 'class': 'hit'}, svg);
     hit.addEventListener('pointermove', function (ev) {
