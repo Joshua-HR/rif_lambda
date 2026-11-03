@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Λ̂ 판정기 원리</title>
-<meta name="description" content="CIR 추정 Λ̂ 판정기의 수식을 CIR 그림으로 설명: 같은 빗 위상의 바깥 탭으로 잡음(열잡음과 틀린 키 신호의 자기잡음)의 세기 Q̂와 모양 Π̂를 추정하고, 추정 잡음의 두꺼운 꼬리를 χ²₂로 바꾸는 이유">
+<meta name="description" content="CIR 추정 Λ̂ 판정기의 수식을 CIR 그림으로 설명: 같은 다상 성분의 바깥 탭으로 잡음(열잡음과 틀린 키 신호의 자기잡음)의 세기 Q̂와 모양 Π̂를 추정하고, 추정 잡음의 두꺼운 꼬리를 χ²₂로 바꾸는 이유">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
 <!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
@@ -145,11 +145,11 @@ tr.grp td{border-top:2px solid var(--axis)}
 <header class="hero">
   <span class="eyebrow">CIR 추정 Λ̂ 판정기 · 수식과 CIR 그림</span>
   <h1>Λ̂는 같은 위상의 바깥 탭과 견줘 얼마나 튀는지 잽니다</h1>
-  <p class="lede">지금 하드웨어에는 Q·Π 누산기가 없어, 프래그먼트마다 덤프되는 CIR 한 장으로 판정해야 합니다. Λ̂는 신호 창 밖의 탭으로 빗 위상마다 잡음의 세기(Q)와 모양(Π)을 추정하고, 창 안 탭이 그 잡음에 비해 얼마나 튀는지를 잽니다. 그 값을 맞는 키가 없을 때(열잡음뿐이든 틀린 키 신호가 섞였든) 세기와 채널에 관계없이 정확히 χ²₂를 따르도록 바꾸므로, 문턱 하나로 모든 조건에서 오검출을 보장합니다.</p>
+  <p class="lede">지금 하드웨어에는 Q·Π 누산기가 없어, 프래그먼트마다 덤프되는 CIR 한 장으로 판정해야 합니다. Λ̂는 신호 창 밖의 탭으로 다상 성분마다 잡음의 세기(Q)와 모양(Π)을 추정하고, 창 안 탭이 그 잡음에 비해 얼마나 튀는지를 잽니다. 그 값을 맞는 키가 없을 때(열잡음뿐이든 틀린 키 신호가 섞였든) 세기와 채널에 관계없이 정확히 χ²₂를 따르도록 바꾸므로, 문턱 하나로 모든 조건에서 오검출을 보장합니다.</p>
   <div class="facts">
     <span class="fact">CIR <b>256탭</b></span>
     <span class="fact">신호 창 <b>119~175</b> (57탭)</span>
-    <span class="fact">빗 위상 <b>e = k mod 8</b></span>
+    <span class="fact">다상 성분 <b>e = k mod 8</b></span>
     <span class="fact">위상당 바깥 탭 <b>24~25개</b></span>
     <span class="fact">문턱 <b>22.71</b> (프래그먼트 1e-3) · <b>69.6</b> (8개 합, 10⁻⁶)</span>
   </div>
@@ -158,7 +158,7 @@ tr.grp td{border-top:2px solid var(--axis)}
 <section id="s1">
   <div class="sec-head"><span class="no">1 · CIR에서 무엇을 보나</span><h2>같은 위상끼리 비교합니다</h2></div>
   <div class="prose">
-    <p>HPRF 펄스가 8탭마다 나오므로, CIR의 잡음은 8탭 주기로 세기와 모양이 바뀝니다. 강한 신호가 섞이면 그 신호 자신의 다른 심볼이 상관에 새어 들어와(자기잡음) 펄스 모양을 따라 위상마다 바닥이 크게 달라집니다. 그래서 탭 k를 판정할 때는 같은 빗 위상 e = k mod 8의 탭과 비교합니다. 신호 창 밖에 있는 같은 위상 탭이 "잡음만 있을 때 이 탭이 어떻게 생겼는지"를 알려 주는 표본입니다.</p>
+    <p>HPRF 펄스가 8탭마다 나오므로, CIR의 잡음은 8탭 주기로 세기와 모양이 바뀝니다. 강한 신호가 섞이면 그 신호 자신의 다른 심볼이 상관에 새어 들어와(자기잡음) 펄스 모양을 따라 위상마다 바닥이 크게 달라집니다. 그래서 탭 k를 판정할 때는 같은 다상 성분 e = k mod 8의 탭과 비교합니다. 신호 창 밖에 있는 같은 위상 탭이 "잡음만 있을 때 이 탭이 어떻게 생겼는지"를 알려 주는 표본입니다.</p>
   </div>
   <figure class="plate">
     <div class="scroll-x"><!--L1-->
@@ -270,9 +270,9 @@ tr.grp td{border-top:2px solid var(--axis)}
 <!--/L1--></div>
     <figcaption>32심볼 프래그먼트 하나의 |C[k]|² (열잡음 기준 dB, 통계 모델 표본). 회색 선이 256탭 전체이고, 위상 7(피크 127탭의 위상)만 점으로 표시했습니다. 파란 점은 신호 창 밖의 바깥 탭으로 잡음 통계를 추정하는 데 쓰고, 주황 원은 창 안에서 판정할 탭입니다. 파란 점선은 그 위상의 바깥 탭 평균 Q̂₇입니다. 위: 맞는 키는 127탭이 Q̂₇보다 크게 튀어 Λ̂가 문턱 22.71을 넘습니다. 아래: 강한 틀린 키는 127탭 전력이 53 dB로 훨씬 크지만, 같은 위상 바깥 탭도 48 dB라 튀지 않습니다(Λ̂ 4.8). 전력만 보면 이 둘을 가르기 어렵고, 이것이 Z 판정기가 중간 세기에서 깨지는 이유입니다.</figcaption>
   </figure>
-  <h3>빗 위상: 8탭 떨어진 탭끼리 비교하는 이유</h3>
+  <h3>다상 성분: 8탭 떨어진 탭끼리 비교하는 이유</h3>
   <div class="prose">
-    <p>상관기는 수신 샘플을 8개씩 끊은 "펄스 슬롯"마다 같은 자리의 샘플 하나씩을 골라, 내 키의 부호(±1)를 곱해 더합니다. 식으로는 C[k] = Σₙ bₙ·r[8n + k]이고, 탭 k가 고르는 자리인 슬롯 안 위치 k mod 8이 빗 위상입니다. 아래 그림은 틀린 키 신호가 들어왔을 때의 수신 샘플을, 펄스 네 개만 실수로 단순화해 그린 예입니다.</p>
+    <p>상관기는 수신 샘플을 8개씩 끊은 "펄스 슬롯"마다 같은 자리의 샘플 하나씩을 골라, 내 키의 부호(±1)를 곱해 더합니다. 식으로는 C[k] = Σₙ bₙ·r[8n + k]이고, 탭 k가 고르는 자리인 슬롯 안 위치 k mod 8이 다상 성분(polyphase component)이고, 줄여서 위상 e라 부릅니다. 아래 그림은 틀린 키 신호가 들어왔을 때의 수신 샘플을, 펄스 네 개만 실수로 단순화해 그린 예입니다.</p>
   </div>
   <figure class="plate">
     <div class="scroll-x"><!--L5-->
@@ -460,7 +460,7 @@ tr.grp td{border-top:2px solid var(--axis)}
 <rect x="620" y="10" width="12" height="12" rx="2" style="fill:var(--h0)"/><text x="638" y="20" style="font-size:12px">맞는 키, −108 dBm (바깥 탭은 사실상 열잡음)</text>
 </svg>
 <!--/L6--></div>
-    <figcaption>그림 1과 같은 두 프래그먼트를 위상별로 잰 값입니다. 틀린 키는 위상 7(48.4 dB)과 이웃한 6·0이 가장 세고, 위상 3은 22.9 dB로 25 dB 낮아 8탭 주기의 빗 모양이 됩니다. 맞는 키 −108 dBm 프래그먼트는 바깥 탭이 사실상 열잡음이라 여덟 위상이 모두 0 dB 근처입니다(표본 24~25개의 추정 흔들림 ±2 dB). 위상을 섞어 바깥 탭 199개를 평균하면 42.0 dB(점선)이고, 이 값으로 위상 7의 탭을 재면 잡음을 6.4 dB 작게 보아 T²가 약 4.4배로 부풉니다. 그러면 문턱 40.4가 실제로는 약 9.3에 해당해, 탭당 오검출 확률이 1.2e-5에서 약 2e-2로 커집니다. 위상 3의 탭은 반대로 잡음을 크게 보아 신호를 놓칩니다. 위상별로 나누는 대가는 표본 수(199개 → 위상당 24~25개)이고, Λ̂ 문턱이 원시 샘플 Λ보다 약 2.4 dB 높은 이유가 이것입니다.</figcaption>
+    <figcaption>그림 1과 같은 두 프래그먼트를 위상별로 잰 값입니다. 틀린 키는 위상 7(48.4 dB)과 이웃한 6·0이 가장 세고, 위상 3은 22.9 dB로 25 dB 낮아, 잡음 바닥이 8탭 주기로 변하는 주기정상(cyclostationary) 잡음이 됩니다. 맞는 키 −108 dBm 프래그먼트는 바깥 탭이 사실상 열잡음이라 여덟 위상이 모두 0 dB 근처입니다(표본 24~25개의 추정 흔들림 ±2 dB). 위상을 섞어 바깥 탭 199개를 평균하면 42.0 dB(점선)이고, 이 값으로 위상 7의 탭을 재면 잡음을 6.4 dB 작게 보아 T²가 약 4.4배로 부풉니다. 그러면 문턱 40.4가 실제로는 약 9.3에 해당해, 탭당 오검출 확률이 1.2e-5에서 약 2e-2로 커집니다. 위상 3의 탭은 반대로 잡음을 크게 보아 신호를 놓칩니다. 위상별로 나누는 대가는 표본 수(199개 → 위상당 24~25개)이고, Λ̂ 문턱이 원시 샘플 Λ보다 약 2.4 dB 높은 이유가 이것입니다.</figcaption>
   </figure>
   <h3>여기서 잡음의 범위</h3>
   <div class="prose">
@@ -476,7 +476,7 @@ tr.grp td{border-top:2px solid var(--axis)}
   </table></div>
   <div class="prose">
     <p>틀린 키의 자기잡음이 납작한 이유는 한 수신 신호에서 나왔기 때문입니다. 프래그먼트 동안 반송파 위상이 거의 같아서 복소평면에서 한 방향으로 늘어섭니다(2장 그림 2 오른쪽). 열잡음은 위상이 제멋대로라 둥급니다. Λ̂가 Q̂만이 아니라 Π̂까지 추정하는 이유가 이 성분입니다. 세기만으로 정규화하면 납작한 잡음의 긴 방향에서 오검출이 늘어, 정확한 Q를 써도 틀린 키 조건에서 1.4e-3~8.3e-3으로 기준 1e-3을 넘습니다(설계 문서 6.2절).</p>
-    <p>어느 경우든 같은 빗 위상의 잡음은 신호 창 안과 밖에서 같은 분포로 퍼져 있으므로(설계 문서 8.2절), 바깥 탭으로 잰 Q̂·Π̂가 창 안 탭의 잡음을 대표하고 판정량이 χ²₂를 따릅니다. 이 전제가 깨지는 경우는 세 가지입니다. 맞는 키의 멀티패스 꼬리가 창 밖까지 이어지면 Q̂가 커져 Pd만 떨어지고 Pfa에는 영향이 없습니다. CIR 양 끝의 누적 경계 효과나 16비트 포화가 있으면 분포가 달라집니다(8.4절). 공격자가 프래그먼트 안 에너지의 시간 분포를 일부러 조작하는 경우는 아직 분석하지 않았습니다(9.7절).</p>
+    <p>어느 경우든 같은 다상 성분의 잡음은 신호 창 안과 밖에서 같은 분포로 퍼져 있으므로(설계 문서 8.2절), 바깥 탭으로 잰 Q̂·Π̂가 창 안 탭의 잡음을 대표하고 판정량이 χ²₂를 따릅니다. 이 전제가 깨지는 경우는 세 가지입니다. 맞는 키의 멀티패스 꼬리가 창 밖까지 이어지면 Q̂가 커져 Pd만 떨어지고 Pfa에는 영향이 없습니다. CIR 양 끝의 누적 경계 효과나 16비트 포화가 있으면 분포가 달라집니다(8.4절). 공격자가 프래그먼트 안 에너지의 시간 분포를 일부러 조작하는 경우는 아직 분석하지 않았습니다(9.7절).</p>
   </div>
 </section>
 
@@ -577,7 +577,7 @@ tr.grp td{border-top:2px solid var(--axis)}
   <div class="sec-head"><span class="no">3 · 계산 순서</span><h2>CIR 한 장에서 판정까지</h2></div>
   <figure class="plate">
     <div class="scroll-x"><!--L3-->
-<svg class="ch dg" viewBox="0 0 960 372" role="img" aria-label="CIR을 빗 위상 8묶음으로 나누고, 위상마다 바깥 탭으로 Q와 Pi를 추정해 창 안 탭의 T 제곱을 구한 뒤 chi 제곱 2로 바꿔 프래그먼트 문턱 또는 패킷 합의 문턱과 비교한다">
+<svg class="ch dg" viewBox="0 0 960 372" role="img" aria-label="CIR을 다상 성분 8묶음으로 나누고, 위상마다 바깥 탭으로 Q와 Pi를 추정해 창 안 탭의 T 제곱을 구한 뒤 chi 제곱 2로 바꿔 프래그먼트 문턱 또는 패킷 합의 문턱과 비교한다">
 <defs><marker id="f3a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--axis)"/></marker></defs>
 <rect class="node" x="0" y="10" width="220" height="104" rx="8"/>
 <text class="t" x="14" y="34">1 · CIR 한 프래그먼트</text>
@@ -585,7 +585,7 @@ tr.grp td{border-top:2px solid var(--axis)}
 <text x="14" y="78">신호 창 W_s = 119 … 175</text>
 <text x="14" y="98">(57탭, 피크는 127)</text>
 <rect class="node" x="250" y="10" width="250" height="104" rx="8"/>
-<text class="t" x="264" y="34">2 · 빗 위상으로 나눔</text>
+<text class="t" x="264" y="34">2 · 다상 성분으로 나눔</text>
 <text class="m" x="264" y="58">e = k mod 8</text>
 <text x="264" y="78">펄스가 8탭마다 → 잡음 세기와</text>
 <text x="264" y="98">모양이 위상마다 다름</text>

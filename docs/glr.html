@@ -491,7 +491,7 @@ pre.eq{font:13.5px/1.75 var(--f-mono);background:var(--code-bg);color:var(--ink)
     <tbody>
       <tr><td>C</td><td>판정할 탭의 CIR 값 C[k] 하나 (복소수)</td><td>5열 덤프의 re, im</td><td>2열 덤프의 re, im</td></tr>
       <tr><td><u>c</u> = [C, C*]</td><td>C와 그 켤레. 실수로 쓰면 x = [Re C, Im C]와 같음 (2장)</td><td>C에서 바로</td><td>같음</td></tr>
-      <tr><td>Q</td><td>H0 잡음의 세기 E|C|². 탭의 빗 위상 e = k mod 8의 값</td><td>누산기 Σ|r[8n+k]|²</td><td>Q̂ₑ = 같은 위상 바깥 탭의 |C|² 평균</td></tr>
+      <tr><td>Q</td><td>H0 잡음의 세기 E|C|². 탭의 다상 성분(polyphase component) e = k mod 8의 값</td><td>누산기 Σ|r[8n+k]|²</td><td>Q̂ₑ = 같은 위상 바깥 탭의 |C|² 평균</td></tr>
       <tr><td>Π</td><td>H0 잡음의 모양 E[C²] (의사분산)</td><td>누산기 Σ r[8n+k]²</td><td>Π̂ₑ = 같은 바깥 탭의 C² 평균</td></tr>
       <tr><td><u>R</u> = [[Q, Π], [Π*, Q]]</td><td><u>c</u>의 공분산 행렬, 곧 잡음 타원. 행렬식 Q² − |Π|²</td><td>누산기 값</td><td>모름 (5장에서 가설마다 맞춤)</td></tr>
       <tr><td>a</td><td>H1에서 그 탭의 맞는 키 신호</td><td>모름</td><td>모름</td></tr>
@@ -1671,7 +1671,7 @@ p(C | H1, a) = 1/(π√det <u>R</u>) · exp(−½ · (<u>c</u> − <u>a</u>)ᴴ 
 <section id="s5">
   <div class="sec-head"><span class="no">5 · Λ̂: 잡음 통계까지 모를 때</span><h2>C를 잡음으로 설명하려면 잡음 타원이 얼마나 부풀어야 하나</h2></div>
   <div class="prose">
-    <p>지금 하드웨어에는 Q·Π 누산기가 없어 <u>R</u>도 모릅니다. 대신 같은 빗 위상의 바깥 탭 y₁ … yₙ(n = 24~25)이 H0 잡음의 표본입니다. 이제 두 가설은 각자 a와 잡음 타원을 가장 그럴듯하게 맞춥니다.</p>
+    <p>지금 하드웨어에는 Q·Π 누산기가 없어 <u>R</u>도 모릅니다. 대신 같은 다상 성분의 바깥 탭 y₁ … yₙ(n = 24~25)이 H0 잡음의 표본입니다. 이제 두 가설은 각자 a와 잡음 타원을 가장 그럴듯하게 맞춥니다.</p>
     <p><strong>H1</strong>은 C를 신호로 설명하므로(â = C) C의 잔차가 0이 되고, 잡음 타원은 바깥 탭만으로 정해집니다. <strong>H0</strong>은 C까지 잡음으로 설명해야 하므로, 바깥 탭과 C를 함께 넣어 맞춘 타원이 C 쪽으로 부풉니다. 가우시안의 최대 우도는 맞춘 공분산의 행렬식(타원 넓이의 제곱)에만 달려 있어서, 우도비는 두 행렬식의 비가 됩니다.</p>
   </div>
 <pre class="eq">S  = Σᵢ yᵢ yᵢᵀ   (바깥 탭의 산포 행렬, 실수 2×2),   x = [Re C, Im C]

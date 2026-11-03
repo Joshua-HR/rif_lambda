@@ -354,7 +354,7 @@ body.present .sc-text p,body.present .sc-try{font-size:17px}
 <section class="scene" id="agenda" data-part="0">
   <div class="sc-head"><p class="sc-part">순서</p><h2>문제에서 검증까지 여섯 부분</h2></div>
   <div class="cards">
-    <a class="card link" href="#mode"><span class="no">1</span><h3>문제 설정</h3><p>지금 모드, 탭별 가설 검정, 8탭 주기의 빗 모양 잡음</p></a>
+    <a class="card link" href="#mode"><span class="no">1</span><h3>문제 설정</h3><p>지금 모드, 탭별 가설 검정, 8탭 주기의 주기정상 잡음</p></a>
     <a class="card link" href="#md"><span class="no">2</span><h3>기존 Z 판정기 진단</h3><p>10표본 바닥 추정과 비원형 꼬리</p></a>
     <a class="card link" href="#moments"><span class="no">3</span><h3>원시 샘플 Λ</h3><p>정확한 모멘트, 잡음 타원, GLRT, 공식 문턱</p></a>
     <a class="card link" href="#outside"><span class="no">4</span><h3>CIR 추정 Λ̂</h3><p>바깥 탭 추정, 부푸는 타원, 2.5 dB의 대가</p></a>
@@ -786,7 +786,7 @@ body.present .sc-text p,body.present .sc-try{font-size:17px}
   <div class="sc-head"><p class="sc-part">1 · 문제 설정</p><h2>프래그먼트 하나의 CIR</h2></div>
   <div class="sc-grid even">
     <p class="sc-lead">세로축은 Z 판정기의 바닥(가장 높은 위상의 평균) 대비 dB라서, 피크 높이가 곧 Z 판정기의 판정값 Z입니다. 오른쪽에는 같은 프래그먼트의 판정값과 위상별 바닥이 나옵니다.</p>
-    <div class="sc-try"><b>해 보세요.</b> "맞는 키 · 강함"과 "틀린 키 · 강함"을 번갈아 누르세요. 둘 다 바닥이 8탭 주기로 출렁이는 빗이 보이지만, 127탭에 우뚝 선 피크는 맞는 키에만 있습니다. "새 프래그먼트"로 다른 표본도 뽑아 보세요.</div>
+    <div class="sc-try"><b>해 보세요.</b> "맞는 키 · 강함"과 "틀린 키 · 강함"을 번갈아 누르세요. 둘 다 바닥이 8탭 주기로 출렁이지만(주기정상 잡음), 127탭에 우뚝 선 피크는 맞는 키에만 있습니다. "새 프래그먼트"로 다른 표본도 뽑아 보세요.</div>
   </div>
   <figure class="plate" id="w1">
     <h3>프래그먼트 하나의 CIR 들여다보기</h3>
@@ -822,7 +822,7 @@ body.present .sc-text p,body.present .sc-try{font-size:17px}
 
 <section class="scene" id="slots" data-part="1">
   <div class="sc-head"><p class="sc-part">1 · 문제 설정</p><h2>탭은 슬롯 안 같은 자리의 샘플만 씁니다</h2></div>
-  <p class="sc-lead">상관기 출력 C[k] = Σₙ bₙ·r[8n + k]는 수신 샘플을 8개씩 끊은 "펄스 슬롯"마다 같은 자리(k mod 8)의 샘플 하나씩에 내 키의 부호를 곱해 더합니다. 그 자리가 빗 위상입니다.</p>
+  <p class="sc-lead">상관기 출력 C[k] = Σₙ bₙ·r[8n + k]는 수신 샘플을 8개씩 끊은 "펄스 슬롯"마다 같은 자리(k mod 8)의 샘플 하나씩에 내 키의 부호를 곱해 더합니다. 그 자리 e = k mod 8이 다상 성분(polyphase component)이고, 줄여서 위상 e라 부릅니다.</p>
   <figure class="plate"><div class="pf scroll-x"><svg class="ch dg" viewBox="0 0 960 410" role="img" aria-label="틀린 키 신호의 수신 샘플을 8개씩 끊은 펄스 슬롯 네 개. 펄스 중심은 각 슬롯의 위치 7에 떨어져 그 샘플이 크고, 위치 6은 0.6배, 펄스 사이인 위치 3은 아주 작다. 탭 127과 135는 같은 위치 7의 숫자를 부호만 한 칸 밀어 쓰고, 탭 126과 131은 다른 위치의 숫자를 쓴다">
 <rect x="120" y="34" width="205" height="190" style="fill:var(--code-bg)"/>
 <text class="rl" x="222.5" y="26" text-anchor="middle">슬롯 0</text>
@@ -955,7 +955,7 @@ body.present .sc-text p,body.present .sc-try{font-size:17px}
 </section>
 
 <section class="scene" id="comb" data-part="1">
-  <div class="sc-head"><p class="sc-part">1 · 문제 설정</p><h2>잡음 바닥은 8탭 주기의 빗입니다</h2></div>
+  <div class="sc-head"><p class="sc-part">1 · 문제 설정</p><h2>잡음 바닥은 8탭 주기로 변합니다: 주기정상(cyclostationary) 잡음</h2></div>
   <figure class="plate nw" id="n1">
     <h3>위상별 잡음 바닥 (모델 기댓값, 32심볼, AWGN)</h3>
     <div class="controls">
@@ -983,7 +983,7 @@ body.present .sc-text p,body.present .sc-try{font-size:17px}
 ③ Z     = max_{k∈W_s} |C[k]|² / max_e F[e]
 ④ valid = Z ≥ (D &lt; 10 dB ? 9.6 dB : 14.4 dB)</pre>
     <div class="sc-text">
-      <p>RIF_CIR_Validity_Detector.md에 정의된 방식입니다. <b>①</b> 피크 앞 잡음 창(16~96)에서 위상마다 탭 약 10개를 평균해 바닥을 잽니다. <b>②</b> 가장 높은 바닥과 가장 낮은 바닥의 비(빗 깊이)로 열잡음인지 강한 자기잡음인지 가늠합니다.</p>
+      <p>RIF_CIR_Validity_Detector.md에 정의된 방식입니다. <b>①</b> 피크 앞 잡음 창(16~96)에서 위상마다 탭 약 10개를 평균해 바닥을 잽니다. <b>②</b> 가장 높은 바닥과 가장 낮은 바닥의 비(위상 간 바닥비 D)로 열잡음인지 강한 자기잡음인지 가늠합니다.</p>
       <p><b>③</b> 신호 창에서 가장 큰 탭이 가장 높은 바닥보다 몇 배인지 봅니다. <b>④</b> D가 10 dB보다 작으면 9.6 dB, 크면 14.4 dB 문턱과 비교합니다. 두 문턱은 −120 dBm과 −40 dBm 두 끝점에 몬테카를로로 맞춘 값입니다.</p>
     </div>
   </div>
@@ -993,14 +993,14 @@ body.present .sc-text p,body.present .sc-try{font-size:17px}
     <svg id="n8-svg" viewBox="0 0 960 330" role="img" aria-label="CIR 256탭과 잡음 창, 신호 창, 위상별 바닥, 가장 높은 바닥 Fmax, 문턱, 피크 대 바닥비 Z"></svg>
     <dl class="readout" id="n8-ro"></dl>
   </figure>
-  <div class="sc-try"><b>해 보세요.</b> 처음 화면 "틀린 키 −82 dBm"이 실제 오검출 사례입니다. 키가 맞지 않는데 빗 깊이 D가 7.5 dB라 낮은 문턱(9.6 dB)이 적용되고, 신호 창의 143탭이 바닥보다 9.9 dB 튀어 문턱을 넘었습니다. "틀린 키 −40 dBm"은 D가 24.7 dB라 높은 문턱(14.4 dB)이 적용되어 거절됩니다. 바닥이 위상 10개 평균이라는 점(주황 점)도 함께 보세요.</div>
+  <div class="sc-try"><b>해 보세요.</b> 처음 화면 "틀린 키 −82 dBm"이 실제 오검출 사례입니다. 키가 맞지 않는데 위상 간 바닥비 D가 7.5 dB라 낮은 문턱(9.6 dB)이 적용되고, 신호 창의 143탭이 바닥보다 9.9 dB 튀어 문턱을 넘었습니다. "틀린 키 −40 dBm"은 D가 24.7 dB라 높은 문턱(14.4 dB)이 적용되어 거절됩니다. 바닥이 위상 10개 평균이라는 점(주황 점)도 함께 보세요.</div>
 </section>
 
 <section class="scene" id="mdplane" data-part="2">
   <div class="sc-head"><p class="sc-part md">2 · 기존 Z 판정기 진단</p><h2>프래그먼트 수천 개를 결정 평면 (D, Z)에 찍으면</h2></div>
   <div class="sc-grid even">
-    <p class="sc-lead">점 하나가 앞 장면의 프래그먼트 하나입니다. 가로축이 ② 빗 깊이 D, 세로축이 ③ Z이고, 계단 모양 경계선이 ④ 2단 문턱입니다. 경계 위로 올라간 점이 오검출입니다.</p>
-    <div class="sc-try"><b>해 보세요.</b> 틀린 키 세기를 −90~−76 dBm으로 옮기세요. D가 아직 10 dB 아래(낮은 문턱)인데 Z만 위로 퍼져 경계를 넘는 점이 늘어납니다. 멀티패스로 바꾸면 빗이 메워져 D가 낮아집니다.</div>
+    <p class="sc-lead">점 하나가 앞 장면의 프래그먼트 하나입니다. 가로축이 ② 위상 간 바닥비 D, 세로축이 ③ Z이고, 계단 모양 경계선이 ④ 2단 문턱입니다. 경계 위로 올라간 점이 오검출입니다.</p>
+    <div class="sc-try"><b>해 보세요.</b> 틀린 키 세기를 −90~−76 dBm으로 옮기세요. D가 아직 10 dB 아래(낮은 문턱)인데 Z만 위로 퍼져 경계를 넘는 점이 늘어납니다. 멀티패스로 바꾸면 위상 사이의 바닥 차이가 메워져 D가 낮아집니다.</div>
   </div>
   <figure class="plate" id="w2">
     <h3>H0 프래그먼트의 결정 평면 (D, Z)</h3>
@@ -1994,7 +1994,7 @@ H0: S ~ χ²₁₆
   <div class="cards">
     <div class="card"><h3>잔여 CFO</h3><p>프래그먼트 안의 위상 회전을 추정·보상해, 10⁻⁶ 비교에서 차이의 대부분인 코히어런트 손실을 되찾을 수 있을까</p></div>
     <div class="card"><h3>공격 모델</h3><p>CIR 추정 Λ̂가 기대는 "창 안과 밖의 분산이 같다"는 가정을 깨는 공격을 어디까지 상정할지</p></div>
-    <div class="card"><h3>BPRF</h3><p>펄스 간격이 16탭이면 mod 16. 빗 구조를 아직 측정하지 않았습니다</p></div>
+    <div class="card"><h3>BPRF</h3><p>펄스 간격이 16탭이면 mod 16. 주기정상 구조(위상별 바닥)를 아직 측정하지 않았습니다</p></div>
     <div class="card"><h3>4z STS 구성</h3><p>결정 3의 감도 표에 넣을 4z 값 (지금은 공개 논문 기준, 미확인)</p></div>
     <div class="card"><h3>일반 모드 병행</h3><p>점수 방식이 도는 모드에서 원시 샘플 Λ를 함께 쓸지, 대체할지</p></div>
     <div class="card"><h3>자료</h3><p>joshua-hr.github.io/rif_lambda: 상세 페이지 10개. 결정 기록은 lambda_patch/DECISIONS.md</p></div>
@@ -4184,7 +4184,7 @@ P(2·ln GLR ≥ g) = e^(−g(n−1)/(2(n+1)))
       var r = q[7] / pool, P = Math.pow(1 + (D.thot24 / r) / 24, -11.5), mn = Math.min.apply(null, db), mx = Math.max.apply(null, db);
       readout(stats, [
         ['위상 7 바닥', db[7].toFixed(1) + ' dB'],
-        ['빗 깊이 (최대 − 최소)', (mx - mn).toFixed(1) + ' dB'],
+        ['위상 간 바닥비 (최대 − 최소)', (mx - mn).toFixed(1) + ' dB'],
         ['섞은 평균', pdb.toFixed(1) + ' dB'], '-',
         ['위상 7을 섞은 평균으로 재면', (10 * Math.log10(r)).toFixed(1) + ' dB 작게 봄'],
         ['위상 7 탭당 오검출', '1.2e' + '−5 → ' + fe(P), P > 1e-4 ? 'bad' : 'no']
@@ -4476,7 +4476,7 @@ P(2·ln GLR ≥ g) = e^(−g(n−1)/(2(n+1)))
       var res = c.truth === 'H1' ? (c.valid ? ['검출 (맞음)', 'yes'] : ['놓침', 'bad']) : (c.valid ? ['오검출 (틀림)', 'bad'] : ['거절 (맞음)', 'no']);
       readout(ro, [
         ['① 위상별 바닥 F[e]', fmin.toFixed(1) + ' ~ ' + fmax.toFixed(1) + ' dB (위상당 약 10탭 평균)'],
-        ['② 빗 깊이 D = Fmax / Fmin', c.D.toFixed(1) + ' dB → ' + (c.D < 10 ? '10 dB 미만: 낮은 문턱 9.6 dB' : '10 dB 이상: 높은 문턱 14.4 dB')],
+        ['② 위상 간 바닥비 D = Fmax / Fmin', c.D.toFixed(1) + ' dB → ' + (c.D < 10 ? '10 dB 미만: 낮은 문턱 9.6 dB' : '10 dB 이상: 높은 문턱 14.4 dB')],
         ['③ Z = 신호 창 최대 / Fmax', c.Z.toFixed(1) + ' dB (' + c.kpk + '탭)'], '-',
         ['④ 판정 Z ≥ 문턱', c.valid ? 'valid (받아들임)' : '거절'],
         ['실제', c.truth === 'H1' ? '맞는 키 신호 있음' : '맞는 키 없음'],

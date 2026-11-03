@@ -14,7 +14,7 @@
 | RIF 길이 지원 검증 기록 | 결정 8의 확인: 바꾼 것, 길이에 따라 움직이는 정답, MATLAB 5·6단계 FAIL의 원인과 해결 | https://joshua-hr.github.io/rif_lambda/length-verify.html (`docs/length-verify.html`) | https://claude.ai/artifact/2NyFcSj6KiD5YT7mcj5EWi |
 | Λ̂ 모멘트 모으기 | 결정 9의 근거: 고정 칩 Λ̂의 Q̂·Π̂를 패킷의 1·2·4·8개 프래그먼트에서 모을 때의 Pfa와 소프트 패킷 감도(RIF 32~256심볼), 더 나빠지는 이유 | https://joshua-hr.github.io/rif_lambda/pooled.html (`docs/pooled.html`) | https://claude.ai/artifact/2sBzqM3Ref6NiHcvPr2s14 |
 | STS 점수 판정 | 결정 4의 근거: 기존 일반 모드 점수 판정의 동작과 원리, SemiSyncOnlyMode에서 쓸 수 없는 이유(심볼 경계 재획득과 CFO·SCO 추적 없음) | https://joshua-hr.github.io/rif_lambda/score.html (`docs/score.html`) | https://claude.ai/artifact/PT1DfL6ijHxGce4ErPXXyW |
-| Λ̂ 판정기 원리 | 고정 칩 Λ̂(결정 9에서 프래그먼트마다 추정하기로 한 판정기) 수식의 그림 설명: 같은 빗 위상의 바깥 탭으로 잡음(열잡음과 틀린 키 신호의 자기잡음)의 Q̂·Π̂를 추정하는 방법, 문턱 타원, χ²₂ 변환 | https://joshua-hr.github.io/rif_lambda/lamhat.html (`docs/lamhat.html`) | https://claude.ai/artifact/SKuYM2RE4hHh2K6Asg1T98 |
+| Λ̂ 판정기 원리 | 고정 칩 Λ̂(결정 9에서 프래그먼트마다 추정하기로 한 판정기) 수식의 그림 설명: 같은 다상 성분의 바깥 탭으로 잡음(열잡음과 틀린 키 신호의 자기잡음)의 Q̂·Π̂를 추정하는 방법, 문턱 타원, χ²₂ 변환 | https://joshua-hr.github.io/rif_lambda/lamhat.html (`docs/lamhat.html`) | https://claude.ai/artifact/SKuYM2RE4hHh2K6Asg1T98 |
 | Λ·Λ̂ 우도비 유도 | 두 판정기의 근거: Λ = 2·ln GLR(잡음 통계를 앎), Λ̂ = (n−1)/(n+1)·2·ln GLR(바깥 탭으로 추정)의 그림 유도와 H0에서 정확히 χ²₂인 이유 | https://joshua-hr.github.io/rif_lambda/glr.html (`docs/glr.html`) | https://claude.ai/artifact/QrnPZt8YZidDkaU1gupW9B |
 | RIF 수신 판정 (세미나 앱) | 세미나 시연용 정리: 기존 Z 판정기의 한계 → 원시 샘플 Λ → CIR 추정 Λ̂ → 패킷 판정과 비교 → 검증 현황을 장면별 위젯으로. 발표용 용어(원시 샘플 Λ = 새 칩, CIR 추정 Λ̂ = 고정 칩, 기존 Z 판정기 = MD 규칙)를 씀 | https://joshua-hr.github.io/rif_lambda/seminar.html (`docs/seminar.html`) | https://claude.ai/artifact/9tpSkDHKPPHWbXRTacP4UP |
 

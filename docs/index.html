@@ -334,7 +334,7 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
         </div>
       </div>
     </div>
-    <figcaption>세로축은 바닥(Fmax) 대비 dB라서 피크 높이가 곧 Z입니다. 맞는 키 · 강함에서는 피크 옆으로 8탭 주기의 <strong>빗</strong>이 보입니다. 신호 자신의 다른 펄스가 상관기로 새어 들어오는 자기잡음이며, 신호가 셀수록 깊어집니다. 같은 빗이 틀린 키 · 강함에서도 나타납니다. 이 그림과 아래 위젯은 모두 이 페이지 안에서 도는 통계 모델(32심볼, AWGN, CFO 0.25 ppm)입니다.</figcaption>
+    <figcaption>세로축은 바닥(Fmax) 대비 dB라서 피크 높이가 곧 Z입니다. 맞는 키 · 강함에서는 피크 옆으로 잡음 바닥이 8탭 주기로 출렁이는 <strong>주기정상(cyclostationary) 잡음</strong>이 보입니다. 신호 자신의 다른 펄스가 상관기로 새어 들어오는 자기잡음이며, 신호가 셀수록 위상 사이의 바닥 차이가 커집니다. 같은 주기 구조가 틀린 키 · 강함에서도 나타납니다. 이 그림과 아래 위젯은 모두 이 페이지 안에서 도는 통계 모델(32심볼, AWGN, CFO 0.25 ppm)입니다.</figcaption>
   </figure>
 </section>
 
@@ -342,11 +342,11 @@ pre.code{font-family:var(--f-mono);font-size:13px;line-height:1.65;background:va
 <section class="sec" id="s2">
   <div class="sec-head"><span class="sec-no">2</span><h2>기존 판정기 (Z 판정기)</h2></div>
   <div class="prose stack">
-    <p>기존 문서의 판정기는 피크를 바닥으로 나눈 값 Z로 판정하고, 빗의 깊이 D로 바닥의 종류를 가려 문턱을 바꿉니다.</p>
+    <p>기존 문서의 판정기는 피크를 바닥으로 나눈 값 Z로 판정하고, 위상 간 바닥비 D로 바닥의 종류를 가려 문턱을 바꿉니다.</p>
   </div>
   <div class="eq">F[e]  = mean{ |C[k]|² : k ∈ W_n, k mod 8 = e }      <span class="c">위상당 약 10개 탭</span>
 Z     = max_{k∈W_s} |C[k]|²  /  max_e F[e]
-D     = max_e F[e]  /  min_e F[e]                    <span class="c">빗 깊이</span>
+D     = max_e F[e]  /  min_e F[e]                    <span class="c">위상 간 바닥비</span>
 valid = Z ≥ ( D &lt; 10 dB ? 9.6 dB : 14.4 dB )        <span class="c">열잡음 바닥 / 자기잡음 바닥</span></div>
   <div class="prose stack">
     <p>−120 dBm(열잡음)과 −40 dBm(강한 틀린 키) 두 끝점에서는 이 규칙이 잘 맞습니다. 문제는 그 사이입니다. 아래에서 틀린 키의 세기를 바꿔 보세요. 점 하나가 H0 프래그먼트 하나이고, <strong>경계선 위로 올라간 점이 오검출</strong>입니다.</p>
@@ -393,7 +393,7 @@ valid = Z ≥ ( D &lt; 10 dB ? 9.6 dB : 14.4 dB )        <span class="c">열잡�
 
   <div class="note">
     <b>요점</b>
-    <p>D가 10 dB를 넘으려면 자기잡음이 열잡음보다 약 10배는 커야 합니다. Z의 꼬리는 그보다 훨씬 이른 세기에서 이미 무거워집니다. 그래서 D로 문턱을 바꾸는 방식은 전환이 늦고, 멀티패스는 빗 자체를 메워 D를 낮춥니다.</p>
+    <p>D가 10 dB를 넘으려면 자기잡음이 열잡음보다 약 10배는 커야 합니다. Z의 꼬리는 그보다 훨씬 이른 세기에서 이미 무거워집니다. 그래서 D로 문턱을 바꾸는 방식은 전환이 늦고, 멀티패스는 위상 사이의 바닥 차이 자체를 메워 D를 낮춥니다.</p>
   </div>
 </section>
 
@@ -1095,7 +1095,7 @@ R1o  = h1_pd_analyze('&lt;H1 root, RIF 1개&gt;', 'Chip', 'fixed', 'Combine', 's
 </section>
 
 <footer class="foot">
-  <p><strong>가정과 한계.</strong> 수치는 통계 모델(기존 문서 5.1장의 빗 프로파일, 펄스당 가우시안 근사)과 파형 모델(이상 펄스, 부동소수점, 단일 안테나, HPRF)에서 나왔습니다. 실제 시뮬레이터의 덤프로 다시 확인해야 합니다. 패킷 10⁻⁶은 FiRa 원문이 아니라 그것을 인용한 논문에서 왔습니다.</p>
+  <p><strong>가정과 한계.</strong> 수치는 통계 모델(기존 문서 5.1장의 위상별 바닥 프로파일, 펄스당 가우시안 근사)과 파형 모델(이상 펄스, 부동소수점, 단일 안테나, HPRF)에서 나왔습니다. 실제 시뮬레이터의 덤프로 다시 확인해야 합니다. 패킷 10⁻⁶은 FiRa 원문이 아니라 그것을 인용한 논문에서 왔습니다.</p>
   <p>Λ의 보장은 H0 신호가 내 키 시퀀스와 독립일 때 성립합니다. 키를 알거나 일부 아는 공격(재전송, 일부 비트 반전)은 대상이 아니며, 표준이 RIF에 요구하는 ToA 무결성 검증은 별도 과제입니다.</p>
   <p>관련 문서: <code>RIF_CIR_Validity_Detector.md</code>(Z 판정기), <code>lambda_patch/LAMBDA_PATCH_DESIGN.md</code>(패치 설계), <code>lambda_patch/TEST_PLAN.md</code>(검증 계획), <code>lambda_patch/model/</code>(수치를 다시 만드는 Python 스크립트). 2026-10-15 기준(판정 기준을 패킷 10⁻⁶으로 전환).</p>
   <p>관련 페이지: <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶ 기준으로 바꾼 근거), <a href="consistency.html">RIF 일관성 검사 비교</a>(일관성 검사 폐기율 결정 자료), <a href="checklist.html">RIF 검증 체크리스트</a>(직접 돌려 볼 시험과 결과 기록), <a href="length.html">RIF 길이별 합성 시험</a>(합성 시험의 RIF 길이 지원 범위), <a href="length-verify.html">RIF 길이 지원 검증 기록</a>(5·6단계 실행 결과와 수정), <a href="pooled.html">Λ̂ 모멘트 모으기</a>(프래그먼트를 모은 Q̂·Π̂ 추정의 모델 확인), <a href="score.html">STS 점수 판정</a>(기존 일반 모드 방식과 지금 모드에서 못 쓰는 이유), <a href="lamhat.html">Λ̂ 판정기 원리</a>(CIR 추정 Λ̂의 수식을 CIR 그림으로 설명), <a href="glr.html">Λ·Λ̂ 우도비 유도</a>(두 판정기가 일반화 우도비인 이유를 그림으로 유도), <a href="seminar.html">RIF 수신 판정 세미나 앱</a>(전체 내용을 장면별 위젯으로 정리한 시연용 앱). 결정 기록: <code>lambda_patch/DECISIONS.md</code>.</p>
