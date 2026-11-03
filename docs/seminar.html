@@ -250,6 +250,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .fold .steps p.sc-src{font-size:12.5px;color:var(--muted)}
 .fold .eqb{font-size:14.5px}
 .fold .nb{white-space:nowrap}
+.fold .c-h0{color:var(--v-pool)} .fold .c-h1{color:var(--v-own)}
 body.present .fold .steps p:not(.sc-src),body.present .fold-sum{font-size:16.5px}
 @media (prefers-reduced-motion:reduce){.fold-body{animation:none}.fold>summary::before{transition:none}}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
@@ -1303,6 +1304,35 @@ GLR = max_a p(C | H1, a) / p(C | H0)
 <circle cx="754.5" cy="149.3" r="4.5" style="fill:var(--v-pool);stroke:var(--surface);stroke-width:2"/>
 </svg></div></figure>
   </div>
+  <details class="fold" id="glrt-read">
+    <summary><span class="fold-t">그림 읽는 법: 왼쪽 잡음 타원과 오른쪽 로그 밀도 단면</span><span class="fold-hint"><span class="when-closed">펼치기</span><span class="when-open">접기</span></span></summary>
+    <div class="fold-body">
+      <p class="fold-sum"><b>한 줄 요약.</b> 두 그림은 같은 관측값 C 하나를 두 방식으로 봅니다. 왼쪽에서는 C가 H0 타원의 몇 겹째에 있는지가 Λ이고, 오른쪽에서는 C에서 두 로그 밀도의 높이 차가 ln GLR = Λ/2입니다.</p>
+      <ol class="steps">
+        <li>
+          <h4><span class="no">1</span>왼쪽: 복소평면의 두 잡음 타원</h4>
+          <p><b>축과 점.</b> Re·Im은 탭 값 C의 실수부와 허수부이고, 검은 마름모가 관측값 C입니다. 이 그림의 잡음은 납작함 κ = 0.6, 긴 축 30°입니다.</p>
+          <p><b class="c-h0">파란 칠한 타원(원점).</b> H0(신호 없음)의 잡음 타원입니다. 모양은 Q·Π가 정하고, 크기는 Λ = 2 윤곽, 곧 잡음의 평균 크기입니다(χ²₂의 평균이 2).</p>
+          <p><b class="c-h0">파란 점선 타원.</b> 같은 모양을 키워 C를 지나게 그린 윤곽으로, 이 선 위의 점은 모두 Λ = 8.8입니다. 그래서 C의 Λ는 "C가 H0 타원의 몇 겹째에 있나"로 읽습니다. 타원을 눈금으로 삼아 잰 원점–C 거리²(마할라노비스 거리²)입니다.</p>
+          <p><b class="c-h1">주황 화살표와 주황 타원.</b> H1의 모르는 진폭 a를 관측값에 가장 잘 맞는 값(최우추정) â = C로 채운 모습입니다. 신호가 있어도 잡음 통계는 같으므로 같은 모양의 타원을 C로 옮겨 놓고, C는 늘 그 중심, 곧 밀도가 가장 높은 곳에 놓입니다.</p>
+          <p><b>회색 점선.</b> 원점과 C를 잇는 직선입니다. 오른쪽 그림은 이 선을 따라 자른 단면입니다.</p>
+        </li>
+        <li>
+          <h4><span class="no">2</span>오른쪽: 그 선을 따라 본 로그 밀도</h4>
+          <p><b>축.</b> 가로축은 회색 점선 위의 위치로, 0이 원점, C가 관측값이고 단위는 |C|입니다. 세로축은 각 가설의 최고점을 0으로 맞춘 로그 밀도입니다. 아래로 갈수록 그 가설로는 나오기 어려운 값입니다.</p>
+          <p><b class="c-h0">파란 곡선</b>은 ln p(·|H0)입니다. 가우시안의 로그는 이차식이라 원점이 꼭짓점인 포물선입니다. <b class="c-h1">주황 곡선</b> ln p(·|H1, â)는 같은 포물선을 C로 옮긴 것이라 C에서 0입니다.</p>
+          <p><b>C에서 읽기.</b> 주황은 0, 파랑은 −4.4입니다. 그 높이 차(검은 화살표)가 ln GLR = Λ/2 = 4.4이고, 2를 곱한 Λ = 8.8은 왼쪽 점선 윤곽의 값과 같습니다.</p>
+          <p><b>두 꼭짓점 높이가 같은 이유.</b> 두 가설의 잡음 <u>R</u>이 같아 정규화 상수 1/(π√det <u>R</u>)가 같습니다. 그래서 비교에서 상수는 약분되고, "C가 H0 그릇에서 얼마나 아래로 떨어져 있나"만 남습니다.</p>
+        </li>
+        <li>
+          <h4><span class="no">3</span>둘을 이어서 읽기</h4>
+          <p><b>H1 쪽은 항상 최고점입니다.</b> â = C로 맞추면 H1은 늘 0이라 판정에 정보를 주지 않습니다. 판정은 결국 C가 H0에서 얼마나 드문 값인가로 정해집니다.</p>
+          <p><b>방향에 따라 Λ가 다릅니다.</b> 같은 |C|라도 긴 축 방향이면 파란 그릇이 완만해 Λ가 작고, 짧은 축 방향이면 가팔라 Λ가 큽니다. 이 그림(κ = 0.6)에서는 <span class="nb">(1 + κ)/(1 − κ) = 4배</span> 차이입니다. C는 80° 방향이라 짧은 축(120°)에 더 가까워서, Π를 무시한 <span class="nb">2|C|²/Q = 5.1</span>보다 Λ = 8.8이 큽니다. 다음 장면의 잡음 타원 놀이터에서 직접 움직여 볼 수 있습니다.</p>
+          <p><b>이 예는 문턱을 넘지 못합니다.</b> 문턱 22.71은 ln GLR = 11.36, 곧 파란 곡선이 −11.36까지 내려가야 한다는 뜻입니다. 같은 방향이면 C가 지금보다 <span class="nb">1.6배(√(22.71 / 8.8))</span> 멀리 있어야 하고, 오른쪽 그림 가로축의 오른쪽 끝(1.6) 부근이 그 자리입니다.</p>
+        </li>
+      </ol>
+    </div>
+  </details>
   <p class="sc-lead">H1에서 a를 C로 맞추면 지수항이 0이 됩니다. 두 가설의 정규화 상수가 같으니, 남는 것은 H0 쪽의 거리(마할라노비스 거리²)뿐입니다. 오른쪽 단면에서 두 로그 밀도의 꼭짓점 높이는 같고, C에서의 높이 차이 Λ/2가 곧 ln GLR입니다. Π = 0이면 Λ = 2|C|²/Q로 기존 Z 판정기의 Z와 같은 꼴이 됩니다.</p>
   <p class="sc-src">2·ln GLR은 H0에서 χ²를 따르고, 자유도는 모르는 파라미터 수입니다(Wilks 정리). 여기서는 가우시안이라 근사 없이 정확히 χ²₂(a의 실수부와 허수부)이고, 그래서 다음 장면처럼 문턱을 공식으로 정합니다. 위상을 모르는 이런 문제에는 모든 경우에 가장 강한 검정이 따로 없어서 GLRT가 실용적인 표준입니다. 백색·원형 잡음에서는 GLRT가 곧 에너지 검출 |C|²/σ²이고, 기존 Z 판정기의 Z가 이 꼴입니다.</p>
 </section>
