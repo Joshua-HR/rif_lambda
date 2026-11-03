@@ -226,6 +226,32 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .sc-src{font-size:12.5px;color:var(--muted);margin:0}
 .eqb{font:15px/1.8 var(--f-mono);background:var(--code-bg);color:var(--ink);padding:14px 18px;border-radius:10px;white-space:pre;overflow-x:auto;margin:0;max-width:100%}
 .eqb b{color:var(--s1);font-weight:600}
+/* fold: a derivation that opens on demand (native <details>, no script) */
+.fold{border:1px solid var(--hair);border-radius:12px;background:var(--surface);min-width:0}
+.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;font:600 15.5px var(--f-sans);color:var(--ink)}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{content:"";flex:none;width:0;height:0;border-left:7px solid var(--s1);border-top:5px solid transparent;border-bottom:5px solid transparent;transition:transform .15s}
+.fold[open]>summary::before{transform:rotate(90deg)}
+.fold>summary:hover{background:var(--wash)}
+.fold[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.fold-t{min-width:0}
+.fold-hint{margin-left:auto;flex:none;font:600 13px var(--f-sans);color:#fff;background:var(--s1);border-radius:8px;padding:5px 14px;white-space:nowrap}
+.fold-hint .when-open,.fold[open] .fold-hint .when-closed{display:none}
+.fold[open] .fold-hint .when-open{display:inline}
+.fold[open] .fold-hint{background:transparent;color:var(--s1);box-shadow:inset 0 0 0 1px var(--s1)}
+.fold-body{border-top:1px solid var(--hair);padding:18px 18px 22px;display:flex;flex-direction:column;gap:22px;animation:fold-in .18s ease-out}
+@keyframes fold-in{from{opacity:0;transform:translateY(-4px)}}
+.fold-sum{margin:0;font-size:15.5px;line-height:1.7;color:var(--ink);max-width:80ch}
+.fold .steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:26px}
+.fold .steps li{display:flex;flex-direction:column;gap:10px;min-width:0}
+.fold .steps h4{margin:0;font-size:16.5px;font-weight:700;color:var(--ink);display:flex;align-items:baseline;gap:10px}
+.fold .steps h4 .no{font:600 15px var(--f-mono);color:var(--s1)}
+.fold .steps p{margin:0;font-size:15px;line-height:1.7;max-width:80ch;color:var(--ink-2)}
+.fold .steps p.sc-src{font-size:12.5px;color:var(--muted)}
+.fold .eqb{font-size:14.5px}
+.fold .nb{white-space:nowrap}
+body.present .fold .steps p:not(.sc-src),body.present .fold-sum{font-size:16.5px}
+@media (prefers-reduced-motion:reduce){.fold-body{animation:none}.fold>summary::before{transition:none}}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
 .card{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .card h3{margin:0;font-size:16px}
@@ -1126,6 +1152,70 @@ body.present .sc-text p,body.present .sc-try{font-size:17px}
       <p><b>③</b> 신호 창의 탭마다 그 위상의 Q·Π로 잡음 타원 거리²를 잽니다(다음 장면). <b>④</b> 57탭 중 최댓값을 22.71과 비교합니다. 잡음 창 W_n은 필요 없습니다.</p>
     </div>
   </div>
+  <details class="fold" id="moments-derive">
+    <summary><span class="fold-t">2차 모멘트의 뜻과 문턱 22.71의 유도</span><span class="fold-hint"><span class="when-closed">펼치기</span><span class="when-open">접기</span></span></summary>
+    <div class="fold-body">
+      <p class="fold-sum"><b>한 줄 요약.</b> H0에서 탭 하나의 Λ가 t를 넘을 확률은 조건과 관계없이 정확히 <span class="nb">e^(−t/2)</span>입니다. 신호 창 57탭 중 하나라도 넘을 확률을 <span class="nb">1e-3 ÷ 1.5</span> 이하로 묶는 t가 22.71입니다.</p>
+      <ol class="steps">
+        <li>
+          <h4><span class="no">1</span>2차 모멘트: Q와 Π는 무엇인가</h4>
+          <p>모멘트는 확률변수를 거듭제곱한 값의 평균입니다. 1차 모멘트는 평균 E[C]이고, 2차 모멘트는 C 두 개를 곱한 값의 평균입니다. 복소수 C에는 2차 모멘트가 두 가지 있습니다. C·C*의 평균이 세기(분산) Q이고, C·C의 평균이 의사분산 Π입니다.</p>
+          <pre class="eqb">E[bₙ] = 0,   E[bₙbₘ] = 1 (n = m),  0 (n ≠ m)
+
+E[C]  = Σₙ E[bₙ]·zₙ          = 0
+E|C|² = Σₙ Σₘ E[bₙbₘ]·zₙzₘ*  = Σₙ |zₙ|²  = <b>Q</b>
+E[C²] = Σₙ Σₘ E[bₙbₘ]·zₙzₘ   = Σₙ zₙ²    = <b>Π</b></pre>
+          <p>H0에서 무작위인 것은 내 키의 부호 bₙ뿐이고, zₙ은 이미 받은 샘플입니다. 그래서 기댓값이 샘플의 합으로 정확히 떨어집니다. 이웃 탭으로 추정하지 않고 상관기 입력으로 계산할 수 있는 이유입니다.</p>
+          <p>실수부 x와 허수부 y로 풀면, Q·Π 두 값이 (x, y)의 공분산 행렬을 모두 정합니다. 잡음 타원의 크기(Q), 납작함(κ = |Π|/Q), 긴 축 각도(θ = arg Π / 2)입니다. 열잡음처럼 위상이 고루 퍼지면 Π ≈ 0이라 원이고, 강한 틀린 키처럼 샘플이 한 방향으로 모이면 |Π| ≈ Q라 납작한 타원입니다.</p>
+          <pre class="eqb">C = x + j·y
+E[x²] = (Q + Re Π) / 2,   E[y²] = (Q − Re Π) / 2,   E[xy] = Im Π / 2</pre>
+        </li>
+        <li>
+          <h4><span class="no">2</span>H0 분포는 Q·Π로 완전히 정해집니다</h4>
+          <p>C는 원시 샘플 M개(32심볼이면 3,968개) 항의 합이라 중심극한정리로 평균 0인 2차원 가우시안에 가깝습니다. 가우시안은 1·2차 모멘트로 분포가 완전히 정해지므로, H0 분포 전체를 Q·Π로 압니다. 랜덤 부호 합은 sub-Gaussian이라 꼬리가 가우시안보다 무겁지 않습니다.</p>
+          <pre class="eqb">v = [x, y]ᵀ ~ N(0, Σ)
+Σ = ½ · [[Q + Re Π, Im Π], [Im Π, Q − Re Π]]
+det Σ = (Q² − |Π|²) / 4</pre>
+        </li>
+        <li>
+          <h4><span class="no">3</span>백색화하면 식 ③이 나옵니다</h4>
+          <p>타원을 원으로 펴는(백색화) 거리² vᵀΣ⁻¹v를 C로 다시 쓰면 식 ③의 Λ입니다. 잡음 타원으로 잰 거리²(마할라노비스 거리²)입니다.</p>
+          <pre class="eqb">vᵀΣ⁻¹v = 2·[ (Q − Re Π)·x² − 2·Im Π·xy + (Q + Re Π)·y² ] / (Q² − |Π|²)
+       = 2·[ Q·(x² + y²) − Re Π·(x² − y²) − Im Π·2xy ] / (Q² − |Π|²)
+
+|C|² = x² + y²,   Re(Π*·C²) = Re Π·(x² − y²) + Im Π·2xy
+
+→  <b>Λ = 2·(Q·|C|² − Re(Π*·C²)) / (Q² − |Π|²)</b>                식 ③</pre>
+        </li>
+        <li>
+          <h4><span class="no">4</span>탭 하나의 꼬리: 정확히 e^(−t/2)</h4>
+          <p>w = Σ^(−½)·v는 서로 독립인 표준 가우시안 두 개라, Λ = w₁² + w₂²는 자유도 2인 카이제곱 χ²₂입니다. 2차원 표준 가우시안을 극좌표로 적분하면 꼬리가 바로 나옵니다.</p>
+          <pre class="eqb">P(Λ ≥ t) = ∫_√t^∞ r·e^(−r²/2) dr = <b>e^(−t/2)</b></pre>
+          <p>세기·채널·CFO·납작함은 모두 Q·Π에 들어가 있어서, 어떤 조건에서도 꼬리가 같습니다. 문턱 하나로 모든 조건을 덮을 수 있는 이유입니다.</p>
+        </li>
+        <li>
+          <h4><span class="no">5</span>신호 창 57탭으로 묶기: 합집합 한계</h4>
+          <p>판정은 신호 창 W_s(119~175, 57탭)의 최댓값이 문턱을 넘는가입니다. 한 탭이라도 넘을 확률은 각 탭이 넘을 확률의 합보다 클 수 없습니다. 탭끼리 상관이 있으면 실제 값은 이보다 작으므로 보수적인 한계입니다.</p>
+          <pre class="eqb">P( max_{k∈W_s} Λ[k] ≥ T )  ≤  Σ_{k∈W_s} P(Λ[k] ≥ T)  =  57 · e^(−T/2)</pre>
+        </li>
+        <li>
+          <h4><span class="no">6</span>목표 1e-3과 여유 1.5를 넣으면 22.71</h4>
+          <p>이 한계를 프래그먼트 목표 <span class="nb">Pfa = 1e-3</span>을 여유 1.5로 나눈 값에 맞춥니다. 여유 1.5는 Q·Π를 유한 표본으로 계산하는 오차를 덮습니다(설계 문서 3.3절).</p>
+          <pre class="eqb">57 · e^(−T/2) = Pfa / Margin = 1e-3 / 1.5 = 6.7e-4
+
+T = 2·ln(57 / 1e-3) + 2·ln 1.5
+  = 2 × 10.951      + 2 × 0.405
+  = 21.90           + 0.81
+  = <b>22.71</b></pre>
+        </li>
+        <li>
+          <h4><span class="no">7</span>감 잡기</h4>
+          <p>Π = 0(열잡음)이면 Λ = 2|C|²/Q라, 22.71은 |C|²/Q ≥ 11.36, 곧 피크가 그 위상의 잡음 세기보다 <b>10.55 dB</b> 높아야 한다는 뜻입니다. 같은 식에 Pfa = 10⁻⁶을 넣으면 36.53(12.62 dB)이고, RIF가 1개인 패킷의 문턱입니다. 식에는 신호 창 탭 수와 목표 Pfa만 들어가고, RIF 길이·PRF·세기·채널·CFO는 들어가지 않습니다.</p>
+          <p class="sc-src">확인(κ = 0.98로 납작한 샘플 400개를 고정하고 부호 bₙ을 20만 번 뽑음): Λ ≥ 14인 비율 <span class="nb">8.2e-4</span>, 이론 <span class="nb">e^(−7) = 9.1e-4</span>. Π를 무시한 <span class="nb">2|C|²/Q ≥ 14</span>는 <span class="nb">7.7e-3</span>으로 8배 많습니다.</p>
+        </li>
+      </ol>
+    </div>
+  </details>
   <figure class="plate nw" id="n9">
     <h3>같은 CIR을 원시 샘플 Λ로 읽기 (2부와 같은 프래그먼트, 32심볼, 통계 모델)</h3>
     <div class="seg" id="n9-seg"><button type="button" data-c="noise" aria-pressed="false">신호 없음</button><button type="button" data-c="h1" aria-pressed="false">맞는 키 −110 dBm</button><button type="button" data-c="wk82" aria-pressed="true">틀린 키 −82 dBm</button><button type="button" data-c="wk40" aria-pressed="false">틀린 키 −40 dBm</button></div>
