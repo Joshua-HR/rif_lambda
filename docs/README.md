@@ -27,6 +27,7 @@
 페이지들은 바닥글에서 서로 링크됩니다. 결정과 재검토 조건은 `../lambda_patch/DECISIONS.md`에 있습니다.
 `basis.html`, `consistency.html`, `checklist.html`, `length.html`, `length-verify.html`, `pooled.html`, `score.html`, `lamhat.html`, `glr.html`, `seminar.html`은 작업 폴더의 원본에서 만든 결과물이라 직접 고치지 않습니다.
 외부로 나가는 요청은 Google Fonts 하나뿐이며, 사내망에서 막혀도 렌더링을 막지 않고 시스템 글꼴(맑은 고딕 등)로 표시됩니다.
+Λ̂·Π̂·Σ̂·κ̂·λ̂·Q̂의 햇(결합 부호 U+0302)은 Google Fonts에 없고, 시스템 글꼴은 그리스 문자 위에 햇을 얹지 못해 Chrome·Edge에서 ^가 글자 옆에 위첨자처럼 보였습니다(2026-11-03). 그래서 각 페이지의 CSS에 IBM Plex Sans/Mono(SIL OFL 1.1)에서 그리스 문자, Q, U+0302만 뽑아 그리스 문자에 햇 위치를 넣은 작은 글꼴(`RIF Greek`, `RIF Q`, `RIF Q Mono`, 페이지당 약 27 KB)을 넣어 두었습니다. 밑줄 기호 c̲·R̲·a̲는 `<u>` 밑줄로 씁니다.
 
 ## 사내 GitHub(GitHub Enterprise) Pages로 게시
 
