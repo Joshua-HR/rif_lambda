@@ -206,7 +206,7 @@ details[open] > summary{margin-bottom:8px}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">lambda_patch · master 기준 · 2026-10-22 갱신 (H1 스윕 범위)</span>
+  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-09 갱신 (LLS 항목 정리)</span>
   <h1>RIF 검증 체크리스트</h1>
   <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾸고, 합성 시험이 RIF 길이 32·64·128·256을 지원하게 된 지금의 master로 직접 돌려 볼 시험입니다. 바로 아래 "할 일 순서"를 위에서부터 따라가세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남고, 순서표의 상태와 "다음" 표시도 따라 바뀝니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
@@ -255,11 +255,11 @@ details[open] > summary{margin-bottom:8px}
 
   <div class="phase">B · 현재 LLS (2열 덤프, C++ 수정 없음)</div>
   <ol class="steps">
-    <li data-ids="B-P"><span class="sn">9</span><div class="sb"><a href="#B-P">LLS 덤프 준비</a><span class="sd">공통 설정, 폴더 규칙, 만들 순서. B-0·B-H0-4 덤프부터</span><span class="ids">B-P</span></div><span class="st"></span></li>
+    <li data-ids="B-P"><span class="sn">9</span><div class="sb"><a href="#B-P">LLS 덤프 준비</a><span class="sd">공통 인자와 세트별 LLS 인자(길이, 세기, 오프셋, 프레임 수), 폴더 규칙. B-0·B-H0-4 덤프부터</span><span class="ids">B-P</span></div><span class="st"></span></li>
     <li data-ids="B-0"><span class="sn">10</span><div class="sb"><a href="#B-0">패킷 전제: 프레임 구성, 피크 이동, AGC</a><span class="sd">이후 명령의 <code>'Drift', A.suggest.Drift</code>가 이 결과를 씁니다.</span><span class="ids">B-0</span><span class="snd">보내기: A.drift, A.suggest.Drift → 결정 5 (이동 후보 확정)</span></div><span class="st"></span></li>
     <li data-ids="B-CH B-H0-4"><span class="sn">11</span><div class="sb"><a href="#B-CH">같은 채널 확인과 멀티패스 소프트 합 꼬리</a><span class="sd">첫 검증 항목. 5,000개로 먼저 보고 30,000개로 늘립니다.</span><span class="ids">B-CH · B-H0-4</span><span class="snd">보내기: 꼬리 비율과 수락 수 → 결정 1 (패킷 10⁻⁶ 유지)</span></div><span class="st"></span></li>
     <li data-ids="B-H0 B-H1"><span class="sn">12</span><div class="sb"><a href="#B-H0">AWGN H0 패킷 근거와 패킷 감도</a><span class="sd">패킷 꼬리·수락 수, 패킷 L90</span><span class="ids">B-H0 · B-H1</span><span class="snd">보내기: "Packet decision" 표와 패킷 L90</span></div><span class="st"></span></li>
-    <li data-ids="B-F B-S B-MD B-1R B-R" data-opt><span class="sn">13</span><div class="sb"><a href="#B-F">나머지 권장 시험</a><span class="sd">권장. 하한 비용, 바꿔치기 폐기율(결정 6 기준선), Z 판정기 패킷 평가, RIF 1개 설정, 나머지 세트</span><span class="ids">B-F · B-S · B-MD · B-1R · B-R</span></div><span class="st"></span></li>
+    <li data-ids="B-F B-S B-MD B-1R B-R" data-opt><span class="sn">13</span><div class="sb"><a href="#B-F">나머지 권장 시험</a><span class="sd">권장. 하한 비용, 바꿔치기 폐기율(결정 6 기준선), Z 판정기 패킷 평가, RIF 1·2·4개 구성, 나머지 세트</span><span class="ids">B-F · B-S · B-MD · B-1R · B-R</span></div><span class="st"></span></li>
   </ol>
 
   <div class="phase">C·D · C++ 5열 덤프 구현 후</div>
@@ -552,47 +552,67 @@ R2 = h1_pd_analyze('D:/rif_test2/h1_wide', 'Chip', 'fixed', 'Profile', 'fira-med
   <div class="stage-head"><span class="stage-no">B</span><div class="t"><h2>현재 LLS: 2열 덤프, CIR 추정 Λ̂ 패킷 판정</h2><p>판정기의 결론은 패킷 근거(꼬리 비율, 독립성, 수락 수, 패킷 L90)로 냅니다. 프래그먼트 탭 꼬리 비율은 패킷 문턱 공식의 전제이고, 프래그먼트 Pfa는 진단입니다. B-P에서 덤프를 준비하고, B-0과 B-H0-4를 먼저 돌려 주세요.</p></div></div>
 
   <article class="item" id="B-P" data-id="B-P" data-stage="B">
-    <div class="item-head"><span class="iid">B-P</span><h3>LLS 덤프 준비: 공통 설정, 폴더 규칙, 만들 순서</h3><span class="tags"><span class="tag req">필수</span></span></div>
-    <p class="why">단계 B의 덤프는 LLS(C++)로 만듭니다. 코드 수정은 필요 없고 지금의 2열 덤프 그대로입니다. 공통 설정은 <code>TEST_PLAN.md</code> 1.2절(기존 문서 11장), 세트 전체 목록은 3.1절입니다.</p>
+    <div class="item-head"><span class="iid">B-P</span><h3>LLS 덤프 준비: 공통 인자, 세트별 인자, 폴더 규칙</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="why">단계 B의 덤프는 LLS(C++)로 만듭니다. 코드 수정 없이 지금의 2열 덤프 그대로입니다. 아래 공통 인자를 두고 세트마다 표의 인자만 바꿉니다. 출처는 <code>TEST_PLAN.md</code> 1.2·1.3·3.1절(기존 문서 11장)입니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>Mode=HPRF Rate=R6M MMSEn=1 MMSOnlyEn=1 NumRSF=0 NumRIF=4 MMRSSeq=33 MMRSGap=33 NumRx=1
 AdcBit=6 TargetRms=31 CfoEn=1 ScoEn=1 CfoEstEn=0 ScoTrkEn=0 ScoLinkedToCFO=0
 SemiSyncOnlyMode=1 MMSPwCtrlOn=1  FreqOffset=0.25 ClkOffset=0.25  ChanType=AWGN
-RIFStsLen=0..3 (32/64/128/256심볼), SemiSyncAcclen = 심볼 수</code></pre></div>
-    <div class="cmd-box"><pre class="cmd"><code>D:/rif/&lt;세트&gt;/c&lt;심볼수&gt;_m&lt;세기 절댓값&gt;_j&lt;job&gt;/bin/&lt;SignalPower&gt;_RifCir_AccNum_&lt;N&gt;_Frame&lt;f&gt;_Samp&lt;s&gt;.txt
-예: D:/rif/h0_awgn/c32_m82_j1/bin/-82_RifCir_AccNum_32_Frame0_Samp129096.txt</code></pre></div>
+RIFStsLen=0 / 1 / 2 / 3 = 32 / 64 / 128 / 256심볼, SemiSyncAcclen = 같은 심볼 수
+SignalPower = 세기 [dBm]</code></pre></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th class="num">순서</th><th>세트 (<code>D:/rif/…</code>)</th><th>내용</th><th>쓰는 항목</th></tr></thead>
+      <thead><tr><th class="num">순서</th><th>루트 (<code>D:/rif/…</code>)</th><th>키 · 길이</th><th>SignalPower [dBm]</th><th>채널 · 오프셋</th><th>개수 (프레임)</th><th>쓰는 항목</th></tr></thead>
       <tbody>
-        <tr><td class="num">1</td><td><code>h1_strong</code></td><td>H1 32심볼 −60 / −75 / −90 dBm, 각 400개(50패킷). 0.25 ppm, 그리고 예상되는 최대 잔여 오프셋(같은 루트에 job 번호를 바꿔 넣으면 함께 분석)</td><td>B-0</td></tr>
-        <tr><td class="num">2</td><td><code>h0_mp</code></td><td>H0 32심볼 −82 / −40 dBm, LLS 실내 멀티패스(패킷 안에서 같은 채널). 5,000개 먼저, 이상이 없으면 30,000개까지</td><td>B-CH, B-H0-4, B-MD</td></tr>
-        <tr><td class="num">3</td><td><code>h0_awgn</code></td><td>H0 32심볼 14개 세기, 64·128·256심볼 −120 / −82 / −40 dBm, 각 5,000개</td><td>B-0(H0 쪽), B-H0, B-S</td></tr>
-        <tr><td class="num">4</td><td><code>h1_awgn</code></td><td>H1 32심볼 −122 ~ −100 dBm, 256심볼 −127 ~ −105 dBm, 1 dB 간격, 세기당 4,000개(500패킷). 소프트 패킷 L90 아래까지 덮는 범위</td><td>B-H1, B-F, B-S</td></tr>
-        <tr><td class="num">5</td><td><code>h0_1rif</code>, <code>h1_1rif</code> 외</td><td>권장 세트: RIF 1개 설정, CFO 0, Tx off, 64·128심볼 H1, 멀티패스 H1</td><td>B-1R, B-R</td></tr>
+        <tr><td class="num">1</td><td><code>h1_strong</code></td><td>H1 · 32</td><td>−60, −75, −90</td><td>AWGN. j1: 0.25 / 0.25 ppm. j2: 예상되는 최대 잔여 오프셋(결정 5 임시값이면 <code>FreqOffset=0.5 ClkOffset=0.5</code>)</td><td>job마다 400 (50)</td><td>B-0, B-1R</td></tr>
+        <tr><td class="num">1′</td><td><code>h1_strong256</code> (권장)</td><td>H1 · 256</td><td>−60</td><td>AWGN, 0.25 / 0.25 ppm</td><td>400 (50)</td><td>B-0 (길이별 이동)</td></tr>
+        <tr><td class="num">2</td><td><code>h0_mp</code></td><td>H0 · 32</td><td>−82, −40</td><td>LLS 실내 멀티패스 1~2종(패킷 안에서 같은 채널, B-CH), 0.25 / 0.25 ppm</td><td>5,000 (625) 먼저, 이상이 없으면 30,000 (3,750)</td><td>B-H0-4, B-MD</td></tr>
+        <tr><td class="num">2′</td><td><code>h1_mp</code></td><td>H1 · 32</td><td>−90 (B-CH)<br>−120 ~ −98, 2 dB (B-H1-3)</td><td>2와 같은 채널 종류</td><td>−90: 80 (10)<br>나머지 1,000 (125)</td><td>B-CH, B-R</td></tr>
+        <tr><td class="num">3</td><td><code>h0_awgn</code></td><td>H0 · 32, 64, 128, 256</td><td>32: −120, −100, −95, −90, −88, −86, −84, −82, −80, −78, −76, −72, −60, −40<br>64·128·256: −120, −82, −40</td><td>AWGN, 0.25 / 0.25 ppm</td><td>5,000 (625)</td><td>B-0 (H0 쪽), B-H0, B-S, B-1R</td></tr>
+        <tr><td class="num">4</td><td><code>h1_awgn</code></td><td>H1 · 32, 256 (필수)<br>64, 128 (권장)</td><td>32: −122 ~ −100<br>64: −125 ~ −103<br>128·256: −127 ~ −105<br>모두 1 dB 간격</td><td>AWGN, 0.25 / 0.25 ppm</td><td>세기당 4,000 (500)</td><td>B-H1, B-F, B-S, B-1R, B-R</td></tr>
+        <tr><td class="num">5</td><td><code>h0_cfo0</code></td><td>H0 · 32, 256</td><td>−82, −40</td><td>AWGN, <code>FreqOffset=0 ClkOffset=0</code></td><td>5,000 (625)</td><td>B-R</td></tr>
+        <tr><td class="num">6</td><td><code>h0_txoff</code></td><td>H0 · 32</td><td>Tx off (안 되면 −150)</td><td>AWGN</td><td>5,000 (625)</td><td>B-R</td></tr>
+        <tr><td class="num">7</td><td><code>h0_1rif</code>, <code>h1_1rif</code> (선택)</td><td>H0 · 32<br>H1 · 32, 64, 128</td><td>H0: −120, −82, −40<br>H1: −120 ~ −100, 1 dB</td><td>AWGN, 0.25 / 0.25 ppm, RIF 1개 구성</td><td>H0 5,000<br>H1 1,000</td><td>B-1R</td></tr>
       </tbody>
     </table></div>
-    <dl class="expect"><dt>키</dt><dd>H0(틀린 키)는 Rx STS 시드만 Tx와 다르게, H1(맞는 키)는 Tx와 Rx 시드를 같게 둡니다.</dd><dt>시드</dt><dd>job마다 STS 시드와 잡음 시드를 모두 다르게 둡니다. 같으면 <code>h0_pfa_analyze</code>가 "identical Z values" 경고를 냅니다.</dd><dt>패킷</dt><dd>한 프레임이 한 패킷입니다. <code>Frame&lt;f&gt;</code>가 같은 프래그먼트 8개(NumRIF = 4)를 묶어 판정합니다.</dd></dl>
+    <div class="cmd-box"><pre class="cmd"><code>D:/rif/&lt;세트&gt;/c&lt;심볼수&gt;_m&lt;세기 절댓값&gt;_j&lt;job&gt;/bin/&lt;SignalPower&gt;_RifCir_AccNum_&lt;N&gt;_Frame&lt;f&gt;_Samp&lt;s&gt;.txt
+예: D:/rif/h0_awgn/c32_m82_j1/bin/-82_RifCir_AccNum_32_Frame0_Samp129096.txt</code></pre></div>
+    <dl class="expect"><dt>키</dt><dd>H0(틀린 키)는 Rx STS 시드만 Tx와 다르게, H1(맞는 키)는 Tx와 Rx 시드를 같게 둡니다.</dd><dt>시드</dt><dd>job마다 STS 시드와 잡음 시드를 모두 다르게 둡니다. 같으면 <code>h0_pfa_analyze</code>가 "identical Z values" 경고를 냅니다.</dd><dt>프레임</dt><dd>한 프레임이 한 패킷(RIF 프래그먼트 8개, NumRIF = 4)입니다. 프레임 수 = 프래그먼트 수 ÷ 8입니다.</dd><dt>덤프</dt><dd><code>RxSemiSync.cpp</code>의 <code>semisync_only()</code>에서 <code>if (0 &amp;&amp; iSemiSyncNextState_ == RX_STS)</code>의 0을 1로 바꿉니다. job마다 실행 폴더를 따로 두고 <code>uwb/bin</code>은 피합니다(덤프가 git 추적 대상으로 잡힘).</dd><dt>루트</dt><dd>H0와 H1, 채널, 오프셋 조건은 루트를 나눕니다. 길이는 한 루트에 섞어도 됩니다(분석이 <code>c&lt;N&gt;_</code>로 나눔).</dd><dt><code>A</code></dt><dd>아래 패킷 명령의 <code>'Drift', A.suggest.Drift</code>는 B-0의 결과입니다. B-0 전에 돌린다면 결정 5의 임시 후보 <code>'Drift', (-4:4)/7</code>(9개)를 씁니다.</dd><dt>LLS 확인</dt><dd>저장소 문서에 이름이 없는 것: 시드 인자(기존 문서에는 <code>TxSTS.cpp:109</code>·<code>RxSTS.cpp:109</code>의 <code>rand_.seed(512)</code> 고정으로 남아 있음), 프레임 수 인자, 실내 멀티패스의 <code>ChanType</code> 값, Tx를 끄는 방법, RIF 1개 구성 설정.</dd></dl>
     <div class="rec"><label for="st-B-P">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-P"></select><span class="meta" id="mt-B-P"></span></div><textarea id="nt-B-P" placeholder="예: h1_strong·h0_mp 5,000개 완료, h0_awgn 진행 중"></textarea></div></div>
   </article>
 
   <article class="item" id="B-0" data-id="B-0" data-stage="B">
     <div class="item-head"><span class="iid">B-0</span><h3>패킷 전제: 프레임 구성, 피크 이동, AGC</h3><span class="tags"><span class="tag req">필수</span><span class="tag dec">결정 5</span></span></div>
-    <p class="data"><b>덤프</b> H1 32심볼, −60 / −75 / −90 dBm, 각 400개(50패킷), AWGN 0.25 ppm과 예상되는 최대 잔여 오프셋</p>
-    <div class="cmd-box"><pre class="cmd"><code>A = check_packet_assumptions('D:/rif/h1_strong', 'D:/rif/h0_awgn');
-A.layout, A.drift, A.suggest.Drift, A.agc.std, A.rounding</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd>모든 프레임이 8개. 기울기 약 0.25탭/프래그먼트(0.25 ppm, 1 ms 간격). AGC 표준편차 약 2.5 dB(참고). 라운딩 몫 1% 미만</dd><dt>쓰임</dt><dd>이동 후보(<code>'Drift'</code>)를 확정합니다. 그 전까지 임시값은 ±0.5 ppm, 후보 9개입니다. 패킷 전체 이동이 0.5탭 이하면 후보 1개(0)</dd></dl>
+    <p class="data"><b>덤프</b> <code>h1_strong</code>: H1 32심볼, −60 / −75 / −90 dBm, job마다 50프레임(400개). j1은 AWGN 0.25 ppm, j2는 예상되는 최대 잔여 오프셋(같은 루트에 job 번호만 바꿔 넣으면 함께 분석). 권장: <code>h1_strong256</code>(256심볼 −60 dBm, 50프레임)</p>
+    <div class="cmd-box"><pre class="cmd"><code>A = check_packet_assumptions('D:/rif/h1_strong', 'D:/rif/h0_awgn');   % h0_awgn 전이면 두 번째 인자 '' (H1 쪽만)
+A.layout, A.drift, A.suggest.Drift, A.agc.std, A.rounding, A.indep
+A256 = check_packet_assumptions('D:/rif/h1_strong256', '');            % 권장: 256심볼의 이동
+[A.drift.q99, A256.drift.q99]                                          % |기울기|의 99% [탭/프래그먼트]</code></pre></div>
+    <dl class="expect"><dt>기대</dt><dd>모든 프레임이 8개. 기울기 약 0.25탭/프래그먼트(0.25 ppm, 1 ms 간격). AGC 표준편차 약 2.5 dB(참고). 라운딩 몫 1% 미만. 독립성(<code>A.indep</code>, H0 쪽): 프래그먼트 쌍 상관 |ρ| ≤ 3/√n, 동시 초과 비율 0.7~1.3</dd><dt>쓰임</dt><dd>이동 후보(<code>'Drift'</code>)를 확정합니다. 그 전까지 임시값은 ±0.5 ppm, 후보 9개(<code>(-4:4)/7</code>)입니다. 패킷 전체 이동이 0.5탭 이하면 후보 1개(0)</dd><dt>길이</dt><dd>프래그먼트 간격에 RIF 자체의 길이(32심볼 약 0.03 ms, 256심볼 약 0.26 ms)가 들어가면 256심볼의 이동이 더 큽니다. 두 <code>q99</code>가 다르면 결과를 보내 주세요. 길이별 <code>'Drift'</code>를 정합니다.</dd></dl>
     <div class="rec"><label for="st-B-0">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-0"></select><span class="meta" id="mt-B-0"></span></div><textarea id="nt-B-0" placeholder="예: layout 100% 8개, 기울기 0.27, 제안 후보 7개, AGC 2.4 dB"></textarea></div></div>
   </article>
 
   <article class="item" id="B-CH" data-id="B-CH" data-stage="B">
     <div class="item-head"><span class="iid">B-CH</span><h3>같은 채널 조건 확인 (B-H0-4 전)</h3><span class="tags"><span class="tag req">필수</span></span></div>
     <p class="why">B-H0-4는 실제 패킷처럼 8개 프래그먼트가 같은 멀티패스 채널을 겪어야 의미가 있습니다. LLS가 채널을 프래그먼트마다 새로 뽑으면 모델의 "독립 채널" 조건이 되어 첫 검증 항목 구실을 못 합니다.</p>
-    <dl class="expect"><dt>방법</dt><dd>LLS 설정과 채널 코드에서 채널 생성 시점을 확인합니다. 또는 맞는 키 멀티패스 덤프에서 한 프레임 안 8개 CIR의 모양이 같고 프레임끼리만 다른지 봅니다.</dd><dt>기준</dt><dd>채널이 프레임(패킷) 안에서 고정</dd></dl>
+    <p class="data"><b>덤프</b> <code>h1_mp</code>의 <code>c32_m90_j1</code>(맞는 키, −90 dBm, 10프레임)</p>
+    <div class="cmd-box"><pre class="cmd"><code>d = 'D:/rif/h1_mp/c32_m90_j1/bin';
+P = []; fr = [];
+for f = 0:3                                              % 프레임 0~3
+    L = dir(fullfile(d, sprintf('*_Frame%d_*.txt', f)));
+    for i = 1:numel(L)
+        c = load(fullfile(d, L(i).name));                % 256 x 2 (re im)
+        P = [P, c(131:175, 1).^2 + c(131:175, 2).^2];    %#ok&lt;AGROW&gt; 피크 뒤 탭 130~174 (멀티패스)
+        fr = [fr, f];                                    %#ok&lt;AGROW&gt;
+    end
+end
+C = corrcoef(P);  same = bsxfun(@eq, fr', fr);  off = ~eye(numel(fr));
+[mean(C(same &amp; off)), mean(C(~same))]                % 프레임 안 / 프레임 사이 |C|² 모양 상관</code></pre></div>
+    <dl class="expect"><dt>방법</dt><dd>LLS 채널 코드에서 채널 생성 시점을 확인하거나, 위 명령으로 한 프레임 안 8개 CIR의 멀티패스 모양이 같고 프레임끼리만 다른지 봅니다.</dd><dt>기준</dt><dd>채널이 프레임(패킷) 안에서 고정: 프레임 안 상관이 1에 가깝고 프레임 사이 상관보다 뚜렷이 큼</dd><dt>아니면</dt><dd>두 값이 비슷하게 낮으면 프래그먼트마다 채널을 새로 뽑는 것이고, 둘 다 1에 가까우면 실행 전체가 채널 하나입니다. 어느 쪽이든 B-H0-4 전에 LLS 채널 설정을 고칩니다.</dd></dl>
     <div class="rec"><label for="st-B-CH">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-CH"></select><span class="meta" id="mt-B-CH"></span></div><textarea id="nt-B-CH" placeholder="예: 채널을 프레임 시작에서 한 번 생성 (파일·함수 이름)"></textarea></div></div>
   </article>
 
   <article class="item" id="B-H0-4" data-id="B-H0-4" data-stage="B">
     <div class="item-head"><span class="iid">B-H0-4</span><h3>같은 채널 멀티패스의 소프트 합 꼬리 (첫 검증 항목)</h3><span class="tags"><span class="tag req">필수</span><span class="tag dec">결정 1</span></span></div>
-    <p class="data"><b>덤프</b> H0(틀린 키) 32심볼, −82 / −40 dBm, LLS 실내 멀티패스. 먼저 5,000개로 P = 1e-2, 1e-3을 보고, 이상이 없으면 30,000개(3,750패킷)로 늘려 1e-4까지</p>
+    <p class="data"><b>덤프</b> <code>h0_mp</code>: H0(틀린 키) 32심볼, −82 / −40 dBm, LLS 실내 멀티패스. 먼저 5,000개(625프레임)로 P = 1e-2, 1e-3을 보고, 이상이 없으면 job을 더해 30,000개(3,750프레임 = 3,750패킷)로 늘려 1e-4까지</p>
     <p class="why">모델에서 채널을 공유하면 깊어질수록 비율이 조금 올라갔고(Λ 1.01~1.23, Λ̂ 0.87~1.11), Λ̂ 소프트 결합이 9,990패킷 중 1건을 받아들였습니다. 한 건이라 결론을 못 냈기 때문에 이 시험이 판정 기준 유지 여부를 정합니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>R0m = h0_pfa_analyze('D:/rif/h0_mp', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', ...
                      'Drift', A.suggest.Drift, 'Save', 'D:/rif/report/B_h0_mp_pkt');
@@ -605,16 +625,23 @@ A.layout, A.drift, A.suggest.Drift, A.agc.std, A.rounding</code></pre></div>
 
   <article class="item" id="B-H0" data-id="B-H0" data-stage="B">
     <div class="item-head"><span class="iid">B-H0</span><h3>AWGN H0: 패킷 근거와 프래그먼트 전제·진단 (B-H0-1, B-H0-2)</h3><span class="tags"><span class="tag req">필수</span></span></div>
-    <p class="data"><b>덤프</b> 32심볼 −120, −100, −95, −90, −88, −86, −84, −82, −80, −78, −76, −72, −60, −40 dBm / 64·128·256심볼 −120, −82, −40 dBm, 각 5,000개</p>
+    <p class="data"><b>덤프</b> <code>h0_awgn</code>: 32심볼 −120, −100, −95, −90, −88, −86, −84, −82, −80, −78, −76, −72, −60, −40 dBm / 64·128·256심볼(RIFStsLen=1·2·3) −120, −82, −40 dBm, 각 5,000개(625프레임)</p>
     <div class="cmd-box"><pre class="cmd"><code>R0  = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Save', 'D:/rif/report/B_h0_md');                     % Z 판정기, κ
 R0c = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Moments', 'cir', 'Save', 'D:/rif/report/B_h0_cir');  % Λ̂ 프래그먼트
 R0p = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', ...
-                     'Drift', A.suggest.Drift, 'Save', 'D:/rif/report/B_h0_pkt');                           % 패킷</code></pre></div>
+                     'Drift', A.suggest.Drift, 'Save', 'D:/rif/report/B_h0_pkt');                           % 패킷
+% Λ̂ 전제: 잡음 탭을 신호 창 앞쪽(탭 0~118)으로만 바꿔도 결과가 비슷해야 함 (대표 폴더 하나)
+fld = 'D:/rif/h0_awgn/c32_m82_j1/bin';
+a = rif_cir_analyze(fld, 'Quiet', true, 'Plot', 'none', 'Moments', 'cir');
+b = rif_cir_analyze(fld, 'Quiet', true, 'Plot', 'none', 'Moments', 'cir', 'CirNoise', [0 118]);
+[mean(a.Lmax &gt;= 10), mean(b.Lmax &gt;= 10)]          % 신호 창 최댓값이 10 이상인 비율</code></pre></div>
     <div class="tbl-wrap"><table>
       <thead><tr><th>구분</th><th>볼 곳</th><th>기준 (모델 기대값)</th></tr></thead>
       <tbody>
         <tr><td><b>합격 (패킷)</b></td><td><code>R0p</code> 패킷 표</td><td>꼬리 비율 P = 1e-2, 1e-3에서 0.7~1.3 (합성 0.86~1.33), |ρ| ≤ 3/√n, 수락 0</td></tr>
         <tr><td><b>전제</b></td><td><code>R0c</code> Λ 표, t = 10, 14</td><td>Λ̂ 탭 꼬리 비율 0.7~1.3 (0.8~1.2). 벗어나면 패킷 결론도 낼 수 없음</td></tr>
+        <tr><td><b>전제</b></td><td><code>a</code>, <code>b</code> (잡음 탭 범위만 다름)</td><td>두 비율이 비슷함 (탭 57개가 χ²₂면 약 0.3)</td></tr>
+        <tr><td>진단</td><td><code>R0</code> −120 / −40 dBm</td><td>기존 문서 7.1 표 재현: 약 1e-3 / 약 2e-3</td></tr>
         <tr><td>진단</td><td><code>R0c</code> Λ 표</td><td>Λ̂ 프래그먼트 Pfa 점추정 ≤ 1e-3 (n = 5,000에서 k ≤ 5)</td></tr>
         <tr><td>진단</td><td><code>R0</code> −88 ~ −76 dBm</td><td>Z 판정기 중간 세기 실패 재현: Pfa 1e-2 ~ 5.6e-2, D 중앙값 &lt; 10 dB</td></tr>
         <tr><td>진단</td><td><code>R0</code> kappa 열</td><td>−120 dBm 0.38 / −40 dBm: 32심볼 0.98, 64심볼 0.91, 128심볼 0.66, 256심볼 0.38</td></tr>
@@ -625,7 +652,7 @@ R0p = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Chip', 'fixed', 'Profi
 
   <article class="item" id="B-H1" data-id="B-H1" data-stage="B">
     <div class="item-head"><span class="iid">B-H1</span><h3>패킷 감도 (B-H1-1)</h3><span class="tags"><span class="tag req">필수</span></span></div>
-    <p class="data"><b>덤프</b> H1 32심볼 −122 ~ −100 dBm, 256심볼 −127 ~ −105 dBm, 1 dB 간격, 세기당 4,000개(500패킷)</p>
+    <p class="data"><b>덤프</b> <code>h1_awgn</code>: H1 32심볼(RIFStsLen=0) −122 ~ −100 dBm, 256심볼(RIFStsLen=3) −127 ~ −105 dBm, 1 dB 간격, 세기당 4,000개(500프레임 = 500패킷)</p>
     <p class="why">길이마다 소프트 패킷 L90 아래까지 내려가는 범위입니다. 256심볼을 −120 dBm에서 끊으면 L90(약 −121.5 dBm)이 스윕 아래라 <code>pkt.L90</code>이 NaN이 됩니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>R1  = h1_pd_analyze('D:/rif/h1_awgn');                          % Z 판정기 프래그먼트 Pd·CI·위치·L90
 R1c = h1_pd_analyze('D:/rif/h1_awgn', 'Moments', 'cir');        % Λ̂ 프래그먼트
@@ -671,23 +698,43 @@ allPass = accumarray(g(:), double(r.valid(:)), [], @min);
   </article>
 
   <article class="item" id="B-1R" data-id="B-1R" data-stage="B">
-    <div class="item-head"><span class="iid">B-1R</span><h3>RIF 1개 설정 (B-H1-4, B-H0-6)</h3><span class="tags"><span class="tag">권장</span></span></div>
-    <div class="cmd-box"><pre class="cmd"><code>R0one = h0_pfa_analyze('D:/rif/h0_1rif', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'FragPerPacket', 1);
-R1one = h1_pd_analyze('D:/rif/h1_1rif', 'Chip', 'fixed', 'Profile', 'fira-medium', 'FragPerPacket', 1);
-R1one.pkt.L90</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd>Λ̂ L90 −106.1 / −109.1 / −111.4 dBm (32 / 64 / 128심볼). 문턱 36.53</dd><dt>기준</dt><dd>꼬리 비율 0.7~1.3 (t ≤ 18에서 확인, 문턱까지는 외삽)</dd></dl>
-    <div class="rec"><label for="st-B-1R">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-1R"></select><span class="meta" id="mt-B-1R"></span></div><textarea id="nt-B-1R" placeholder="예: −106.4 / −109.0 / −111.6"></textarea></div></div>
+    <div class="item-head"><span class="iid">B-1R</span><h3>RIF 1·2·4개 구성 (B-H1-4, B-H0-6)</h3><span class="tags"><span class="tag">권장</span><span class="tag dec">결정 3</span></span></div>
+    <p class="why">결정 3은 RIF 1·2·4·8개 구성을 모두 지원합니다. 8개는 B-H0·B-H1에서 보고, 여기서는 1·2·4개를 봅니다. <code>rif_packet</code>은 한 프레임 안의 프래그먼트를 K개씩 연속으로 묶으므로, AWGN에서는 8개 덤프(<code>h0_awgn</code>, <code>h1_awgn</code>)를 <code>'FragPerPacket'</code> 1·2·4로 분석해도 같은 통계입니다. RIF 1개 구성 덤프(<code>h0_1rif</code>, <code>h1_1rif</code>)를 따로 만들 수 있으면 프레임 구성까지 확인합니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>% 8개 덤프를 1·2·4개씩 묶어 분석
+A4 = check_packet_assumptions('D:/rif/h1_strong', '', 'FragPerPacket', 4);   % 4개 구성의 이동 후보 (layout 경고는 정상)
+fk = {{'FragPerPacket', 1}, {'FragPerPacket', 2}, {'FragPerPacket', 4, 'Drift', A4.suggest.Drift}};
+R0k = cell(1, 3); R1k = cell(1, 3);
+for i = 1:3
+    R0k{i} = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', fk{i}{:});
+    R1k{i} = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', fk{i}{:});
+end
+[R1k{1}.pkt.L90(:), R1k{2}.pkt.L90(:), R1k{3}.pkt.L90(:)]   % 열 = 1·2·4개, 행 = 길이
+[R1k{1}.pkt.L99(:), R1k{2}.pkt.L99(:), R1k{3}.pkt.L99(:)]
+% RIF 1개 구성 덤프를 따로 만들었으면
+R0one = h0_pfa_analyze('D:/rif/h0_1rif', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'FragPerPacket', 1);
+R1one = h1_pd_analyze('D:/rif/h1_1rif', 'Chip', 'fixed', 'Profile', 'fira-medium', 'FragPerPacket', 1);</code></pre></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>구성</th><th class="num">32심볼</th><th class="num">64심볼</th><th class="num">128심볼</th><th class="num">256심볼</th></tr></thead>
+      <tbody>
+        <tr><td>RIF 1개</td><td class="num">−106.2 / −104.8</td><td class="num">−109.1 / −107.8</td><td class="num">−111.4 / −110.1</td><td class="num">−111.2 / −109.8</td></tr>
+        <tr><td>RIF 2개</td><td class="num">−110.5 / −109.5</td><td class="num">−113.4 / −112.3</td><td class="num">−115.7 / −114.6</td><td class="num">−115.5 / −114.4</td></tr>
+        <tr><td>RIF 4개</td><td class="num">−114.0 / −112.9</td><td class="num">−116.7 / −115.7</td><td class="num">−119.2 / −118.0</td><td class="num">−118.9 / −117.7</td></tr>
+        <tr><td>RIF 8개 (B-H1)</td><td class="num">−116.7 / −115.7</td><td class="num">−119.5 / −118.6</td><td class="num">−121.9 / −120.9</td><td class="num">−121.5 / −120.6</td></tr>
+      </tbody>
+    </table></div>
+    <dl class="expect"><dt>기대</dt><dd>표는 Λ̂ 소프트 패킷 L90 / L99 [dBm] 모델 값(<code>model/results/pooled_moments.json</code>, <code>l99.json</code>). 64·128심볼은 B-H1-2 덤프가 있을 때. RIF 1개는 모든 규칙이 single, 문턱 36.53</dd><dt>기준</dt><dd>H0: 패킷 꼬리 비율 0.7~1.3, 수락 0 (1개는 t ≤ 18에서 확인하고 문턱까지는 외삽). H1: 모델 ±1.5 dB</dd><dt>이동</dt><dd>2개는 패킷 전체 이동이 약 0.25탭이라 후보 1개(0, 기본값). 4개는 <code>A4.suggest.Drift</code></dd></dl>
+    <div class="rec"><label for="st-B-1R">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-1R"></select><span class="meta" id="mt-B-1R"></span></div><textarea id="nt-B-1R" placeholder="예: 32심볼 L90 1개 −106.4, 2개 −110.3, 4개 −113.8 / H0 꼬리 0.9~1.1, 수락 0"></textarea></div></div>
   </article>
 
   <article class="item" id="B-R" data-id="B-R" data-stage="B">
     <div class="item-head"><span class="iid">B-R</span><h3>나머지 권장 세트</h3><span class="tags"><span class="tag">권장</span></span></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>ID</th><th>조건</th><th>기대 (모델)</th></tr></thead>
+      <thead><tr><th>ID</th><th>덤프 (B-P 표)</th><th>명령</th><th>기대 (모델)</th></tr></thead>
       <tbody>
-        <tr><td class="num">B-H0-3</td><td>H0 32·256심볼, −82 / −40 dBm, FreqOffset = 0, ClkOffset = 0</td><td>256심볼도 κ ≈ 1, Z 판정기 Pfa ≈ 2.7e-3</td></tr>
-        <tr><td class="num">B-H0-5</td><td>H0 32심볼, Tx off (안 되면 −150 dBm)</td><td>열잡음 기준선</td></tr>
-        <tr><td class="num">B-H1-2</td><td>H1 64심볼 −125 ~ −103, 128심볼 −127 ~ −105 dBm, 세기당 4,000개</td><td>소프트 Λ̂ L90 약 −119.5 / −121.9 dBm</td></tr>
-        <tr><td class="num">B-H1-3</td><td>H1 32심볼, B-H0-4의 멀티패스, 2 dB 간격</td><td>위치 정확도 τrms 10 ns 약 97%, 20 ns 약 61%</td></tr>
+        <tr><td class="num">B-H0-3</td><td><code>h0_cfo0</code>: H0 32·256심볼, −82 / −40 dBm, <code>FreqOffset=0 ClkOffset=0</code>, 625프레임</td><td><code>h0_pfa_analyze('D:/rif/h0_cfo0', 'Suggest', false)</code>, 같은 명령에 <code>'Moments', 'cir'</code>, 그리고 <code>'Chip', 'fixed', 'Profile', 'fira-medium'</code> (이동이 없어 <code>'Drift'</code> 생략)</td><td>256심볼도 κ ≈ 1, Z 판정기 Pfa ≈ 2.7e-3. 자기잡음이 가장 납작한 조건이라 Λ̂ 탭·패킷 꼬리 비율 0.7~1.3도 확인</td></tr>
+        <tr><td class="num">B-H0-5</td><td><code>h0_txoff</code>: H0 32심볼, Tx off (안 되면 −150 dBm), 625프레임</td><td><code>h0_pfa_analyze('D:/rif/h0_txoff', 'Suggest', false)</code>, 같은 명령에 <code>'Moments', 'cir'</code></td><td>열잡음 기준선 (−120 dBm 결과와 비교)</td></tr>
+        <tr><td class="num">B-H1-2</td><td><code>h1_awgn</code>에 추가: H1 64심볼(RIFStsLen=1) −125 ~ −103, 128심볼(RIFStsLen=2) −127 ~ −105 dBm, 1 dB, 세기당 500프레임</td><td>B-H1의 명령 그대로 (길이별로 나옴)</td><td>소프트 Λ̂ L90 약 −119.5 / −121.9 dBm, L99 −118.6 / −120.9 dBm</td></tr>
+        <tr><td class="num">B-H1-3</td><td><code>h1_mp</code>: H1 32심볼, B-H0-4와 같은 채널, −120 ~ −98 dBm 2 dB, 세기당 125프레임</td><td><code>R1m = h1_pd_analyze('D:/rif/h1_mp', 'Moments', 'cir');</code> <code>[R1m.cond.PosAcc]</code></td><td>위치 정확도 τrms 10 ns 약 97%, 20 ns 약 61% (argmax가 첫 경로가 아닌 경우)</td></tr>
       </tbody>
     </table></div>
     <div class="rec"><label for="st-B-R">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-R"></select><span class="meta" id="mt-B-R"></span></div><textarea id="nt-B-R" placeholder="돌린 ID와 핵심 값"></textarea></div></div>
@@ -699,16 +746,26 @@ R1one.pkt.L90</code></pre></div>
   <div class="stage-head"><span class="stage-no">C</span><div class="t"><h2>5열 덤프 bring-up (C++ 수정 후)</h2><p>상관기와 같은 루프, 같은 샘플, 같은 AccLen−1 구간에서 <code>momQ += |z|²</code>, <code>momPi += z²</code>를 누적하고, 프래그먼트마다 초기화합니다. 조건당 200~500개면 됩니다.</p></div></div>
   <article class="item" id="C-1" data-id="C-1" data-stage="C">
     <div class="item-head"><span class="iid">C-1~4</span><h3>Q·Π 구현 확인</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="data"><b>덤프</b> 5열 빌드(덤프 열 <code>re im Q PiRe PiIm</code>), 32심볼, AWGN 0.25 ppm, 조건마다 200~500개(25~63프레임). <code>D:/rif5/c_h0</code>: H0 −120, −40 dBm (C-1, C-2). <code>D:/rif5/c_h1</code>: H1 −60 dBm (C-3). <code>D:/rif/c_h0_2col</code>: C-1과 같은 시드로 지금의 2열 빌드 (C-4)</p>
+    <div class="cmd-box"><pre class="cmd"><code>R = rif_cir_analyze('D:/rif5/c_h0/c32_m120_j1/bin', 'Plot', 'none', 'Quiet', true);
+[median(R.qRatio), median(R.rhoPk)]          % C-1
+R = rif_cir_analyze('D:/rif5/c_h0/c32_m40_j1/bin', 'Plot', 'none', 'Quiet', true);
+[median(R.qRatio), median(R.rhoPk)]          % C-2
+R = rif_cir_analyze('D:/rif5/c_h1/c32_m60_j1/bin', 'Plot', 'none', 'Quiet', true);
+[mean(R.validL), median(R.kpk)]              % C-3
+R5 = rif_cir_analyze('D:/rif5/c_h0/c32_m120_j1/bin', 'Plot', 'none', 'Quiet', true);
+R2 = rif_cir_analyze('D:/rif/c_h0_2col/c32_m120_j1/bin', 'Plot', 'none', 'Quiet', true);
+isequal(R5.C, R2.C)                          % C-4</code></pre></div>
     <div class="tbl-wrap"><table>
       <thead><tr><th>ID</th><th>조건</th><th>확인</th><th>기준</th></tr></thead>
       <tbody>
         <tr><td class="num">C-1</td><td>H0 −120 dBm</td><td><code>median(R.qRatio)</code>, <code>median(R.rhoPk)</code></td><td>0.9~1.1, ≤ 0.1</td></tr>
         <tr><td class="num">C-2</td><td>H0 −40 dBm</td><td><code>qRatio</code>, <code>rhoPk</code></td><td>≈ 1, ≈ 0.97</td></tr>
         <tr><td class="num">C-3</td><td>H1 −60 dBm</td><td><code>validL</code>, <code>kpk</code></td><td>전부 1, 127 근처</td></tr>
-        <tr><td class="num">C-4</td><td>C-1과 같은 시드로 2열 / 5열</td><td>1·2열(CIR) 비교</td><td>동일</td></tr>
+        <tr><td class="num">C-4</td><td>C-1과 같은 시드로 2열 / 5열</td><td>1·2열(CIR) 비교: <code>isequal(R5.C, R2.C)</code></td><td><code>true</code></td></tr>
       </tbody>
     </table></div>
-    <p class="hint"><code>qRatio</code>가 1/64나 64 근처면 라운딩 스케일 불일치, 열잡음에서 <code>rhoPk</code> ≈ 1이면 Π를 <code>z·conj(z)</code>로 계산한 것입니다.</p>
+    <p class="hint"><code>qRatio</code>가 1/64나 64 근처면 C와 Q·Π의 라운딩 스케일 불일치, 1에서 10~30% 벗어나면 Q를 다른 샘플·구간에서 누적한 것, 열잡음에서 <code>rhoPk</code> ≈ 1이면 Π를 <code>z·conj(z)</code>로 계산한 것입니다. C-4가 <code>false</code>면 Q·Π 누적이 상관 계산 경로를 바꾼 것이고, <code>rif_cir_analyze:mixed</code> 오류는 한 폴더에 이전 2열 덤프가 남아 있는 것입니다.</p>
     <div class="rec"><label for="st-C-1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-C-1"></select><span class="meta" id="mt-C-1"></span></div><textarea id="nt-C-1" placeholder="예: qRatio 0.99, rhoPk 0.05 / −40 dBm 0.97 / validL 1 / CIR 동일"></textarea></div></div>
   </article>
 </section>
@@ -718,22 +775,25 @@ R1one.pkt.L90</code></pre></div>
   <div class="stage-head"><span class="stage-no">D</span><div class="t"><h2>5열 최종 검증: 원시 샘플 Λ 패킷 판정</h2><p>원시 샘플 Λ의 최종 확인입니다. 같은 덤프로 CIR 추정 Λ̂도 함께 봅니다.</p></div></div>
   <article class="item" id="D-H0" data-id="D-H0" data-stage="D">
     <div class="item-head"><span class="iid">D-H0</span><h3>핵심 H0 30,000개</h3><span class="tags"><span class="tag req">필수</span></span></div>
-    <p class="data"><b>덤프</b> 32심볼 −120, −88, −82, −76, −40 dBm / 256심볼 −82, −40 dBm (CFO 0 포함) / 같은 채널 멀티패스 −82, −40 dBm, 각 30,000개. 나머지 H0는 5,000개</p>
+    <p class="data"><b>덤프</b> 5열 빌드, 각 30,000개(3,750프레임). <code>D:/rif5/h0_awgn</code>: 32심볼 −120, −88, −82, −76, −40 dBm와 256심볼 −82, −40 dBm. <code>D:/rif5/h0_cfo0</code>: 256심볼 −82, −40 dBm, <code>FreqOffset=0 ClkOffset=0</code>. <code>D:/rif5/h0_mp</code>: 32심볼 −82, −40 dBm, B-H0-4와 같은 채널. 단계 B의 나머지 H0 세기는 5,000개(625프레임). <code>A</code>는 B-0의 결과를 그대로 씁니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>R0   = h0_pfa_analyze('D:/rif5/h0_awgn', 'Suggest', false, 'Save', 'D:/rif/report/D_h0');   % raw Λ
 R0h  = h0_pfa_analyze('D:/rif5/h0_awgn', 'Suggest', false, 'PerClass', true);              % HW 근사
+R0c  = h0_pfa_analyze('D:/rif5/h0_awgn', 'Suggest', false, 'Moments', 'cir');              % 같은 덤프로 Λ̂
 R0n  = h0_pfa_analyze('D:/rif5/h0_awgn', 'Suggest', false, 'Chip', 'new', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
+R0nz = h0_pfa_analyze('D:/rif5/h0_cfo0', 'Suggest', false, 'Chip', 'new', 'Profile', 'fira-medium');                          % CFO 0 (이동 없음)
 R0nm = h0_pfa_analyze('D:/rif5/h0_mp', 'Suggest', false, 'Chip', 'new', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);   % 같은 채널</code></pre></div>
     <dl class="expect"><dt>합격</dt><dd>원시 샘플 Λ 패킷 꼬리 비율 0.7~1.3 (P = 1e-2, 1e-3, 1e-4), |ρ| ≤ 3/√n, 수락 0 (합성 0.88~1.10, 같은 채널 모델 Λ 1.01~1.23)</dd><dt>전제</dt><dd>탭 꼬리 비율 0.7~1.3 (0.83~1.25), PerClass는 raw와 통계 오차 안</dd><dt>진단</dt><dd>프래그먼트 Pfa 점추정 ≤ 1e-3 (2.5e-4~8.5e-4)</dd></dl>
     <div class="rec"><label for="st-D-H0">상태 · 결과</label><div class="fields"><div class="row"><select id="st-D-H0"></select><span class="meta" id="mt-D-H0"></span></div><textarea id="nt-D-H0" placeholder="조건별 꼬리 비율, 수락 수"></textarea></div></div>
   </article>
   <article class="item" id="D-H1" data-id="D-H1" data-stage="D">
     <div class="item-head"><span class="iid">D-H1</span><h3>원시 샘플 Λ 패킷 감도</h3><span class="tags"><span class="tag req">필수</span></span></div>
+    <p class="data"><b>덤프</b> 5열 빌드 <code>D:/rif5/h1_awgn</code>: 단계 B와 같은 길이별 세기 범위(32심볼 −122 ~ −100, 256심볼 −127 ~ −105 dBm 필수, 64·128심볼 권장), 1 dB 간격, 세기당 4,000개(500프레임). 원시 샘플 Λ의 소프트 L90은 Λ̂보다 0.8~0.9 dB 아래라 같은 범위에 들어갑니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>R1  = h1_pd_analyze('D:/rif5/h1_awgn');
 R1c = h1_pd_analyze('D:/rif5/h1_awgn', 'Moments', 'cir');
 R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
 R1n.pkt.L90, R1.L90, R1c.L90
 R1n.pkt.L99, R1.L99, R1c.L99                 % L99 (Pd 99%)</code></pre></div>
-    <dl class="expect"><dt>합격</dt><dd>원시 샘플 Λ 패킷 L90이 CIR 추정 Λ̂ 패킷보다 나쁘지 않을 것 (Λ −117.6 / Λ̂ −116.7 dBm). L99도 같은 순서 (Λ −116.7 / Λ̂ −115.7 dBm, 진단)</dd><dt>진단</dt><dd>프래그먼트 Λ가 Z 판정기보다 약 0.6 dB 좋음, Λ̂는 raw 대비 손해 1.5~3.5 dB, AWGN 위치 정확도 ≥ 98%</dd></dl>
+    <dl class="expect"><dt>합격</dt><dd>원시 샘플 Λ 패킷 L90이 CIR 추정 Λ̂ 패킷보다 나쁘지 않을 것 (32심볼 Λ −117.6 / Λ̂ −116.7 dBm). L99도 같은 순서 (Λ −116.7 / Λ̂ −115.7 dBm, 진단)</dd><dt>길이별</dt><dd>원시 샘플 Λ 소프트 L90 32 / 64 / 128 / 256심볼 −117.6 / −120.5 / −122.8 / −122.5 dBm, L99 −116.7 / −119.6 / −121.9 / −121.6 dBm (모델)</dd><dt>진단</dt><dd>프래그먼트 Λ가 Z 판정기보다 약 0.6 dB 좋음, Λ̂는 raw 대비 손해 1.5~3.5 dB, AWGN 위치 정확도 ≥ 98%</dd></dl>
     <div class="rec"><label for="st-D-H1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-D-H1"></select><span class="meta" id="mt-D-H1"></span></div><textarea id="nt-D-H1" placeholder="예: Λ −117.3, Λ̂ −116.5"></textarea></div></div>
   </article>
 </section>
@@ -743,9 +803,9 @@ R1n.pkt.L99, R1.L99, R1c.L99                 % L99 (Pd 99%)</code></pre></div>
   <p>할 일 순서의 "보내기" 지점과 같습니다. A-1·A-2와 길이 회귀(A-L32·A-LN)의 결과는 이미 받았습니다.</p>
   <ol>
     <li>A-3의 <code>true</code> 네 줄과 A-P의 결과. A-W를 했다면 <code>rif_results.json</code></li>
-    <li>B-0의 <code>A.drift</code>, <code>A.suggest.Drift</code>, <code>A.layout</code>, <code>A.agc</code>: 이동 후보 확정(결정 5)</li>
+    <li>B-0의 <code>A.drift</code>, <code>A.suggest.Drift</code>, <code>A.layout</code>, <code>A.agc</code>, <code>A.indep</code>(256심볼을 돌렸다면 <code>A256.drift.q99</code>도): 이동 후보 확정(결정 5)</li>
     <li>B-CH 확인 결과와 B-H0-4 패킷 표의 꼬리 비율(P = 1e-2 / 1e-3 / 1e-4)·수락 수: 결정 1 유지 판단</li>
-    <li>단계 B의 나머지 표와 그림: <code>h0_pfa_analyze</code>의 "Packet decision" 표, <code>h1_pd_analyze</code>의 패킷 L90·L99</li>
+    <li>단계 B의 나머지 표와 그림: <code>h0_pfa_analyze</code>의 "Packet decision" 표, <code>h1_pd_analyze</code>의 패킷 L90·L99, B-1R의 RIF 1·2·4개 L90·L99</li>
     <li>C++ 수정 뒤 C-1 표의 값, 그다음 단계 D의 표</li>
   </ol>
   <p class="hint">이 페이지에 적은 메모는 "결과 요약 복사"로 한 번에 옮길 수 있습니다. 공유 기록에 연결된 페이지라면 Claude가 직접 읽을 수도 있습니다.</p>
