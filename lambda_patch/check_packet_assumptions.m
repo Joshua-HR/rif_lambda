@@ -29,9 +29,14 @@ function A = check_packet_assumptions(h1Src, h0Src, varargin)
 %     4 rounding      H0: noise std per real component [LSB] on the taps outside W_s, and the share of the
 %                     >>3 rounding noise (1/12 LSB^2) in that variance; whether the dumped values are integers
 %     5 independence  H0: Lmax of disjoint fragment pairs of a packet: correlation (0 +- 2/sqrt(n) expected) and
-%                     co-exceedance at the per-fragment 0.2 level (ratio ~1 expected)
+%                     co-exceedance at the per-fragment 0.2 level: pairs with both fragments above, divided by
+%                     the count expected if independent, sum over folders of nPair * (hit rate of that folder)^2
+%                     (ratio 1 +- 2/sqrt(expected) expected). The expectation is formed per folder because
+%                     folders are conditions with different hit rates; pooling them first (ratioPooled, the
+%                     form used before 2026-11-12) inflates the ratio by 1 + CV^2 of the hit rates.
 %
-%   Returned struct A: layout, drift, agc, rounding, indep, suggest (FragPerPacket, Drift, T_soft).
+%   Returned struct A: layout, drift, agc, rounding, indep (rho, n, ratio, ratioPooled, hitRate [min max],
+%   coHits [observed expected]), suggest (FragPerPacket, Drift, T_soft).
 %
 %   Example
 %       A = check_packet_assumptions('D:/rif/h1_strong', 'D:/rif/h0_awgn');
@@ -72,7 +77,7 @@ if ~isempty(o.h1Src)
 end
 
 % ---------------------------------------------------------------- H0: layout, AGC, rounding, independence
-lsb = zeros(1, 0); isInt = true; cs = zeros(1, 4); ph = 0; np = 0; fh = 0; nf = 0;
+lsb = zeros(1, 0); isInt = true; cs = zeros(1, 4); ph = 0; np = 0; fh = 0; nf = 0; eh = 0; pfs = zeros(1, 0);
 if ~isempty(o.h0Src)
     dirs = bin_dirs(o.h0Src);
     fprintf('H0 (rounding, independence): %d folder(s) under %s\n', numel(dirs), o.h0Src);
@@ -87,6 +92,9 @@ if ~isempty(o.h0Src)
             P = rif_packet(r, 'Combine', 'soft', 'FragPerPacket', K);
             cs = cs + centered(P.pairSum);           % pooled within folders (conditions differ in mean)
             ph = ph + P.pairHit; np = np + P.nPair; fh = fh + P.fragHit; nf = nf + P.nFrag;
+            pf_ = P.fragHit / max(P.nFrag, 1);      % hit rate of this folder (conditions differ)
+            eh = eh + P.nPair * pf_ ^ 2;             % co-exceedances expected if independent
+            pfs = [pfs, pf_]; %#ok<AGROW>
         end
     end
 end
@@ -151,16 +159,23 @@ end
 fprintf('5 independence: ');
 if np == 0
     fprintf('no H0 packets\n');
-    A.indep = struct('rho', NaN, 'n', 0, 'ratio', NaN);
+    A.indep = struct('rho', NaN, 'n', 0, 'ratio', NaN, 'ratioPooled', NaN, 'hitRate', [NaN NaN], 'coHits', [0 0]);
 else
     rho = cs(2) / sqrt(max(cs(3) * cs(4), realmin));
     pr = fh / nf;
-    ratio = (ph / np) / max(pr, eps) ^ 2;
-    A.indep = struct('rho', rho, 'n', cs(1), 'ratio', ratio);
-    fprintf('Lmax pairs: correlation %+.3f (n = %d, +-%.3f expected), co-exceedance ratio %.2f (1 expected)\n', ...
-            rho, cs(1), 2 / sqrt(cs(1)), ratio);
+    ratio = ph / max(eh, eps);                       % expectation per folder (conditions differ in hit rate)
+    ratioPooled = (ph / np) / max(pr, eps) ^ 2;      % one pooled hit rate: >= ratio, biased up by the spread
+    A.indep = struct('rho', rho, 'n', cs(1), 'ratio', ratio, 'ratioPooled', ratioPooled, ...
+                     'hitRate', [min(pfs), max(pfs)], 'coHits', [ph, eh]);
+    fprintf('Lmax pairs: correlation %+.3f (n = %d, +-%.3f expected), co-exceedance ratio %.2f (1 +-%.2f expected)\n', ...
+            rho, cs(1), 2 / sqrt(cs(1)), ratio, 2 / sqrt(max(eh, 1)));
+    fprintf('   co-exceedances %d observed / %.1f expected from each folder''s hit rate (%d folder(s), %.3f..%.3f); pooled form %.2f\n', ...
+            ph, eh, numel(pfs), min(pfs), max(pfs), ratioPooled);
     if abs(rho) > 3 / sqrt(cs(1))
         fprintf('   WARNING: the fragments of a packet look correlated; the packet threshold assumes independence\n');
+    end
+    if abs(ratio - 1) > 3 / sqrt(max(eh, 1))
+        fprintf('   WARNING: co-exceedance differs from independence by more than 3 sigma\n');
     end
 end
 
