@@ -206,7 +206,7 @@ details[open] > summary{margin-bottom:8px}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-13 갱신 (단계 B H0 쪽 결론)</span>
+  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-13 갱신 (단계 B 결론)</span>
   <h1>RIF 검증 체크리스트</h1>
   <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾸고, 합성 시험이 RIF 길이 32·64·128·256을 지원하게 된 지금의 master로 직접 돌려 볼 시험입니다. 바로 아래 "할 일 순서"를 위에서부터 따라가세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남고, 순서표의 상태와 "다음" 표시도 따라 바뀝니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
@@ -549,7 +549,7 @@ R2 = h1_pd_analyze('D:/rif_test2/h1_wide', 'Chip', 'fixed', 'Profile', 'fira-med
 
 <!-- ============================================================ B -->
 <section class="stage" id="sB" data-stage="B">
-  <div class="stage-head"><span class="stage-no">B</span><div class="t"><h2>현재 LLS: 2열 덤프, CIR 추정 Λ̂ 패킷 판정</h2><p>판정기의 결론은 패킷 근거(꼬리 비율, 독립성, 수락 수, 패킷 L90)로 냅니다. 프래그먼트 탭 꼬리 비율은 패킷 문턱 공식의 전제이고, 프래그먼트 Pfa는 진단입니다. B-P에서 덤프를 준비하고, B-0과 B-H0-4를 먼저 돌려 주세요.</p></div></div>
+  <div class="stage-head"><span class="stage-no">B</span><div class="t"><h2>현재 LLS: 2열 덤프, CIR 추정 Λ̂ 패킷 판정</h2><p>판정기의 결론은 패킷 근거(꼬리 비율, 독립성, 수락 수, 패킷 L90)로 냅니다. 프래그먼트 탭 꼬리 비율은 패킷 문턱 공식의 전제이고, 프래그먼트 Pfa는 진단입니다. B-P에서 덤프를 준비하고, B-0과 B-H0-4를 먼저 돌려 주세요. <b>결론(2026-11-13):</b> 필수 항목(B-0, B-CH, B-H0-4, B-H0, B-H1)이 모두 통과해, 고정 칩 패킷 판정(Λ̂ 소프트, 10⁻⁶)은 지금 LLS에서 오수락과 감도 양쪽으로 사용 가능합니다(<code>DECISIONS.md</code> "결정 1: LLS 검증").</p></div></div>
 
   <article class="item" id="B-P" data-id="B-P" data-stage="B">
     <div class="item-head"><span class="iid">B-P</span><h3>LLS 덤프 준비: 공통 인자, 세트별 인자, 폴더 규칙</h3><span class="tags"><span class="tag req">필수</span></span></div>
@@ -575,7 +575,7 @@ SignalPower = 세기 [dBm]</code></pre></div>
     </table></div>
     <div class="cmd-box"><pre class="cmd"><code>D:/rif/&lt;세트&gt;/c&lt;심볼수&gt;_m&lt;세기 절댓값&gt;_j&lt;job&gt;/bin/&lt;SignalPower&gt;_RifCir_AccNum_&lt;N&gt;_Frame&lt;f&gt;_Samp&lt;s&gt;.txt
 예: D:/rif/h0_awgn/c32_m82_j1/bin/-82_RifCir_AccNum_32_Frame0_Samp129096.txt</code></pre></div>
-    <dl class="expect"><dt>키</dt><dd>H0(틀린 키)는 Rx STS 시드만 Tx와 다르게, H1(맞는 키)는 Tx와 Rx 시드를 같게 둡니다.</dd><dt>시드</dt><dd>job마다 STS 시드와 잡음 시드를 모두 다르게 둡니다. 같으면 <code>h0_pfa_analyze</code>가 "identical Z values" 경고를 냅니다.</dd><dt>프레임</dt><dd>한 프레임이 한 패킷(RIF 프래그먼트 8개, NumRIF = 4)입니다. 프레임 수 = 프래그먼트 수 ÷ 8입니다.</dd><dt>덤프</dt><dd><code>RxSemiSync.cpp</code>의 <code>semisync_only()</code>에서 <code>if (0 &amp;&amp; iSemiSyncNextState_ == RX_STS)</code>의 0을 1로 바꿉니다. job마다 실행 폴더를 따로 두고 <code>uwb/bin</code>은 피합니다(덤프가 git 추적 대상으로 잡힘).</dd><dt>루트</dt><dd>H0와 H1, 채널, 오프셋 조건은 루트를 나눕니다. 길이는 한 루트에 섞어도 됩니다(분석이 <code>c&lt;N&gt;_</code>로 나눔).</dd><dt><code>A</code></dt><dd>아래 패킷 명령의 <code>'Drift', A.suggest.Drift</code>는 B-0의 결과입니다. LLS는 RIF 시작점마다 설정 오프셋의 누적만큼 정수 샘플을 옮기는 구조라 B-0 결과가 0(후보 1개)입니다(2026-11-12, 결정 5). 원래 설계(silicon 기준)의 임시 후보 <code>(-4:4)/7</code>(9개)은 silicon의 오프셋 추정·사용 방식이 정해질 때까지 설계 기준으로 남깁니다.</dd><dt>LLS 확인</dt><dd>저장소 문서에 이름이 없는 것: 시드 인자(기존 문서에는 <code>TxSTS.cpp:109</code>·<code>RxSTS.cpp:109</code>의 <code>rand_.seed(512)</code> 고정으로 남아 있음), 프레임 수 인자, 실내 멀티패스의 <code>ChanType</code> 값, Tx를 끄는 방법, RIF 1개 구성 설정.</dd></dl>
+    <dl class="expect"><dt>키</dt><dd>H0(틀린 키)는 Rx STS 시드만 Tx와 다르게, H1(맞는 키)는 Tx와 Rx 시드를 같게 둡니다.</dd><dt>시드</dt><dd>job마다 STS 시드와 잡음 시드를 모두 다르게 둡니다. 같으면 <code>h0_pfa_analyze</code>가 "identical Z values" 경고를 냅니다.</dd><dt>프레임</dt><dd>한 프레임이 한 패킷(RIF 프래그먼트 8개, NumRIF = 4)입니다. 프레임 수 = 프래그먼트 수 ÷ 8입니다.</dd><dt>덤프</dt><dd><code>RxSemiSync.cpp</code>의 <code>semisync_only()</code>에서 <code>if (0 &amp;&amp; iSemiSyncNextState_ == RX_STS)</code>의 0을 1로 바꿉니다. job마다 실행 폴더를 따로 두고 <code>uwb/bin</code>은 피합니다(덤프가 git 추적 대상으로 잡힘).</dd><dt>루트</dt><dd>H0와 H1, 채널, 오프셋 조건은 루트를 나눕니다. 길이는 한 루트에 섞어도 됩니다(분석이 <code>c&lt;N&gt;_</code>로 나눔).</dd><dt><code>A</code></dt><dd>아래 패킷 명령의 <code>'Drift', A.suggest.Drift</code>는 B-0의 결과입니다. LLS는 RIF 시작점마다 설정 오프셋의 누적만큼 정수 샘플을 옮기는 구조라 B-0 결과가 0(후보 1개)입니다(2026-11-12, 결정 5). 원래 설계(silicon 기준)의 임시 후보 <code>(-4:4)/7</code>(9개)은 silicon의 오프셋 추정·사용 방식이 정해질 때까지 설계 기준으로 남깁니다.</dd><dt>LLS 확인</dt><dd>저장소 문서에 이름이 없는 것: 시드 인자(기존 문서에는 <code>TxSTS.cpp:109</code>·<code>RxSTS.cpp:109</code>의 <code>rand_.seed(512)</code> 고정으로 남아 있음), 프레임 수 인자, 실내 멀티패스의 <code>ChanType</code> 값, Tx를 끄는 방법, RIF 1개 구성 설정.</dd><dt>피크 탭</dt><dd>이 LLS의 피크는 탭 125입니다(256심볼은 패킷마다 122~126). <code>h1_pd_analyze</code>의 위치 정확도는 <code>'PeakTap', 125, 'Tol', 3</code>으로 봅니다. 기본값 127 ± 2는 합성 덤프 기준이라 LLS에서는 낮게 나옵니다(2026-11-13, B-H1).</dd></dl>
     <div class="rec"><label for="st-B-P">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-P"></select><span class="meta" id="mt-B-P"></span></div><textarea id="nt-B-P" placeholder="예: h1_strong·h0_mp 5,000개 완료, h0_awgn 진행 중"></textarea></div></div>
   </article>
 
@@ -656,13 +656,12 @@ b = rif_cir_analyze(fld, 'Quiet', true, 'Plot', 'none', 'Moments', 'cir', 'CirNo
     <div class="item-head"><span class="iid">B-H1</span><h3>패킷 감도 (B-H1-1)</h3><span class="tags"><span class="tag req">필수</span></span></div>
     <p class="data"><b>덤프</b> <code>h1_awgn</code>: H1 32심볼(RIFStsLen=0) −122 ~ −100 dBm, 256심볼(RIFStsLen=3) −127 ~ −105 dBm, 1 dB 간격, 세기당 4,000개(500프레임 = 500패킷)</p>
     <p class="why">길이마다 소프트 패킷 L90 아래까지 내려가는 범위입니다. 256심볼을 −120 dBm에서 끊으면 L90(약 −121.5 dBm)이 스윕 아래라 <code>pkt.L90</code>이 NaN이 됩니다.</p>
-    <div class="cmd-box"><pre class="cmd"><code>R1  = h1_pd_analyze('D:/rif/h1_awgn');                          % Z 판정기 프래그먼트 Pd·CI·위치·L90
-R1c = h1_pd_analyze('D:/rif/h1_awgn', 'Moments', 'cir');        % Λ̂ 프래그먼트
-R1p = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
+    <div class="cmd-box"><pre class="cmd"><code>R1c = h1_pd_analyze('D:/rif/h1_awgn', 'Moments', 'cir', 'PeakTap', 125, 'Tol', 3);   % 1열 Z 판정기, 2열 Λ̂ 프래그먼트 (2열 덤프)
+R1p = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift, 'PeakTap', 125, 'Tol', 3);
 R1a = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Combine', 'kofn', 'KofN', 6);
 R1p.pkt.L90, R1a.pkt.L90, R1c.L90
 R1p.pkt.L99, R1a.pkt.L99, R1c.L99                               % L99 (Pd 99%)</code></pre></div>
-    <dl class="expect"><dt>기준</dt><dd>Λ̂ 소프트 패킷 L90 32심볼 약 −116.7, 256심볼 약 −121.5 dBm(모델은 이동 0. 원래 설계대로 이동을 탐색하면 약 0.3 dB 덜함. LLS는 후보 1개라 탐색 손해가 없고, 대신 소수 탭 어긋남(최대 0.5탭) 손해가 측정값에 들어감). 32심볼은 프래그먼트 Λ̂ L90(−109.6)보다 6 dB 이상 좋을 것. 패킷 위치 정확도 ≥ 98%</dd><dt>참고</dt><dd>6-of-8 약 −112.5 dBm. 프래그먼트: Z 판정기 −111.3(실측 −111.9), Λ̂ −109.6(LLS 약 −110.1 예상), Z 판정기 대비 손해 ≤ 2.5 dB</dd><dt>L99</dt><dd>모델: Λ̂ 소프트 패킷 32 / 64 / 128 / 256심볼 −115.7 / −118.6 / −120.9 / −120.6 dBm(L90보다 약 1 dB 위), 6-of-8 −111.7, 프래그먼트 Λ̂ −108.1, Z 판정기 −109.9 dBm. ±1.5 dB 안이면 정상(세기당 500패킷이면 한 점 흔들림 약 0.2 dB)</dd></dl>
+    <dl class="expect"><dt>기준</dt><dd>Λ̂ 소프트 패킷 L90 32심볼 약 −116.7, 256심볼 약 −121.5 dBm(모델은 이동 0. 원래 설계대로 이동을 탐색하면 약 0.3 dB 덜함. LLS는 후보 1개라 탐색 손해가 없고, 대신 소수 탭 어긋남(최대 0.5탭) 손해가 측정값에 들어감). 32심볼은 프래그먼트 Λ̂ L90(−109.6)보다 6 dB 이상 좋을 것. 패킷 위치 정확도 ≥ 98%</dd><dt>참고</dt><dd>6-of-8 약 −112.5 dBm. 프래그먼트: Z 판정기 −111.3(실측 −111.9), Λ̂ −109.6(LLS 약 −110.1 예상), Z 판정기 대비 손해 ≤ 2.5 dB</dd><dt>L99</dt><dd>모델: Λ̂ 소프트 패킷 32 / 64 / 128 / 256심볼 −115.7 / −118.6 / −120.9 / −120.6 dBm(L90보다 약 1 dB 위), 6-of-8 −111.7, 프래그먼트 Λ̂ −108.1, Z 판정기 −109.9 dBm. ±1.5 dB 안이면 정상(세기당 500패킷이면 한 점 흔들림 약 0.2 dB)</dd><dt>결과</dt><dd>2026-11-13, 32 / 64 / 128 / 256심볼: 패킷 L90 −116.76 / −119.69 / −122.08 / −121.61 dBm(모델과 0.2 dB 안), L99 −115.33 / −118.08 / −120.25 / −120.30. 프래그먼트 L90 Z −111.90 / −114.76 / −117.13 / −116.76(32심볼은 기존 문서 실측 −111.9와 같음), Λ̂ −110.35 / −113.28 / −115.58 / −115.28 → Λ̂ 손해 1.5 dB, 패킷 이득 6.3~6.5 dB. 6-of-8 L90 −113.28 / −116.19 / −118.43 / −118.24. 위치 정확도(<code>PeakTap</code> 125, <code>Tol</code> 3) 1.00. 스윕 최저 Pd ≤ 0.014 → <b>통과</b></dd><dt>소수 탭 손해</dt><dd>프래그먼트마다 자기 탭을 쓰는 판정(Z, Λ̂, 6-of-8)은 모델보다 0.6~0.8 dB 좋은데, 같은 탭을 더하는 소프트 합은 L90 0.13 dB, L99 −0.46 dB → 피크 톱니(결정 5)로 소프트 합이 L90 약 0.5 dB, L99 약 1 dB를 잃는 것으로 봄</dd></dl>
     <div class="rec"><label for="st-B-H1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-H1"></select><span class="meta" id="mt-B-H1"></span></div><textarea id="nt-B-H1" placeholder="예: 소프트 −116.4, 6-of-8 −112.3, Λ̂ 프래그먼트 −110.0, 위치 99%"></textarea></div></div>
   </article>
 
@@ -763,7 +762,7 @@ isequal(R5.C, R2.C)                          % C-4</code></pre></div>
       <tbody>
         <tr><td class="num">C-1</td><td>H0 −120 dBm</td><td><code>median(R.qRatio)</code>, <code>median(R.rhoPk)</code></td><td>0.9~1.1, ≤ 0.1</td></tr>
         <tr><td class="num">C-2</td><td>H0 −40 dBm</td><td><code>qRatio</code>, <code>rhoPk</code></td><td>≈ 1, ≈ 0.97</td></tr>
-        <tr><td class="num">C-3</td><td>H1 −60 dBm</td><td><code>validL</code>, <code>kpk</code></td><td>전부 1, 127 근처</td></tr>
+        <tr><td class="num">C-3</td><td>H1 −60 dBm</td><td><code>validL</code>, <code>kpk</code></td><td>전부 1, 125 근처(단계 B의 LLS 피크. 합성 덤프는 127)</td></tr>
         <tr><td class="num">C-4</td><td>C-1과 같은 시드로 2열 / 5열</td><td>1·2열(CIR) 비교: <code>isequal(R5.C, R2.C)</code></td><td><code>true</code></td></tr>
       </tbody>
     </table></div>
@@ -790,12 +789,12 @@ R0nm = h0_pfa_analyze('D:/rif5/h0_mp', 'Suggest', false, 'Chip', 'new', 'Profile
   <article class="item" id="D-H1" data-id="D-H1" data-stage="D">
     <div class="item-head"><span class="iid">D-H1</span><h3>원시 샘플 Λ 패킷 감도</h3><span class="tags"><span class="tag req">필수</span></span></div>
     <p class="data"><b>덤프</b> 5열 빌드 <code>D:/rif5/h1_awgn</code>: 단계 B와 같은 길이별 세기 범위(32심볼 −122 ~ −100, 256심볼 −127 ~ −105 dBm 필수, 64·128심볼 권장), 1 dB 간격, 세기당 4,000개(500프레임). 원시 샘플 Λ의 소프트 L90은 Λ̂보다 0.8~0.9 dB 아래라 같은 범위에 들어갑니다.</p>
-    <div class="cmd-box"><pre class="cmd"><code>R1  = h1_pd_analyze('D:/rif5/h1_awgn');
-R1c = h1_pd_analyze('D:/rif5/h1_awgn', 'Moments', 'cir');
-R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift);
+    <div class="cmd-box"><pre class="cmd"><code>R1  = h1_pd_analyze('D:/rif5/h1_awgn', 'PeakTap', 125, 'Tol', 3);                     % 위치 정확도는 단계 B의 LLS 피크(125) 기준
+R1c = h1_pd_analyze('D:/rif5/h1_awgn', 'Moments', 'cir', 'PeakTap', 125, 'Tol', 3);
+R1n = h1_pd_analyze('D:/rif5/h1_awgn', 'Chip', 'new', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift, 'PeakTap', 125, 'Tol', 3);
 R1n.pkt.L90, R1.L90, R1c.L90
 R1n.pkt.L99, R1.L99, R1c.L99                 % L99 (Pd 99%)</code></pre></div>
-    <dl class="expect"><dt>합격</dt><dd>원시 샘플 Λ 패킷 L90이 CIR 추정 Λ̂ 패킷보다 나쁘지 않을 것 (32심볼 Λ −117.6 / Λ̂ −116.7 dBm). L99도 같은 순서 (Λ −116.7 / Λ̂ −115.7 dBm, 진단)</dd><dt>길이별</dt><dd>원시 샘플 Λ 소프트 L90 32 / 64 / 128 / 256심볼 −117.6 / −120.5 / −122.8 / −122.5 dBm, L99 −116.7 / −119.6 / −121.9 / −121.6 dBm (모델)</dd><dt>진단</dt><dd>프래그먼트 Λ가 Z 판정기보다 약 0.6 dB 좋음, Λ̂는 raw 대비 손해 1.5~3.5 dB, AWGN 위치 정확도 ≥ 98%</dd></dl>
+    <dl class="expect"><dt>합격</dt><dd>원시 샘플 Λ 패킷 L90이 CIR 추정 Λ̂ 패킷보다 나쁘지 않을 것 (32심볼 Λ −117.6 / Λ̂ −116.7 dBm). L99도 같은 순서 (Λ −116.7 / Λ̂ −115.7 dBm, 진단)</dd><dt>길이별</dt><dd>원시 샘플 Λ 소프트 L90 32 / 64 / 128 / 256심볼 −117.6 / −120.5 / −122.8 / −122.5 dBm, L99 −116.7 / −119.6 / −121.9 / −121.6 dBm (모델)</dd><dt>진단</dt><dd>프래그먼트 Λ가 Z 판정기보다 약 0.6 dB 좋음, Λ̂는 raw 대비 손해 1.5~3.5 dB, AWGN 위치 정확도 ≥ 98%(<code>PeakTap</code> 125, <code>Tol</code> 3. 5열 빌드에서도 피크가 125인지 C-3의 <code>kpk</code>로 먼저 확인)</dd></dl>
     <div class="rec"><label for="st-D-H1">상태 · 결과</label><div class="fields"><div class="row"><select id="st-D-H1"></select><span class="meta" id="mt-D-H1"></span></div><textarea id="nt-D-H1" placeholder="예: Λ −117.3, Λ̂ −116.5"></textarea></div></div>
   </article>
 </section>
