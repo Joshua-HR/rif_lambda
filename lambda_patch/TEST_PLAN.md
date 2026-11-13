@@ -385,18 +385,32 @@ C = corrcoef(P);  same = bsxfun(@eq, fr', fr);  off = ~eye(numel(fr));
 [mean(C(same & off)), mean(C(~same))]                % 프레임 안 / 프레임 사이 |C|² 모양 상관
 ```
 
-**RIF 1·2·4개 구성:** 8개 덤프를 K개씩 묶어 분석합니다. 2개는 패킷 전체 이동이 약 0.25탭이라 이동 후보 1개(0, 기본값)이고, 4개는 4개씩 묶어 잰 이동 후보를 씁니다(프레임마다 8개라 `A4`의 layout 경고는 정상).
+**RIF 1·2·4개 구성:** 8개 덤프를 K개씩 묶어 분석합니다. LLS는 RIF 시작점을 정수 샘플로 옮겨 피크가 1탭 안에 머물므로(결정 5), 모든 구성에서 이동 후보 1개(`'Drift', 0`)를 씁니다. 위치 정확도는 B-H1과 같이 `'PeakTap', 125, 'Tol', 3`으로 봅니다. 결과는 아래 (1)~(3)의 출력을 적습니다. RIF 1개는 소프트 합이 없어 꼬리 비율과 쌍 상관이 NaN인 것이 정상이고, 그 근거는 B-H0의 Λ̂ 탭 꼬리 비율입니다. `h1_pd_analyze`는 캐시가 없어 구성마다 `h1_awgn`을 다시 읽습니다.
 
 ```matlab
-A4 = check_packet_assumptions('D:/rif/h1_strong', '', 'FragPerPacket', 4);
-fk = {{'FragPerPacket', 1}, {'FragPerPacket', 2}, {'FragPerPacket', 4, 'Drift', A4.suggest.Drift}};
+K = [1 2 4];
 R0k = cell(1, 3); R1k = cell(1, 3);
 for i = 1:3
-    R0k{i} = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', fk{i}{:});
-    R1k{i} = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', fk{i}{:});
+    R0k{i} = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', ...
+                            'FragPerPacket', K(i), 'Drift', 0, 'Plot', false);
+    R1k{i} = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', ...
+                           'FragPerPacket', K(i), 'Drift', 0, 'PeakTap', 125, 'Tol', 3, 'Plot', false);
 end
-[R1k{1}.pkt.L90(:), R1k{2}.pkt.L90(:), R1k{3}.pkt.L90(:)]   % 열 = 1·2·4개, 행 = 길이
-[R1k{1}.pkt.L99(:), R1k{2}.pkt.L99(:), R1k{3}.pkt.L99(:)]
+format short g
+% (1) H0: RIF 개수별 패킷 수, 수락 수, 소프트 꼬리 비율(1e-2/1e-3/1e-4) 조건 평균과 최댓값, 쌍 상관 최댓값
+for i = 1:3
+    P = R0k{i}.PK;  tr = vertcat(P.tailRatio);
+    fprintf('K=%d  패킷 %d  수락 %d  꼬리 평균 %.3f %.3f %.3f  최대 %.3f %.3f %.3f  최대|rho| %.3f\n', ...
+            K(i), sum([P.nPkt]), sum([P.k]), mean(tr, 1, 'omitnan'), max(tr, [], 1), max(abs([P.rhoPair])));
+end
+% (2) H1: 길이별 패킷 L90 / L99 [dBm]
+L = R1k{1}.len(:);
+fprintf('%4d | 1개 %8.2f %8.2f | 2개 %8.2f %8.2f | 4개 %8.2f %8.2f\n', ...
+        [L R1k{1}.pkt.L90 R1k{1}.pkt.L99 R1k{2}.pkt.L90 R1k{2}.pkt.L99 R1k{3}.pkt.L90 R1k{3}.pkt.L99]');
+% (3) H1: RIF 개수별 위치 정확도 최솟값 (Pd ≥ 0.5인 세기)
+for i = 1:3
+    c = R1k{i}.pkt.cond;  fprintf('K=%d  위치 정확도 최솟값 %.3f\n', K(i), min([c([c.Pd] >= 0.5).PosAcc]));
+end
 % RIF 1개 구성 덤프를 따로 만들었으면 (FragPerPacket 1이면 모든 규칙이 single, 문턱 36.53)
 R0one = h0_pfa_analyze('D:/rif/h0_1rif', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'FragPerPacket', 1);
 R1one = h1_pd_analyze('D:/rif/h1_1rif', 'Chip', 'fixed', 'Profile', 'fira-medium', 'FragPerPacket', 1);
@@ -409,7 +423,7 @@ R0z  = h0_pfa_analyze('D:/rif/h0_cfo0', 'Suggest', false);                     %
 R0zc = h0_pfa_analyze('D:/rif/h0_cfo0', 'Suggest', false, 'Moments', 'cir');   % Λ̂ 탭 꼬리
 R0zp = h0_pfa_analyze('D:/rif/h0_cfo0', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium');   % 이동이 없어 'Drift' 생략
 R0t  = h0_pfa_analyze('D:/rif/h0_txoff', 'Suggest', false);                    % B-H0-5 (같은 명령에 'Moments', 'cir'도)
-R1m  = h1_pd_analyze('D:/rif/h1_mp', 'Moments', 'cir');                        % B-H1-3
+R1m  = h1_pd_analyze('D:/rif/h1_mp', 'Moments', 'cir', 'PeakTap', 125);       % B-H1-3 (32심볼 피크 124~126이라 Tol 기본 2)
 [R1m.cond.PosAcc]                                                             % 위치 정확도
 ```
 
@@ -464,7 +478,7 @@ allPass = accumarray(g(:), double(r.valid(:)), [], @min);
 | H1 패킷 L99 | `R1p.pkt.L99` | Λ̂ 소프트 32 / 64 / 128 / 256심볼 −115.7 / −118.6 / −120.9 / −120.6 dBm (L90보다 약 1.0~1.1 dB 위, 설계 문서 9.9절) | 참고: 모델 ±1.5 dB. 1 dB 격자 선형 보간이라 모델(0.5 dB 격자)과 0.1~0.2 dB 다를 수 있음. **결과: −115.33 / −118.08 / −120.25 / −120.30 dBm(모델보다 0.3~0.65 dB 나쁨, 소프트 합의 소수 탭 손해)** |
 | H1 위치 | `R1p.pkt.cond.PosAcc` | ≥ 98% | AWGN ≥ 98% (LLS는 `'PeakTap', 125, 'Tol', 3`). **결과: 1.00** |
 | K-of-N 대안 | `R1a.pkt.L90`, `R1a.pkt.L99` | 6-of-8 L90 −112.5, L99 −111.7 dBm | 참고. **결과 L90 / L99: −113.28 / −112.25, −116.19 / −115.17, −118.43 / −117.50, −118.24 / −117.31 dBm** |
-| RIF 1·2·4개 구성 | `R0k`·`R1k`(또는 `R0one`·`R1one`)의 패킷 표, `pkt.L90`, `pkt.L99` | 아래 "구성별 기대 감도" 표 | H0 꼬리 비율 0.7~1.3, 수락 0 (1개는 t ≤ 18에서 확인하고 문턱 36.53까지 외삽). H1 L90·L99 모델 ±1.5 dB |
+| RIF 1·2·4개 구성 | `R0k`·`R1k`(또는 `R0one`·`R1one`)의 패킷 표, `pkt.L90`, `pkt.L99` | 아래 "구성별 기대 감도" 표 | H0 꼬리 비율 0.7~1.3, 수락 0, 쌍 상관 ≤ 약 0.06 (1개는 꼬리 비율·쌍 상관이 NaN이고, B-H0의 탭 꼬리를 t ≤ 18에서 확인하고 문턱 36.53까지 외삽). H1 L90·L99 모델 ±1.5 dB, 위치 정확도 ≥ 98%. B-H1에서 프래그먼트마다 자기 탭을 쓰는 판정은 모델보다 0.6~0.8 dB 좋고 소프트 합은 0.1 dB만 좋았으므로, 1개는 모델보다 0.5~0.8 dB 좋고 2·4개는 그 사이로 예상 |
 | 일관성 검사 비용 | `R1p.pkt.L90 - R1f0.pkt.L90` (`'Floor', 0`으로 다시 돌린 결과와의 차이) | 약 0.2 dB | ≤ 0.5 dB |
 | 바꿔치기 폐기율 | 아래 코드 (5번 RIF를 틀린 키 덤프로 교체) | F = 1: 약 40% (= 1 − e^(−F/2)) | 참고. 일관성 검사 구현(결정 6 안 3)의 기준선 |
 

@@ -701,17 +701,32 @@ allPass = accumarray(g(:), double(r.valid(:)), [], @min);
   <article class="item" id="B-1R" data-id="B-1R" data-stage="B">
     <div class="item-head"><span class="iid">B-1R</span><h3>RIF 1·2·4개 구성 (B-H1-4, B-H0-6)</h3><span class="tags"><span class="tag">권장</span><span class="tag dec">결정 3</span></span></div>
     <p class="why">결정 3은 RIF 1·2·4·8개 구성을 모두 지원합니다. 8개는 B-H0·B-H1에서 보고, 여기서는 1·2·4개를 봅니다. <code>rif_packet</code>은 한 프레임 안의 프래그먼트를 K개씩 연속으로 묶으므로, AWGN에서는 8개 덤프(<code>h0_awgn</code>, <code>h1_awgn</code>)를 <code>'FragPerPacket'</code> 1·2·4로 분석해도 같은 통계입니다. RIF 1개 구성 덤프(<code>h0_1rif</code>, <code>h1_1rif</code>)를 따로 만들 수 있으면 프레임 구성까지 확인합니다.</p>
-    <div class="cmd-box"><pre class="cmd"><code>% 8개 덤프를 1·2·4개씩 묶어 분석
-A4 = check_packet_assumptions('D:/rif/h1_strong', '', 'FragPerPacket', 4);   % 4개 구성의 이동 후보 (layout 경고는 정상)
-fk = {{'FragPerPacket', 1}, {'FragPerPacket', 2}, {'FragPerPacket', 4, 'Drift', A4.suggest.Drift}};
+    <div class="cmd-box"><pre class="cmd"><code>% 8개 덤프를 1·2·4개씩 묶어 분석 (모든 구성 'Drift' 0, 위치 정확도는 LLS 피크 125 기준)
+K = [1 2 4];
 R0k = cell(1, 3); R1k = cell(1, 3);
 for i = 1:3
-    R0k{i} = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', fk{i}{:});
-    R1k{i} = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', fk{i}{:});
+    R0k{i} = h0_pfa_analyze('D:/rif/h0_awgn', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', ...
+                            'FragPerPacket', K(i), 'Drift', 0, 'Plot', false);
+    R1k{i} = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', ...
+                           'FragPerPacket', K(i), 'Drift', 0, 'PeakTap', 125, 'Tol', 3, 'Plot', false);
 end
-[R1k{1}.pkt.L90(:), R1k{2}.pkt.L90(:), R1k{3}.pkt.L90(:)]   % 열 = 1·2·4개, 행 = 길이
-[R1k{1}.pkt.L99(:), R1k{2}.pkt.L99(:), R1k{3}.pkt.L99(:)]
-% RIF 1개 구성 덤프를 따로 만들었으면
+format short g
+% ---- 메모에 붙일 값 ----
+% (1) H0: RIF 개수별 패킷 수, 수락 수, 소프트 꼬리 비율(1e-2/1e-3/1e-4) 조건 평균과 최댓값, 쌍 상관 최댓값
+for i = 1:3
+    P = R0k{i}.PK;  tr = vertcat(P.tailRatio);
+    fprintf('K=%d  패킷 %d  수락 %d  꼬리 평균 %.3f %.3f %.3f  최대 %.3f %.3f %.3f  최대|rho| %.3f\n', ...
+            K(i), sum([P.nPkt]), sum([P.k]), mean(tr, 1, 'omitnan'), max(tr, [], 1), max(abs([P.rhoPair])));
+end
+% (2) H1: 길이별 패킷 L90 / L99 [dBm]
+L = R1k{1}.len(:);
+fprintf('%4d | 1개 %8.2f %8.2f | 2개 %8.2f %8.2f | 4개 %8.2f %8.2f\n', ...
+        [L R1k{1}.pkt.L90 R1k{1}.pkt.L99 R1k{2}.pkt.L90 R1k{2}.pkt.L99 R1k{3}.pkt.L90 R1k{3}.pkt.L99]');
+% (3) H1: RIF 개수별 위치 정확도 최솟값 (Pd ≥ 0.5인 세기)
+for i = 1:3
+    c = R1k{i}.pkt.cond;  fprintf('K=%d  위치 정확도 최솟값 %.3f\n', K(i), min([c([c.Pd] &gt;= 0.5).PosAcc]));
+end
+% RIF 1개 구성 덤프를 따로 만들었으면 (선택)
 R0one = h0_pfa_analyze('D:/rif/h0_1rif', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'FragPerPacket', 1);
 R1one = h1_pd_analyze('D:/rif/h1_1rif', 'Chip', 'fixed', 'Profile', 'fira-medium', 'FragPerPacket', 1);</code></pre></div>
     <div class="tbl-wrap"><table>
@@ -723,7 +738,7 @@ R1one = h1_pd_analyze('D:/rif/h1_1rif', 'Chip', 'fixed', 'Profile', 'fira-medium
         <tr><td>RIF 8개 (B-H1)</td><td class="num">−116.7 / −115.7</td><td class="num">−119.5 / −118.6</td><td class="num">−121.9 / −120.9</td><td class="num">−121.5 / −120.6</td></tr>
       </tbody>
     </table></div>
-    <dl class="expect"><dt>기대</dt><dd>표는 Λ̂ 소프트 패킷 L90 / L99 [dBm] 모델 값(<code>model/results/pooled_moments.json</code>, <code>l99.json</code>). 64·128심볼은 B-H1-2 덤프가 있을 때. RIF 1개는 모든 규칙이 single, 문턱 36.53</dd><dt>기준</dt><dd>H0: 패킷 꼬리 비율 0.7~1.3, 수락 0 (1개는 t ≤ 18에서 확인하고 문턱까지는 외삽). H1: 모델 ±1.5 dB</dd><dt>이동</dt><dd>2개는 패킷 전체 이동이 약 0.25탭이라 후보 1개(0, 기본값). 4개는 <code>A4.suggest.Drift</code></dd></dl>
+    <dl class="expect"><dt>기대</dt><dd>표는 Λ̂ 소프트 패킷 L90 / L99 [dBm] 모델 값(<code>model/results/pooled_moments.json</code>, <code>l99.json</code>). 64·128심볼은 B-H1-2 덤프가 있을 때. RIF 1개는 모든 규칙이 single, 문턱 36.53. B-H1에서 프래그먼트마다 자기 탭을 쓰는 판정은 모델보다 0.6~0.8 dB 좋고 소프트 합은 0.1 dB만 좋았으므로, 1개는 모델보다 0.5~0.8 dB 좋고 2·4개는 그 사이로 예상</dd><dt>기준</dt><dd>H0 (1): 수락 0, 꼬리 비율 0.7~1.3(1e-2, 1e-3), 쌍 상관 ≤ 약 0.06. RIF 1개는 소프트 합이 없어 꼬리 비율과 쌍 상관이 NaN인 것이 정상이고, 근거는 B-H0의 Λ̂ 탭 꼬리 비율(t ≤ 18, 문턱까지는 외삽). H1 (2): 모델 ±1.5 dB. 위치 정확도 (3): ≥ 98%</dd><dt>이동</dt><dd>모든 구성 <code>'Drift'</code> 0. LLS는 RIF 시작점을 정수 샘플로 옮겨 피크가 1탭 안에 머묾(결정 5)</dd><dt>시간</dt><dd><code>h0_pfa_analyze</code>는 B-H0의 캐시를 써서 빠르고, <code>h1_pd_analyze</code>는 구성마다 <code>h1_awgn</code>을 다시 읽어 B-H1의 약 세 배</dd></dl>
     <div class="rec"><label for="st-B-1R">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-1R"></select><span class="meta" id="mt-B-1R"></span></div><textarea id="nt-B-1R" placeholder="예: 32심볼 L90 1개 −106.4, 2개 −110.3, 4개 −113.8 / H0 꼬리 0.9~1.1, 수락 0"></textarea></div></div>
   </article>
 
@@ -735,7 +750,7 @@ R1one = h1_pd_analyze('D:/rif/h1_1rif', 'Chip', 'fixed', 'Profile', 'fira-medium
         <tr><td class="num">B-H0-3</td><td><code>h0_cfo0</code>: H0 32·256심볼, −82 / −40 dBm, <code>FreqOffset=0 ClkOffset=0</code>, 625프레임</td><td><code>h0_pfa_analyze('D:/rif/h0_cfo0', 'Suggest', false)</code>, 같은 명령에 <code>'Moments', 'cir'</code>, 그리고 <code>'Chip', 'fixed', 'Profile', 'fira-medium'</code> (이동이 없어 <code>'Drift'</code> 생략)</td><td>256심볼도 κ ≈ 1, Z 판정기 Pfa ≈ 2.7e-3. 자기잡음이 가장 납작한 조건이라 Λ̂ 탭·패킷 꼬리 비율 0.7~1.3도 확인</td></tr>
         <tr><td class="num">B-H0-5</td><td><code>h0_txoff</code>: H0 32심볼, Tx off (안 되면 −150 dBm), 625프레임</td><td><code>h0_pfa_analyze('D:/rif/h0_txoff', 'Suggest', false)</code>, 같은 명령에 <code>'Moments', 'cir'</code></td><td>열잡음 기준선 (−120 dBm 결과와 비교)</td></tr>
         <tr><td class="num">B-H1-2</td><td><code>h1_awgn</code>에 추가: H1 64심볼(RIFStsLen=1) −125 ~ −103, 128심볼(RIFStsLen=2) −127 ~ −105 dBm, 1 dB, 세기당 500프레임</td><td>B-H1의 명령 그대로 (길이별로 나옴)</td><td>소프트 Λ̂ L90 약 −119.5 / −121.9 dBm, L99 −118.6 / −120.9 dBm</td></tr>
-        <tr><td class="num">B-H1-3</td><td><code>h1_mp</code>: H1 32심볼, B-H0-4와 같은 채널, −120 ~ −98 dBm 2 dB, 세기당 125프레임</td><td><code>R1m = h1_pd_analyze('D:/rif/h1_mp', 'Moments', 'cir');</code> <code>[R1m.cond.PosAcc]</code></td><td>위치 정확도 τrms 10 ns 약 97%, 20 ns 약 61% (argmax가 첫 경로가 아닌 경우)</td></tr>
+        <tr><td class="num">B-H1-3</td><td><code>h1_mp</code>: H1 32심볼, B-H0-4와 같은 채널, −120 ~ −98 dBm 2 dB, 세기당 125프레임</td><td><code>R1m = h1_pd_analyze('D:/rif/h1_mp', 'Moments', 'cir', 'PeakTap', 125);</code> <code>[R1m.cond.PosAcc]</code> (32심볼 피크 124~126이라 <code>'Tol'</code>은 기본 2)</td><td>위치 정확도 τrms 10 ns 약 97%, 20 ns 약 61% (argmax가 첫 경로가 아닌 경우)</td></tr>
       </tbody>
     </table></div>
     <div class="rec"><label for="st-B-R">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-R"></select><span class="meta" id="mt-B-R"></span></div><textarea id="nt-B-R" placeholder="돌린 ID와 핵심 값"></textarea></div></div>
