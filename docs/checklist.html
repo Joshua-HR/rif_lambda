@@ -206,7 +206,7 @@ details[open] > summary{margin-bottom:8px}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-12 갱신 (B-0 결과, 결정 5)</span>
+  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-13 갱신 (단계 B H0 쪽 결론)</span>
   <h1>RIF 검증 체크리스트</h1>
   <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾸고, 합성 시험이 RIF 길이 32·64·128·256을 지원하게 된 지금의 master로 직접 돌려 볼 시험입니다. 바로 아래 "할 일 순서"를 위에서부터 따라가세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남고, 순서표의 상태와 "다음" 표시도 따라 바뀝니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
@@ -607,7 +607,7 @@ for f = 0:3                                              % 프레임 0~3
 end
 C = corrcoef(P);  same = bsxfun(@eq, fr', fr);  off = ~eye(numel(fr));
 [mean(C(same &amp; off)), mean(C(~same))]                % 프레임 안 / 프레임 사이 |C|² 모양 상관</code></pre></div>
-    <dl class="expect"><dt>방법</dt><dd>LLS 채널 코드에서 채널 생성 시점을 확인하거나, 위 명령으로 한 프레임 안 8개 CIR의 멀티패스 모양이 같고 프레임끼리만 다른지 봅니다.</dd><dt>기준</dt><dd>채널이 프레임(패킷) 안에서 고정: 프레임 안 상관이 1에 가깝고 프레임 사이 상관보다 뚜렷이 큼</dd><dt>아니면</dt><dd>두 값이 비슷하게 낮으면 프래그먼트마다 채널을 새로 뽑는 것이고, 둘 다 1에 가까우면 실행 전체가 채널 하나입니다. 어느 쪽이든 B-H0-4 전에 LLS 채널 설정을 고칩니다.</dd></dl>
+    <dl class="expect"><dt>방법</dt><dd>LLS 채널 코드에서 채널 생성 시점을 확인하거나, 위 명령으로 한 프레임 안 8개 CIR의 멀티패스 모양이 같고 프레임끼리만 다른지 봅니다.</dd><dt>기준</dt><dd>채널이 프레임(패킷) 안에서 고정: 프레임 안 상관이 1에 가깝고 프레임 사이 상관보다 뚜렷이 큼</dd><dt>아니면</dt><dd>두 값이 비슷하게 낮으면 프래그먼트마다 채널을 새로 뽑는 것이고, 둘 다 1에 가까우면 실행 전체가 채널 하나입니다. 어느 쪽이든 B-H0-4 전에 LLS 채널 설정을 고칩니다.</dd><dt>결과</dt><dd>2026-11-12: 프레임 안 0.894, 프레임 사이 0.085 → 채널은 패킷 안에서 고정, 프레임마다 새로 뽑힘</dd></dl>
     <div class="rec"><label for="st-B-CH">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-CH"></select><span class="meta" id="mt-B-CH"></span></div><textarea id="nt-B-CH" placeholder="예: 채널을 프레임 시작에서 한 번 생성 (파일·함수 이름)"></textarea></div></div>
   </article>
 
@@ -620,7 +620,7 @@ C = corrcoef(P);  same = bsxfun(@eq, fr', fr);  off = ~eye(numel(fr));
 [[R0m.PK.pow]' vertcat(R0m.PK.tailRatio)]   % 세기, 꼬리 비율 (P = 1e-2, 1e-3, 1e-4; 표본이 모자라면 NaN)
 [R0m.PK.k]                                   % 패킷 수락 수
 [R0m.PK.rhoPair]                             % 프래그먼트 쌍 상관</code></pre></div>
-    <dl class="expect"><dt>기준</dt><dd>모든 지점에서 꼬리 비율 0.7~1.3이고 깊어질수록 커지지 않을 것. 수락 0. |ρ| ≤ 3/√n</dd><dt>넘으면</dt><dd>결정 1(패킷 10⁻⁶ 기준)을 다시 봅니다. 표본을 늘리거나 문턱 여유를 키우는 쪽을 먼저 검토합니다.</dd></dl>
+    <dl class="expect"><dt>기준</dt><dd>모든 지점에서 꼬리 비율 0.7~1.3이고 깊어질수록 커지지 않을 것. 수락 0. |ρ| ≤ 3/√n</dd><dt>넘으면</dt><dd>결정 1(패킷 10⁻⁶ 기준)을 다시 봅니다. 표본을 늘리거나 문턱 여유를 키우는 쪽을 먼저 검토합니다.</dd><dt>결과</dt><dd>2026-11-13, 30,000개(−80 dBm으로 실행): 꼬리 비율 −40 dBm 1.06 / 0.95 / 1.06, −80 dBm 1.00 / 1.04 / 1.15, 수락 0, 쌍 상관 ≤ 0.015 → <b>결정 1 유지</b>. 5,000개 때의 −40 dBm 1.20 / 1.33은 흔들림이었음</dd></dl>
     <div class="rec"><label for="st-B-H0-4">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-H0-4"></select><span class="meta" id="mt-B-H0-4"></span></div><textarea id="nt-B-H0-4" placeholder="예: −82 dBm 1.02 / 1.08 / 1.15, −40 dBm 0.97 / 1.01 / NaN, 수락 0, n = 30,000"></textarea></div></div>
   </article>
 
@@ -648,6 +648,7 @@ b = rif_cir_analyze(fld, 'Quiet', true, 'Plot', 'none', 'Moments', 'cir', 'CirNo
         <tr><td>진단</td><td><code>R0</code> kappa 열</td><td>−120 dBm 0.38 / −40 dBm: 32심볼 0.98, 64심볼 0.91, 128심볼 0.66, 256심볼 0.38</td></tr>
       </tbody>
     </table></div>
+    <dl class="expect"><dt>결과</dt><dd>2026-11-13: 패킷 꼬리 비율 23개 조건 평균 0.97 / 0.92(1e-2 / 1e-3), 수락 모두 0, |ρ| ≤ 0.044. 5,000개에서 1.3을 넘은 64/−40(1.48)은 30,000개에서 1.08 / 1.06 / 0.72. Λ̂ 탭 꼬리 0.8~1.1(전제 성립), Λ̂ 오검출 5.0e-4(64/−120은 30,000개에서 8.0e-4), 잡음 탭 범위 0.265 / 0.268. Z 판정기 −76~−88 dBm 2.0~4.9%, κ −40 dBm 0.975 / 0.905 / 0.662 / 0.382</dd><dt>H0 결론</dt><dd>B-0·B-H0-4·B-H0이 모두 기준 안이고 수락 0 → 고정 칩 패킷 판정(Λ̂ 소프트, 10⁻⁶)은 오수락 면에서 사용 가능(<code>DECISIONS.md</code> "결정 1: LLS 검증"). 감도(B-H1)가 남음. 5,000개 조건의 꼬리 비율은 실제 흔들림이 Poisson 오차의 1.3~1.5배라, 1.3을 살짝 넘으면 30,000개로 늘려 판단</dd></dl>
     <div class="rec"><label for="st-B-H0">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-H0"></select><span class="meta" id="mt-B-H0"></span></div><textarea id="nt-B-H0" placeholder="예: 패킷 꼬리 0.91~1.12, 수락 0 / Λ̂ 탭 꼬리 0.86~1.10 / Z 판정기 −82 dBm 4.9e-2"></textarea></div></div>
   </article>
 
