@@ -206,7 +206,7 @@ details[open] > summary{margin-bottom:8px}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-16 갱신 (B-MD·B-H0-3 결과)</span>
+  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-16 갱신 (B-H1-3 결과)</span>
   <h1>RIF 검증 체크리스트</h1>
   <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾸고, 합성 시험이 RIF 길이 32·64·128·256을 지원하게 된 지금의 master로 직접 돌려 볼 시험입니다. 바로 아래 "할 일 순서"를 위에서부터 따라가세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남고, 순서표의 상태와 "다음" 표시도 따라 바뀝니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
@@ -564,7 +564,7 @@ SignalPower = 세기 [dBm]</code></pre></div>
       <tbody>
         <tr><td class="num">1</td><td><code>h1_strong</code></td><td>H1 · 32</td><td>−60, −75, −90</td><td>AWGN. j1: 0.25 / 0.25 ppm. j2: 예상되는 최대 잔여 오프셋(결정 5 임시값이면 <code>FreqOffset=0.5 ClkOffset=0.5</code>)</td><td>job마다 400 (50)</td><td>B-0, B-1R</td></tr>
         <tr><td class="num">1′</td><td><code>h1_strong256</code> (권장)</td><td>H1 · 256</td><td>−60</td><td>AWGN, 0.25 / 0.25 ppm</td><td>400 (50)</td><td>B-0 (길이별 이동)</td></tr>
-        <tr><td class="num">2</td><td><code>h0_mp</code></td><td>H0 · 32</td><td>−82, −40</td><td>LLS 실내 멀티패스 1~2종(패킷 안에서 같은 채널, B-CH), 0.25 / 0.25 ppm</td><td>5,000 (625) 먼저, 이상이 없으면 30,000 (3,750)</td><td>B-H0-4, B-MD</td></tr>
+        <tr><td class="num">2</td><td><code>h0_mp</code></td><td>H0 · 32</td><td>−82, −40</td><td><code>ChanType=RESIDENTIAL LoSPath=1</code>(802.15.4a 주거 LOS, 패킷 안에서 같은 채널, B-CH), 0.25 / 0.25 ppm</td><td>5,000 (625) 먼저, 이상이 없으면 30,000 (3,750)</td><td>B-H0-4, B-MD</td></tr>
         <tr><td class="num">2′</td><td><code>h1_mp</code></td><td>H1 · 32</td><td>−90 (B-CH)<br>−120 ~ −98, 2 dB (B-H1-3)</td><td>2와 같은 채널 종류</td><td>−90: 80 (10)<br>나머지 1,000 (125)</td><td>B-CH, B-R</td></tr>
         <tr><td class="num">3</td><td><code>h0_awgn</code></td><td>H0 · 32, 64, 128, 256</td><td>32: −120, −100, −95, −90, −88, −86, −84, −82, −80, −78, −76, −72, −60, −40<br>64·128·256: −120, −82, −40</td><td>AWGN, 0.25 / 0.25 ppm</td><td>5,000 (625)</td><td>B-0 (H0 쪽), B-H0, B-S, B-1R</td></tr>
         <tr><td class="num">4</td><td><code>h1_awgn</code></td><td>H1 · 32, 256 (필수)<br>64, 128 (권장)</td><td>32: −122 ~ −100<br>64: −125 ~ −103<br>128·256: −127 ~ −105<br>모두 1 dB 간격</td><td>AWGN, 0.25 / 0.25 ppm</td><td>세기당 4,000 (500)</td><td>B-H1, B-F, B-S, B-1R, B-R</td></tr>
@@ -613,7 +613,7 @@ C = corrcoef(P);  same = bsxfun(@eq, fr', fr);  off = ~eye(numel(fr));
 
   <article class="item" id="B-H0-4" data-id="B-H0-4" data-stage="B">
     <div class="item-head"><span class="iid">B-H0-4</span><h3>같은 채널 멀티패스의 소프트 합 꼬리 (첫 검증 항목)</h3><span class="tags"><span class="tag req">필수</span><span class="tag dec">결정 1</span></span></div>
-    <p class="data"><b>덤프</b> <code>h0_mp</code>: H0(틀린 키) 32심볼, −82 / −40 dBm, LLS 실내 멀티패스. 먼저 5,000개(625프레임)로 P = 1e-2, 1e-3을 보고, 이상이 없으면 job을 더해 30,000개(3,750프레임 = 3,750패킷)로 늘려 1e-4까지</p>
+    <p class="data"><b>덤프</b> <code>h0_mp</code>: H0(틀린 키) 32심볼, −82 / −40 dBm, LLS 멀티패스(<code>ChanType=RESIDENTIAL LoSPath=1</code>). 먼저 5,000개(625프레임)로 P = 1e-2, 1e-3을 보고, 이상이 없으면 job을 더해 30,000개(3,750프레임 = 3,750패킷)로 늘려 1e-4까지</p>
     <p class="why">모델에서 채널을 공유하면 깊어질수록 비율이 조금 올라갔고(Λ 1.01~1.23, Λ̂ 0.87~1.11), Λ̂ 소프트 결합이 9,990패킷 중 1건을 받아들였습니다. 한 건이라 결론을 못 냈기 때문에 이 시험이 판정 기준 유지 여부를 정합니다.</p>
     <div class="cmd-box"><pre class="cmd"><code>R0m = h0_pfa_analyze('D:/rif/h0_mp', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', ...
                      'Drift', A.suggest.Drift, 'Save', 'D:/rif/report/B_h0_mp_pkt');
@@ -788,7 +788,7 @@ end</code></pre></div>
         <tr><td class="num">B-H0-3</td><td><code>h0_cfo0</code>: H0 32·256심볼, −82 / −40 dBm, <code>FreqOffset=0 ClkOffset=0</code>, 625프레임</td><td>아래 B-H0-3 코드 (<code>R0z</code>, <code>R0zc</code>, <code>R0zp</code>와 세 표)</td><td>256심볼도 κ ≈ 1, Z 판정기 Pfa ≈ 2.7e-3. 자기잡음이 가장 납작한 조건이라 Λ̂ 탭·패킷 꼬리 비율 0.7~1.3도 확인(높은 쪽이 실패, 낮은 쪽은 보수적). <b>결과 2026-11-16: 통과</b>, 아래 참고</td></tr>
         <tr><td class="num">B-H0-5</td><td><code>h0_txoff</code>: H0 32심볼, Tx off (안 되면 −150 dBm), 625프레임</td><td><code>h0_pfa_analyze('D:/rif/h0_txoff', 'Suggest', false)</code>, 같은 명령에 <code>'Moments', 'cir'</code></td><td>열잡음 기준선 (−120 dBm 결과와 비교)</td></tr>
         <tr><td class="num">B-H1-2</td><td><code>h1_awgn</code>에 추가: H1 64심볼(RIFStsLen=1) −125 ~ −103, 128심볼(RIFStsLen=2) −127 ~ −105 dBm, 1 dB, 세기당 500프레임</td><td>B-H1의 명령 그대로 (길이별로 나옴)</td><td>소프트 Λ̂ L90 약 −119.5 / −121.9 dBm, L99 −118.6 / −120.9 dBm. <b>B-H1(2026-11-13)에서 함께 끝남: −119.69 / −122.08 dBm</b></td></tr>
-        <tr><td class="num">B-H1-3</td><td><code>h1_mp</code>: H1 32심볼, B-H0-4와 같은 채널, −120 ~ −98 dBm 2 dB, 세기당 125프레임</td><td><code>R1m = h1_pd_analyze('D:/rif/h1_mp', 'Moments', 'cir', 'PeakTap', 125);</code> <code>[R1m.cond.PosAcc]</code> (32심볼 피크 124~126이라 <code>'Tol'</code>은 기본 2)</td><td>위치 정확도 τrms 10 ns 약 97%, 20 ns 약 61% (argmax가 첫 경로가 아닌 경우)</td></tr>
+        <tr><td class="num">B-H1-3</td><td><code>h1_mp</code>: H1 32심볼, B-H0-4와 같은 채널(주거 LOS), −120 ~ −98 dBm 2 dB, 세기당 125프레임</td><td>아래 B-H1-3 코드 (<code>R1m</code>, <code>R1mp</code>, 원인 확인 (a)·(b))</td><td>위치 정확도: 이 채널은 첫 경로가 페이딩하는 광선이라, 채널만 보면(1 ns) 57.5%. 98% 미만이어도 실패 아님. (모델의 τrms 10 ns 97%, 20 ns 61%는 고정 LOS 탭 채널이라 비교 대상이 아님) <b>결과 2026-11-16: 완료</b>, 아래 참고</td></tr>
       </tbody>
     </table></div>
     <div class="cmd-box"><pre class="cmd"><code>% B-H0-3 (CFO 0): 메모에는 아래 세 표 (조건 네 개씩)
@@ -811,7 +811,39 @@ for c = 1:numel(P)
     fprintf('%4d %4d | %.3f %.3f %.3f | %d | %+.4f | %.3f | %d\n', P(c).len, -P(c).pow, P(c).tailRatio, ...
             P(c).k, P(c).rhoPair, P(c).pairRatio, P(c).nPkt);
 end</code></pre></div>
-    <dl class="expect"><dt>B-H0-3 결과</dt><dd>2026-11-16 → <b>통과</b>. κ −40 dBm 1.000 / 1.000(32 / 256심볼, AWGN 0.975 / 0.382), −82 dBm 0.847 / 0.848. Λ̂ 탭 꼬리 t = 10 / 14 / 18: −82 dBm 1.06 / 1.06 / 1.05, 0.97 / 1.05 / 1.02(Π̂ 보정이 맞음), −40 dBm 0.43~0.77, 0.20~0.42(비원형성 상한 때문에 보수적). Λ̂ 오검출 0 / 5 / 0 / 4건. 패킷 꼬리 1e-2 / 1e-3: −82 dBm 1.06 / 0.94, 0.91 / 0.76, −40 dBm 0.21~0.26, 수락 0. Z Pfa −40 dBm 0.20 / 0.32%, −82 dBm 5.0 / 5.9%(256심볼 AWGN 0.94% → 길이에 따른 Z 감소는 잔여 CFO 덕분)</dd><dt>감시</dt><dd>쌍 상관 +0.030 / +0.014 / <b>+0.077</b> / +0.036(32/−40, 32/−82, 256/−40, 256/−82)으로 모두 양수이고 256/−40 dBm은 기준 0.06을 넘음. CFO 0이면 패킷마다 정해지는 반송파 위상(또는 AGC 이득)이 패킷 안에 공통으로 남는 것으로 추정. 그 조건의 패킷 꼬리는 0.21로 상관까지 포함해 보수적이라 영향 없음. 확정하려면 꼬리가 1 근처인 256/−82 dBm(+0.036)을 30,000개로 늘림(선택)</dd><dt>남은 것</dt><dd>B-H0-5(<code>h0_txoff</code>), B-H1-3(<code>h1_mp</code> 스윕). B-H1-2는 B-H1에 포함</dd></dl>
+    <dl class="expect"><dt>B-H0-3 결과</dt><dd>2026-11-16 → <b>통과</b>. κ −40 dBm 1.000 / 1.000(32 / 256심볼, AWGN 0.975 / 0.382), −82 dBm 0.847 / 0.848. Λ̂ 탭 꼬리 t = 10 / 14 / 18: −82 dBm 1.06 / 1.06 / 1.05, 0.97 / 1.05 / 1.02(Π̂ 보정이 맞음), −40 dBm 0.43~0.77, 0.20~0.42(비원형성 상한 때문에 보수적). Λ̂ 오검출 0 / 5 / 0 / 4건. 패킷 꼬리 1e-2 / 1e-3: −82 dBm 1.06 / 0.94, 0.91 / 0.76, −40 dBm 0.21~0.26, 수락 0. Z Pfa −40 dBm 0.20 / 0.32%, −82 dBm 5.0 / 5.9%(256심볼 AWGN 0.94% → 길이에 따른 Z 감소는 잔여 CFO 덕분)</dd><dt>감시</dt><dd>쌍 상관 +0.030 / +0.014 / <b>+0.077</b> / +0.036(32/−40, 32/−82, 256/−40, 256/−82)으로 모두 양수이고 256/−40 dBm은 기준 0.06을 넘음. CFO 0이면 패킷마다 정해지는 반송파 위상(또는 AGC 이득)이 패킷 안에 공통으로 남는 것으로 추정. 그 조건의 패킷 꼬리는 0.21로 상관까지 포함해 보수적이라 영향 없음. 확정하려면 꼬리가 1 근처인 256/−82 dBm(+0.036)을 30,000개로 늘림(선택)</dd><dt>남은 것</dt><dd>B-H0-5(<code>h0_txoff</code>). B-H1-2는 B-H1에 포함, B-H1-3은 아래</dd></dl>
+    <div class="cmd-box"><pre class="cmd"><code>% B-H1-3 (멀티패스 H1, 주거 LOS): 메모에는 (1) 세 줄, (2) 세기별 표, (3) 한 줄, (a)·(b) 두 줄
+R1m  = h1_pd_analyze('D:/rif/h1_mp', 'Moments', 'cir', 'PeakTap', 125, 'Plot', false);    % 프래그먼트: 1열 Z, 2열 Λ̂
+R1mp = h1_pd_analyze('D:/rif/h1_mp', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', 0, ...
+                     'PeakTap', 125, 'Plot', false);                                      % 패킷 Λ̂ 소프트
+fprintf('(1) 감도 [dBm]: L90 / L99 / L90loc (위치까지 맞은 L90)\n');
+fprintf('   Z 프래그먼트    %8.2f %8.2f %8.2f\n', R1m.L90(1, 1), R1m.L99(1, 1), R1m.L90loc(1, 1));
+fprintf('   Λ̂ 프래그먼트   %8.2f %8.2f %8.2f\n', R1m.L90(1, 2), R1m.L99(1, 2), R1m.L90loc(1, 2));
+fprintf('   Λ̂ 패킷 소프트  %8.2f %8.2f %8.2f\n', R1mp.pkt.L90(1), R1mp.pkt.L99(1), R1mp.pkt.L90loc(1));
+C = R1m.cond;  PC = R1mp.pkt.cond;
+fprintf('(2) 세기 | 프래그먼트 수 | Pd Z  Λ̂ | 위치 정확도 Z  Λ̂ | 패킷 수 | 패킷 Pd | 패킷 위치 정확도\n');
+for c = 1:numel(C)
+    j = find([PC.dBm] == C(c).dBm, 1);
+    fprintf('%5d | %5d | %.3f %.3f | %.3f %.3f | %4d | %.3f | %.3f\n', C(c).dBm, C(c).n, C(c).Pd, ...
+            C(c).PosAcc, PC(j).n, PC(j).Pd, PC(j).PosAcc);
+end
+c = find([C.dBm] == max([C.dBm]), 1);  e = C(c).errL;
+fprintf('(3) %d dBm Λ̂ 검출의 피크 위치 오차 |k - 125|: 0~2 %d, 3~5 %d, 6~10 %d, 11~20 %d, 21 이상 %d (검출 %d)\n', ...
+        C(c).dBm, sum(e &lt;= 2), sum(e &gt;= 3 &amp; e &lt;= 5), sum(e &gt;= 6 &amp; e &lt;= 10), sum(e &gt;= 11 &amp; e &lt;= 20), sum(e &gt;= 21), numel(e));
+% 원인 확인 (가장 센 세기): (a) 피크가 첫 경로보다 앞서는지(타이밍), (b) 첫 경로 탭의 Λ̂ / 피크 Λ̂
+root = 'D:/rif/h1_mp';  d = dir(fullfile(root, 'c32_m98_j*'));  dk = [];  rr = [];
+for f = 1:numel(d)
+    r = rif_cir_analyze(fullfile(root, d(f).name, 'bin'), 'Plot', 'none', 'Quiet', true, 'Chip', 'fixed');
+    v = logical(r.validL);
+    dk = [dk, r.kpk(v) - 125];                                                   %#ok&lt;AGROW&gt; 피크 탭 - 125 (부호 있음)
+    L = double(r.Lam_W(:, v));  rr = [rr, 10 * log10(L(7, :) ./ max(L, [], 1))]; %#ok&lt;AGROW&gt; 탭 125(창 119~175의 7번째) / 피크
+end
+b = [sum(dk &lt;= -6), sum(dk &gt;= -5 &amp; dk &lt;= -3), sum(abs(dk) &lt;= 2), sum(dk &gt;= 3 &amp; dk &lt;= 5), ...
+     sum(dk &gt;= 6 &amp; dk &lt;= 10), sum(dk &gt;= 11 &amp; dk &lt;= 20), sum(dk &gt;= 21)];
+fprintf('(a) 피크 탭 - 125: -6 이하 %d, -5~-3 %d, -2~+2 %d, +3~+5 %d, +6~+10 %d, +11~+20 %d, +21 이상 %d (검출 %d)\n', b, numel(dk));
+s = sort(rr);  q = s(max(1, round([0.1 0.5 0.9] * numel(s))));
+fprintf('(b) 탭 125의 Λ̂ / 피크 Λ̂ [dB]: 10%% %.2f, 중앙값 %.2f, 90%% %.2f, -10 dB 이상 비율 %.3f\n', q, mean(rr &gt;= -10));</code></pre></div>
+    <dl class="expect"><dt>B-H1-3 결과</dt><dd>2026-11-16, 주거 LOS(<code>ChanType=RESIDENTIAL LoSPath=1</code>, τrms 중앙값 15.2 ns): L90 / L99 Z 프래그먼트 −105.15 / −101.33, Λ̂ 프래그먼트 −103.85 / −100.13, <b>Λ̂ 패킷 소프트 −109.07 / −104.50 dBm</b>(AWGN보다 L90 6.5~7.7 dB 나쁨, L99 − L90 3.7~4.6 dB). Λ̂의 Z 대비 손해 1.30 dB, 패킷 이득 5.2 dB(AWGN 6.4, 같은 채널이라 결합이 채널은 평균하지 못함). L90loc 모두 NaN</dd><dt>위치</dt><dd>첫 경로(125 ± 2) 0.42~0.46, 세기와 무관(채널만 1 ns 해상도 57.5%). −98 dBm 피크 − 125: 앞선 경우 0, ±2 42%, +3~+5 13%, +6~+10 16%, +11~+20 19.5%, +21 이상 10% → 탭 125는 늘 첫 경로(타이밍 문제 아님). 탭 125의 Λ̂ / 피크 중앙값 −0.98 dB(10% −4.98, 채널만 −0.14 / −7.08): 약 2 ns 펄스로 대역 제한된 CIR에서 첫 탭이 한쪽 광선만 모아 약해짐</dd><dt>의미</dt><dd>판정(신호 존재)은 동작하지만 피크는 ToA가 아님. 첫 경로 탐색: 강한 신호에서 첫 경로 탭이 피크 −10 dB 안 97.3%, 앞쪽 탐색 창 20~30탭 이상, 약한 신호용 절대 하한 필요(<code>TEST_PLAN.md</code> 9장)</dd></dl>
     <div class="rec"><label for="st-B-R">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-R"></select><span class="meta" id="mt-B-R"></span></div><textarea id="nt-B-R" placeholder="돌린 ID와 핵심 값"></textarea></div></div>
   </article>
 </section>
