@@ -206,7 +206,7 @@ details[open] > summary{margin-bottom:8px}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-16 갱신 (B-1R·B-F·B-S 결과)</span>
+  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-16 갱신 (B-MD·B-H0-3 결과)</span>
   <h1>RIF 검증 체크리스트</h1>
   <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾸고, 합성 시험이 RIF 길이 32·64·128·256을 지원하게 된 지금의 master로 직접 돌려 볼 시험입니다. 바로 아래 "할 일 순서"를 위에서부터 따라가세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남고, 순서표의 상태와 "다음" 표시도 따라 바뀝니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
@@ -620,7 +620,7 @@ C = corrcoef(P);  same = bsxfun(@eq, fr', fr);  off = ~eye(numel(fr));
 [[R0m.PK.pow]' vertcat(R0m.PK.tailRatio)]   % 세기, 꼬리 비율 (P = 1e-2, 1e-3, 1e-4; 표본이 모자라면 NaN)
 [R0m.PK.k]                                   % 패킷 수락 수
 [R0m.PK.rhoPair]                             % 프래그먼트 쌍 상관</code></pre></div>
-    <dl class="expect"><dt>기준</dt><dd>모든 지점에서 꼬리 비율 0.7~1.3이고 깊어질수록 커지지 않을 것. 수락 0. |ρ| ≤ 3/√n</dd><dt>넘으면</dt><dd>결정 1(패킷 10⁻⁶ 기준)을 다시 봅니다. 표본을 늘리거나 문턱 여유를 키우는 쪽을 먼저 검토합니다.</dd><dt>결과</dt><dd>2026-11-13, 30,000개(−80 dBm으로 실행): 꼬리 비율 −40 dBm 1.06 / 0.95 / 1.06, −80 dBm 1.00 / 1.04 / 1.15, 수락 0, 쌍 상관 ≤ 0.015 → <b>결정 1 유지</b>. 5,000개 때의 −40 dBm 1.20 / 1.33은 흔들림이었음</dd></dl>
+    <dl class="expect"><dt>기준</dt><dd>모든 지점에서 꼬리 비율 0.7~1.3이고 깊어질수록 커지지 않을 것. 수락 0. |ρ| ≤ 3/√n</dd><dt>넘으면</dt><dd>결정 1(패킷 10⁻⁶ 기준)을 다시 봅니다. 표본을 늘리거나 문턱 여유를 키우는 쪽을 먼저 검토합니다.</dd><dt>결과</dt><dd>2026-11-13, 30,000개: 꼬리 비율 −40 dBm 1.06 / 0.95 / 1.06, −82 dBm 1.00 / 1.04 / 1.15(2026-11-16 정정: 처음에 −80 dBm으로 적은 것은 메모 오기), 수락 0, 쌍 상관 ≤ 0.015 → <b>결정 1 유지</b>. 5,000개 때의 −40 dBm 1.20 / 1.33은 흔들림이었음</dd></dl>
     <div class="rec"><label for="st-B-H0-4">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-H0-4"></select><span class="meta" id="mt-B-H0-4"></span></div><textarea id="nt-B-H0-4" placeholder="예: −82 dBm 1.02 / 1.08 / 1.15, −40 dBm 0.97 / 1.01 / NaN, 수락 0, n = 30,000"></textarea></div></div>
   </article>
 
@@ -689,12 +689,25 @@ P1 = rif_packet(r, 'Combine', 'soft', 'Floor', 1);
 
   <article class="item" id="B-MD" data-id="B-MD" data-stage="B">
     <div class="item-head"><span class="iid">B-MD</span><h3>Z 판정기의 패킷 평가</h3><span class="tags"><span class="tag">권장</span><span class="tag">진단</span></span></div>
-    <p class="why">한 패킷의 8개가 같은 채널을 겪으므로, 실제로 8개 모두 통과한 비율이 독립 가정의 p⁸과 다를 수 있습니다. "Z 판정기는 패킷 보장이 없다"는 근거로 기록합니다.</p>
-    <div class="cmd-box"><pre class="cmd"><code>r = rif_cir_analyze('D:/rif/h0_mp/c32_m40_j1/bin', 'Plot', 'none', 'Quiet', true);
-[~, ~, g] = unique(r.frame);                       % 프레임 = 패킷
-allPass = accumarray(g(:), double(r.valid(:)), [], @min);
-[mean(r.valid), mean(r.valid)^8, mean(allPass)]    % p, p^8 (독립 가정), 실제 8개 모두 통과 비율</code></pre></div>
-    <dl class="expect"><dt>참고</dt><dd>AWGN은 약 1e-10이라 0건. 멀티패스는 채널에 따라 다름 (모델: 평균 8.5e-9, 최악 채널 8.8e-7)</dd></dl>
+    <p class="why">한 패킷의 8개가 같은 채널을 겪으므로, 채널마다 p가 다르면 8개 모두 통과할 확률은 독립 가정의 p⁸이 아니라 E[p(채널)⁸]입니다. 8개 모두 통과는 3,750패킷에서 셀 수 없으므로, 패킷마다 통과한 개수의 분포를 이항분포(독립)와 비교해 몰림을 봅니다. "Z 판정기는 패킷 보장이 없다"는 근거로 기록합니다.</p>
+    <div class="cmd-box"><pre class="cmd"><code>% h0_mp의 모든 job 폴더 (-40, -82 dBm), 메모에는 조건마다 세 줄
+root = 'D:/rif/h0_mp';
+for P = [40 82]
+    d = dir(fullfile(root, sprintf('c32_m%d_j*', P)));  nv = [];
+    if isempty(d), fprintf('-%d dBm  폴더 없음\n', P); continue; end
+    for f = 1:numel(d)
+        r = rif_cir_analyze(fullfile(root, d(f).name, 'bin'), 'Plot', 'none', 'Quiet', true);
+        [~, ~, g] = unique(r.frame(:));
+        nf = accumarray(g, 1);  k = accumarray(g, double(r.valid(:)));
+        nv = [nv; k(nf == 8)];                                    %#ok&lt;AGROW&gt; 패킷마다 통과한 프래그먼트 수
+    end
+    n = numel(nv);  p = mean(nv) / 8;  obs = histc(nv, 0:8);  obs = obs(:).';
+    ex = n * arrayfun(@(j) nchoosek(8, j) * p^j * (1 - p)^(8 - j), 0:8);     % 독립(이항) 기대
+    fprintf('-%d dBm  패킷 %d  p %.4g  p^8 %.3g  8개 모두 통과 %d  분산비 %.2f\n', ...
+            P, n, p, p^8, obs(9), var(nv) / (8 * p * (1 - p)));
+    fprintf('   통과 개수 0~8  실제 %s\n   독립 기대      %s\n', mat2str(obs), mat2str(round(ex, 1)));
+end</code></pre></div>
+    <dl class="expect"><dt>참고</dt><dd>AWGN은 약 1e-10이라 0건. 멀티패스는 채널에 따라 다름 (모델: 평균 8.5e-9, 최악 채널 8.8e-7). E[pᵏ] = 평균 C(X, k) / C(8, k)로 2~4차를 구해 몰림을 봄</dd><dt>결과</dt><dd>2026-11-16, 각 3,750패킷: p −40 dBm 3.15%(AWGN 0.14%), −82 dBm 1.87%. 8개 모두 통과 0건. 3개 이상 통과 −40 dBm 10건(독립 5.8, P = 0.07), <b>−82 dBm 7건(독립 1.3, P ≈ 4e-4)</b>. E[p²]/p² 1.25 / 1.80, E[p³]/p³ 2.44 / 5.1. 베타분포로 8차까지 외삽한 E[p⁸] 약 1e-10~1e-9로 독립 가정 p⁸의 80~1만 배 → 같은 채널 몰림 확인. 이 채널에서는 10⁻⁶보다 아래지만 드물게 나쁜 채널에 좌우되어 공식 보장이 없음. 같은 덤프의 Λ̂ 소프트(B-H0-4)는 꼬리 약 1, 쌍 상관 약 0</dd></dl>
     <div class="rec"><label for="st-B-MD">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-MD"></select><span class="meta" id="mt-B-MD"></span></div><textarea id="nt-B-MD" placeholder="예: p 0.048, p^8 2.8e-11, 실제 0 / 3,750"></textarea></div></div>
   </article>
 
@@ -772,12 +785,33 @@ end</code></pre></div>
     <div class="tbl-wrap"><table>
       <thead><tr><th>ID</th><th>덤프 (B-P 표)</th><th>명령</th><th>기대 (모델)</th></tr></thead>
       <tbody>
-        <tr><td class="num">B-H0-3</td><td><code>h0_cfo0</code>: H0 32·256심볼, −82 / −40 dBm, <code>FreqOffset=0 ClkOffset=0</code>, 625프레임</td><td><code>h0_pfa_analyze('D:/rif/h0_cfo0', 'Suggest', false)</code>, 같은 명령에 <code>'Moments', 'cir'</code>, 그리고 <code>'Chip', 'fixed', 'Profile', 'fira-medium'</code> (이동이 없어 <code>'Drift'</code> 생략)</td><td>256심볼도 κ ≈ 1, Z 판정기 Pfa ≈ 2.7e-3. 자기잡음이 가장 납작한 조건이라 Λ̂ 탭·패킷 꼬리 비율 0.7~1.3도 확인</td></tr>
+        <tr><td class="num">B-H0-3</td><td><code>h0_cfo0</code>: H0 32·256심볼, −82 / −40 dBm, <code>FreqOffset=0 ClkOffset=0</code>, 625프레임</td><td>아래 B-H0-3 코드 (<code>R0z</code>, <code>R0zc</code>, <code>R0zp</code>와 세 표)</td><td>256심볼도 κ ≈ 1, Z 판정기 Pfa ≈ 2.7e-3. 자기잡음이 가장 납작한 조건이라 Λ̂ 탭·패킷 꼬리 비율 0.7~1.3도 확인(높은 쪽이 실패, 낮은 쪽은 보수적). <b>결과 2026-11-16: 통과</b>, 아래 참고</td></tr>
         <tr><td class="num">B-H0-5</td><td><code>h0_txoff</code>: H0 32심볼, Tx off (안 되면 −150 dBm), 625프레임</td><td><code>h0_pfa_analyze('D:/rif/h0_txoff', 'Suggest', false)</code>, 같은 명령에 <code>'Moments', 'cir'</code></td><td>열잡음 기준선 (−120 dBm 결과와 비교)</td></tr>
-        <tr><td class="num">B-H1-2</td><td><code>h1_awgn</code>에 추가: H1 64심볼(RIFStsLen=1) −125 ~ −103, 128심볼(RIFStsLen=2) −127 ~ −105 dBm, 1 dB, 세기당 500프레임</td><td>B-H1의 명령 그대로 (길이별로 나옴)</td><td>소프트 Λ̂ L90 약 −119.5 / −121.9 dBm, L99 −118.6 / −120.9 dBm</td></tr>
+        <tr><td class="num">B-H1-2</td><td><code>h1_awgn</code>에 추가: H1 64심볼(RIFStsLen=1) −125 ~ −103, 128심볼(RIFStsLen=2) −127 ~ −105 dBm, 1 dB, 세기당 500프레임</td><td>B-H1의 명령 그대로 (길이별로 나옴)</td><td>소프트 Λ̂ L90 약 −119.5 / −121.9 dBm, L99 −118.6 / −120.9 dBm. <b>B-H1(2026-11-13)에서 함께 끝남: −119.69 / −122.08 dBm</b></td></tr>
         <tr><td class="num">B-H1-3</td><td><code>h1_mp</code>: H1 32심볼, B-H0-4와 같은 채널, −120 ~ −98 dBm 2 dB, 세기당 125프레임</td><td><code>R1m = h1_pd_analyze('D:/rif/h1_mp', 'Moments', 'cir', 'PeakTap', 125);</code> <code>[R1m.cond.PosAcc]</code> (32심볼 피크 124~126이라 <code>'Tol'</code>은 기본 2)</td><td>위치 정확도 τrms 10 ns 약 97%, 20 ns 약 61% (argmax가 첫 경로가 아닌 경우)</td></tr>
       </tbody>
     </table></div>
+    <div class="cmd-box"><pre class="cmd"><code>% B-H0-3 (CFO 0): 메모에는 아래 세 표 (조건 네 개씩)
+R0z  = h0_pfa_analyze('D:/rif/h0_cfo0', 'Suggest', false, 'Plot', false);                     % Z 판정기, κ
+R0zc = h0_pfa_analyze('D:/rif/h0_cfo0', 'Suggest', false, 'Moments', 'cir', 'Plot', false);   % Λ̂ 프래그먼트
+R0zp = h0_pfa_analyze('D:/rif/h0_cfo0', 'Suggest', false, 'Chip', 'fixed', 'Profile', 'fira-medium', 'Plot', false);   % 패킷 ('Drift' 기본 0)
+C = R0z.cond;
+fprintf('(1) Z 판정기: 길이 세기 | Z Pfa | D 중앙값[dB] | κ 중앙값\n');
+for c = 1:numel(C)
+    fprintf('%4d %4d | %.4f | %6.2f | %.3f\n', C(c).len, -C(c).pow, R0z.E.pfa(c), median(C(c).D), median(C(c).kappa));
+end
+C = R0zc.cond;  EL = R0zc.EL;
+fprintf('(2) Λ̂ 프래그먼트: 길이 세기 | 탭 꼬리 t=10/14/18 | 오검출 수 / 프래그먼트 수\n');
+for c = 1:numel(C)
+    fprintf('%4d %4d | %.3f %.3f %.3f | %d / %d\n', C(c).len, -C(c).pow, EL.tailRatio(c, :), EL.k(c), C(c).n);
+end
+P = R0zp.PK;
+fprintf('(3) 패킷: 길이 세기 | 꼬리 1e-2/1e-3/1e-4 | 수락 | 쌍 상관 | 동시 초과 비율 | 패킷 수\n');
+for c = 1:numel(P)
+    fprintf('%4d %4d | %.3f %.3f %.3f | %d | %+.4f | %.3f | %d\n', P(c).len, -P(c).pow, P(c).tailRatio, ...
+            P(c).k, P(c).rhoPair, P(c).pairRatio, P(c).nPkt);
+end</code></pre></div>
+    <dl class="expect"><dt>B-H0-3 결과</dt><dd>2026-11-16 → <b>통과</b>. κ −40 dBm 1.000 / 1.000(32 / 256심볼, AWGN 0.975 / 0.382), −82 dBm 0.847 / 0.848. Λ̂ 탭 꼬리 t = 10 / 14 / 18: −82 dBm 1.06 / 1.06 / 1.05, 0.97 / 1.05 / 1.02(Π̂ 보정이 맞음), −40 dBm 0.43~0.77, 0.20~0.42(비원형성 상한 때문에 보수적). Λ̂ 오검출 0 / 5 / 0 / 4건. 패킷 꼬리 1e-2 / 1e-3: −82 dBm 1.06 / 0.94, 0.91 / 0.76, −40 dBm 0.21~0.26, 수락 0. Z Pfa −40 dBm 0.20 / 0.32%, −82 dBm 5.0 / 5.9%(256심볼 AWGN 0.94% → 길이에 따른 Z 감소는 잔여 CFO 덕분)</dd><dt>감시</dt><dd>쌍 상관 +0.030 / +0.014 / <b>+0.077</b> / +0.036(32/−40, 32/−82, 256/−40, 256/−82)으로 모두 양수이고 256/−40 dBm은 기준 0.06을 넘음. CFO 0이면 패킷마다 정해지는 반송파 위상(또는 AGC 이득)이 패킷 안에 공통으로 남는 것으로 추정. 그 조건의 패킷 꼬리는 0.21로 상관까지 포함해 보수적이라 영향 없음. 확정하려면 꼬리가 1 근처인 256/−82 dBm(+0.036)을 30,000개로 늘림(선택)</dd><dt>남은 것</dt><dd>B-H0-5(<code>h0_txoff</code>), B-H1-3(<code>h1_mp</code> 스윕). B-H1-2는 B-H1에 포함</dd></dl>
     <div class="rec"><label for="st-B-R">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-R"></select><span class="meta" id="mt-B-R"></span></div><textarea id="nt-B-R" placeholder="돌린 ID와 핵심 값"></textarea></div></div>
   </article>
 </section>
