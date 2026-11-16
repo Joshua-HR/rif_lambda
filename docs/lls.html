@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LLS 검증 결과</title>
+<meta name="description" content="현재 LLS(2열 CIR 덤프)로 한 CIR 추정 Λ̂ 패킷 판정의 검증 결과: 시험별 판정, 감도와 오검출 그래프, 멀티패스와 잔여 CFO, 감시 항목과 남은 일">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<script>
+  (function () {  /* 저장된 테마를 첫 렌더링 전에 적용 */
+    try { var t = localStorage.getItem('rif-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  })();
+</script>
+<style>
+/* Layout: RIF 페이지들과 같은 체계(68ch 본문 + 1080px 도판). 답 → 검증 대상 → LLS 설정 → 시험과 판정 → 감도 → 오검출 → 멀티패스 → 잔여 CFO → 일관성 검사 → 감시 항목.
+   Color: 판정기마다 고정색(CIR 추정 Λ̂ 패킷 파랑, 기존 Z 주황, Λ̂ 프래그먼트 청록, 6-of-8 분홍), RIF 개수는 1 주황 · 2 청록 · 4 노랑 · 8 파랑.
+   통과·주의는 상태 전용 초록·노랑. 모양(●■▲◆)을 함께 써서 색만으로 구분하지 않는다. 데이터: build_lls.py가 notes/*.csv에서 넣음. */
+:root{
+  --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
+  --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.11);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4;
+  --crit:#d03b3b; --good:#0c9a3e; --warn:#b7791f;
+  --band:rgba(42,120,214,.09);
+  --wash:#e6eef9; --code-bg:#e9eae6;
+  --f-sans:"RIF Q", "RIF Greek", "IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --f-mono:"RIF Q Mono", "RIF Greek", "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+    --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+    --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+    --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
+    --band:rgba(57,135,229,.13);
+    --wash:#1b2636; --code-bg:#242422;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+  --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+  --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+  --crit:#e05252; --good:#2fb55f; --warn:#d69a3a;
+  --band:rgba(57,135,229,.13);
+  --wash:#1b2636; --code-bg:#242422;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:36px 80px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:clamp(28px,4.6vw,40px);font-weight:700;letter-spacing:-0.02em}
+h2{font-size:clamp(21px,2.8vw,26px);font-weight:700;letter-spacing:-0.01em}
+h3{font-size:16.5px;font-weight:600}
+p,ul,ol,dl{margin:0}
+ul,ol{padding-left:1.3em}
+li + li{margin-top:6px}
+a{color:var(--s1)}
+code,.mono{font-family:var(--f-mono);font-size:.9em}
+code{background:var(--code-bg);padding:1px 5px;border-radius:4px}
+strong{font-weight:600}
+:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.prose{max-width:68ch}
+.eyebrow{font:500 12.5px/1.5 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:18px;line-height:1.7;color:var(--ink-2);max-width:66ch}
+.hero{display:flex;flex-direction:column;gap:20px}
+.toc{display:flex;flex-wrap:wrap;gap:6px 8px;padding:0;list-style:none}
+.toc li{margin:0}
+.toc a{display:inline-flex;gap:8px;align-items:baseline;text-decoration:none;color:var(--ink-2);font-size:14px;padding:5px 10px;border-radius:999px;border:1px solid var(--hair);background:var(--surface)}
+.toc a:hover{color:var(--ink);border-color:var(--axis)}
+.toc .n{font:500 12px var(--f-mono);color:var(--muted)}
+.answer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ans{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ans .k{font:600 12px var(--f-mono);letter-spacing:.05em;color:var(--muted)}
+.ans .v{font:600 26px/1.15 var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+.ans .v small{font-size:15px;font-weight:500;color:var(--ink-2);margin-left:4px}
+.ans .d{font-size:13.5px;color:var(--ink-2);line-height:1.55}
+@media (max-width:860px){.answer{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.answer{grid-template-columns:1fr}}
+section{display:flex;flex-direction:column;gap:18px;scroll-margin-top:16px}
+.sec-head{display:flex;flex-direction:column;gap:6px}
+.sec-head .no{font:600 12.5px var(--f-mono);color:var(--muted);letter-spacing:.05em}
+.plate{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0;position:relative;margin:0}
+.plate h3{font-size:15px}
+.plate figcaption,.plate .cap{font-size:13.5px;color:var(--ink-2);line-height:1.65;max-width:86ch}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+svg.ch{width:100%;height:auto;display:block;overflow:visible;touch-action:pan-y}
+.ch text{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+.ch .lab{fill:var(--ink-2);font-family:var(--f-sans);font-size:12px}
+.ch .grid{stroke:var(--grid);stroke-width:1}
+.ch .axis{stroke:var(--axis);stroke-width:1}
+.ch .ref{stroke:var(--ink-2);stroke-width:1;stroke-dasharray:3 3}
+.ch .cross{stroke:var(--axis);stroke-width:1}
+.keys{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink-2)}
+.key{display:inline-flex;align-items:center;gap:6px}
+.key svg{width:24px;height:12px;flex:none}
+.controls{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:13.5px;color:var(--ink-2)}
+.seg{display:inline-flex;border:1px solid var(--axis);border-radius:8px;overflow:hidden}
+.seg button{font:500 13px var(--f-mono);padding:4px 11px;border:0;background:var(--raised);color:var(--ink-2);cursor:pointer}
+.seg button + button{border-left:1px solid var(--axis)}
+.seg button[aria-pressed="true"]{background:var(--s1);color:#fff}
+.tip{position:absolute;pointer-events:none;background:var(--raised);border:1px solid var(--axis);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.5;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.12);min-width:170px;z-index:5}
+.tip .h{font:600 12px var(--f-mono);color:var(--muted);margin-bottom:2px}
+.tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+.tip .r i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+.tbl-wrap{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;font-size:13.5px;min-width:100%}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-weight:600;color:var(--ink-2);font-size:12.5px;white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-size:13px;white-space:nowrap}
+td.id{font:600 13px var(--f-mono);white-space:nowrap}
+tr.grp td{border-top:2px solid var(--axis)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:1px 9px;border-radius:999px;font:600 12px var(--f-mono);border:1px solid var(--hair);background:var(--raised);white-space:nowrap}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.chip.pass i{background:var(--good)} .chip.watch i{background:var(--warn)} .chip.info i{background:var(--axis)}
+.note{border-left:3px solid var(--axis);padding:2px 0 2px 14px;color:var(--ink-2);font-size:14.5px;max-width:72ch}
+.eq{font-family:var(--f-mono);font-size:13px;background:var(--code-bg);border-radius:8px;padding:10px 14px;overflow-x:auto;white-space:pre;max-width:100%}
+.foot{border-top:1px solid var(--hair);padding-top:20px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:8px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto !important;transition:none !important}}
+/* rif-mark-fonts: hatted symbols (Λ̂ Π̂ Σ̂ κ̂ λ̂ Q̂) drawn with the hat on the letter. Built by make_markfonts.py from IBM Plex Sans / Mono (SIL OFL 1.1). */
+@font-face{font-family:"RIF Greek";src:url(data:font/woff2;base64,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) format("woff2");font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+0370-03FF,U+0302}
+@font-face{font-family:"RIF Q";src:url(data:font/woff2;base64,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) format("woff2");font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+0051,U+0302}
+@font-face{font-family:"RIF Q Mono";src:url(data:font/woff2;base64,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) format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0051,U+0302}
+@font-face{font-family:"RIF Q Mono";src:url(data:font/woff2;base64,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) format("woff2");font-weight:500;font-style:normal;font-display:swap;unicode-range:U+0051,U+0302}
+@font-face{font-family:"RIF Q Mono";src:url(data:font/woff2;base64,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) format("woff2");font-weight:600;font-style:normal;font-display:swap;unicode-range:U+0051,U+0302}
+/* /rif-mark-fonts */
+.theme-btn{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);right:12px;z-index:40;font:500 12.5px var(--f-sans);padding:6px 11px;border-radius:999px;border:1px solid var(--hair);background:var(--raised);color:var(--ink-2);cursor:pointer}
+.theme-btn:hover{color:var(--ink);border-color:var(--axis)}
+</style>
+</head>
+<body>
+<button type="button" class="theme-btn" id="theme-btn" aria-label="테마 바꾸기">테마: 시스템</button>
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">lambda_patch · LLS 2열 덤프 · 단계 B · 2026-11-16</span>
+  <h1>LLS 검증 결과</h1>
+  <p class="lede">현재 LLS(C++ 링크 레벨 시뮬레이터)의 2열 CIR 덤프로 <strong>고정 칩 CIR 추정 Λ̂의 소프트 패킷 판정</strong>(패킷 오수락 10⁻⁶)을 검증한 결과입니다. 오수락과 감도 모두 기준 안이어서 지금 LLS에서 사용할 수 있습니다. 판정과 별개인 첫 경로 탐색(ToA)이 새 과제로 남았습니다.</p>
+  <div class="answer">
+    <div class="ans"><span class="k">패킷 감도 L90 (32심볼, RIF 8개)</span><span class="v">−116.76<small>dBm</small></span><span class="d">모델 −116.7과 0.1 dB 안. 기존 Z 판정기(프래그먼트)보다 4.9 dB, Λ̂ 프래그먼트보다 6.4 dB 좋음</span></div>
+    <div class="ans"><span class="k">패킷 오수락</span><span class="v">0<small>건 / 모든 조건</small></span><span class="d">10⁻⁶은 셀 수 없어 꼬리 비율로 판단. AWGN 23개 조건 평균 0.97 / 0.92 (P = 1e-2 / 1e-3), 기준 0.7~1.3</span></div>
+    <div class="ans"><span class="k">기존 Z 판정기 오검출</span><span class="v">4.9<small>% (−82 dBm)</small></span><span class="d">중간 세기에서 프래그먼트 1e-3을 크게 넘음. Λ̂ 프래그먼트는 세기와 무관하게 약 5e-4</span></div>
+    <div class="ans"><span class="k">RIF 1·2·4·8개 구성</span><span class="v">±1.5<small>dB 안</small></span><span class="d">16개 구성 모두 모델 기준 안. RIF 개수가 늘수록 피크 톱니로 소프트 합 손해가 커짐(1개 대비 8개 약 0.7 dB)</span></div>
+    <div class="ans"><span class="k">주거 LOS 멀티패스</span><span class="v">−109.07<small>dBm</small></span><span class="d">패킷 L90, AWGN보다 7.7 dB 나쁨. 오수락 꼬리 비율은 약 1로 유지</span></div>
+    <div class="ans"><span class="k">피크가 첫 경로인 비율</span><span class="v">42~46<small>%</small></span><span class="d">주거 LOS에서 세기와 무관. 피크를 ToA로 쓸 수 없어 첫 경로 탐색이 필요</span></div>
+  </div>
+  <ol class="toc">
+    <li><a href="#s1"><span class="n">1</span>무엇을 검증했나</a></li>
+    <li><a href="#s2"><span class="n">2</span>LLS 설정</a></li>
+    <li><a href="#s3"><span class="n">3</span>시험과 판정</a></li>
+    <li><a href="#s4"><span class="n">4</span>감도</a></li>
+    <li><a href="#s5"><span class="n">5</span>오검출</a></li>
+    <li><a href="#s6"><span class="n">6</span>멀티패스</a></li>
+    <li><a href="#s7"><span class="n">7</span>잔여 CFO 0</a></li>
+    <li><a href="#s8"><span class="n">8</span>일관성 검사</a></li>
+    <li><a href="#s9"><span class="n">9</span>감시 항목과 남은 일</a></li>
+  </ol>
+</header>
+
+<!-- 1 -->
+<section id="s1">
+  <div class="sec-head"><span class="no">1 · 무엇을 검증했나</span><h2>패킷 오수락 10⁻⁶을 지키는 CIR 추정 Λ̂ 소프트 판정</h2></div>
+  <div class="prose stack">
+    <ul>
+      <li><strong>기준:</strong> 패킷(한 수신기의 거리 측정 1회) 오수락 10⁻⁶(FiRa medium, 측정 1회당으로 보수적으로 해석). RIF 4개 설정이면 프래그먼트 8개가 한 패킷입니다.</li>
+      <li><strong>판정:</strong> 프래그먼트마다 CIR 신호 창(탭 119~175, 57개)의 Λ̂를 구하고, 8개를 같은 탭끼리 더한 소프트 합을 문턱과 비교합니다. 문턱은 목표를 1.5로 나눈 값(탭 57개에 대한 합집합 한계)이라, 꼬리가 χ²보다 1.5배까지 무거워도 10⁻⁶을 지킵니다.</li>
+      <li><strong>근거의 종류:</strong> 10⁻⁶은 직접 셀 수 없습니다(수락 0건 / 3,750패킷의 95% 상한은 8e-4). 그래서 오검출은 <strong>꼬리 비율</strong>(측정한 꼬리 ÷ χ² 꼬리, 1이면 공식대로)과 프래그먼트 독립성으로 판단하고, 수락 0건은 보조 근거로 씁니다.</li>
+      <li><strong>진단용:</strong> 프래그먼트 1e-3 기준과 기존 Z 판정기(MD 규칙)는 비교와 진단에만 씁니다.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+  <div class="sec-head"><span class="no">2 · LLS 설정</span><h2>2열 덤프, 잔여 오프셋 0.25 ppm, AWGN과 주거 LOS</h2></div>
+  <div class="prose stack">
+    <p>모든 세트는 같은 공통 인자를 쓰고, 세트마다 길이, 세기, 오프셋, 채널만 바꿨습니다. 덤프는 지금 하드웨어 그대로의 2열(CIR) 형식입니다.</p>
+  </div>
+  <div class="eq">Mode=HPRF Rate=R6M MMSEn=1 MMSOnlyEn=1 NumRSF=0 NumRIF=4 MMRSSeq=33 MMRSGap=33 NumRx=1
+SemiSyncOnlyMode=1 MMSPwCtrlOn=1  FreqOffset=0.25 ClkOffset=0.25  ChanType=AWGN | RESIDENTIAL (LoSPath=1)</div>
+  <div class="plate">
+    <h3>덤프 세트</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>세트</th><th>키</th><th>RIF 길이</th><th>세기 [dBm]</th><th>채널 · 오프셋</th><th class="num">개수 (패킷)</th><th>쓰인 시험</th></tr></thead>
+      <tbody>
+        <tr><td><code>h0_awgn</code></td><td>H0 (틀린 키)</td><td>32, 64, 128, 256</td><td>32: −120 ~ −40 (14개)<br>그 외: −120, −82, −40</td><td>AWGN, 0.25 ppm</td><td class="num">5,000 (625)<br>64/−40·−120: 30,000</td><td>B-0, B-H0, B-S, B-1R</td></tr>
+        <tr><td><code>h1_awgn</code></td><td>H1 (맞는 키)</td><td>32, 64, 128, 256</td><td>−127 ~ −100, 1 dB</td><td>AWGN, 0.25 ppm</td><td class="num">세기당 4,000 (500)</td><td>B-H1, B-F, B-S, B-1R</td></tr>
+        <tr><td><code>h0_mp</code></td><td>H0</td><td>32</td><td>−82, −40</td><td>주거 LOS, 0.25 ppm</td><td class="num">30,000 (3,750)</td><td>B-H0-4, B-MD</td></tr>
+        <tr><td><code>h1_mp</code></td><td>H1</td><td>32</td><td>−120 ~ −98, 2 dB (B-CH −90)</td><td>주거 LOS, 0.25 ppm</td><td class="num">세기당 1,000 (125)</td><td>B-CH, B-H1-3</td></tr>
+        <tr><td><code>h0_cfo0</code></td><td>H0</td><td>32, 256</td><td>−82, −40</td><td>AWGN, 잔여 CFO 0</td><td class="num">5,000 (625)</td><td>B-H0-3</td></tr>
+        <tr><td><code>h1_strong</code></td><td>H1</td><td>32 (256)</td><td>−60, −75, −90</td><td>AWGN, 0.25 / 0.5 ppm</td><td class="num">job마다 400 (50)</td><td>B-0</td></tr>
+      </tbody>
+    </table></div>
+    <p class="cap">주거 LOS는 <code>ChanType=RESIDENTIAL LoSPath=1</code>(IEEE 802.15.4a 주거 LOS)입니다. LLS 소스 기준으로 첫 도달은 모든 실현에서 지연 0, RMS 지연 확산 중앙값 15.2 ns(10~90% 10.5~24.0 ns)이고, 첫 경로는 늘 있지만 페이딩하는 광선입니다. 채널은 프레임(패킷)마다 새로 뽑히고 패킷 안에서는 같습니다(B-CH: 프레임 안 0.894, 프레임 사이 0.085).</p>
+  </div>
+  <figure class="plate">
+    <h3>LLS의 피크 톱니 (B-0)</h3>
+    <div class="controls"><span>세트</span><div class="seg" id="g5-set"></div></div>
+    <svg class="ch" id="c-g5" viewBox="0 0 960 300" role="img" aria-label="프래그먼트 순서에 따른 피크 위치, 예시 패킷 6개"></svg>
+    <figcaption>LLS는 RIF 시작점마다 <strong>설정한 잔여 오프셋(정답값)</strong>의 누적만큼 시작을 정수 샘플로 옮깁니다. 그래서 피크는 프래그먼트마다 0.25탭(0.5 ppm이면 0.5탭)씩 밀리다 1탭 되돌아가, 1탭 안의 톱니로 머뭅니다. 패킷 전체 이동이 0.5탭 이하라 LLS 시험은 이동 후보 1개(<code>'Drift'</code> 0)로 판정했습니다. silicon이 오프셋을 어떻게 추정하고 쓸지는 아직 정하지 않았고, 그 전까지는 원래 설계(이동 후보 탐색)를 기준으로 둡니다. 256심볼의 122탭 근처 패킷은 패킷 단위 시작 위치가 다른 경우입니다. 피크 탭이 125라 위치 정확도는 125 ± 3으로 봤습니다.</figcaption>
+  </figure>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+  <div class="sec-head"><span class="no">3 · 시험과 판정</span><h2>필수와 권장 항목을 모두 마쳤습니다</h2></div>
+  <div class="plate">
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ID</th><th>목적</th><th>핵심 결과</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr class="grp"><td class="id">B-0</td><td>패킷 전제: 프레임 구성, 피크 이동, 프래그먼트 독립성</td><td>모든 프레임 8개. 이동은 1탭 톱니 → 후보 1개. 쌍 상관 +0.006(기준 ±0.0125), 조건별 동시 초과 비율 1.05</td><td><span class="chip pass"><i></i>통과</span></td></tr>
+        <tr><td class="id">B-CH</td><td>멀티패스 채널이 패킷 안에서 같은가</td><td>모양 상관 프레임 안 0.894, 프레임 사이 0.085</td><td><span class="chip pass"><i></i>통과</span></td></tr>
+        <tr><td class="id">B-H0-4</td><td>같은 채널 멀티패스의 오검출 (첫 검증 항목)</td><td>30,000개, 꼬리 비율 −40 dBm 1.06 / 0.95 / 1.06, −82 dBm 1.00 / 1.04 / 1.15. 수락 0, |ρ| ≤ 0.015</td><td><span class="chip pass"><i></i>통과</span></td></tr>
+        <tr><td class="id">B-H0</td><td>AWGN 오검출, Λ̂ 전제, 기존 Z 재현</td><td>23개 조건 꼬리 비율 평균 0.97 / 0.92, 수락 0, |ρ| ≤ 0.044. Λ̂ 탭 꼬리 0.8~1.1, Λ̂ 프래그먼트 5.0e-4. Z는 −76 ~ −88 dBm에서 2.0~4.9%</td><td><span class="chip pass"><i></i>통과</span></td></tr>
+        <tr><td class="id">B-H1</td><td>AWGN 감도와 위치 정확도</td><td>패킷 L90 −116.76 / −119.69 / −122.08 / −121.61 dBm (32~256심볼, 모델과 0.2 dB 안). 위치 정확도 1.00</td><td><span class="chip pass"><i></i>통과</span></td></tr>
+        <tr class="grp"><td class="id">B-F</td><td>일관성 검사 고정 하한 F = 1의 감도 비용</td><td>0.32 / 0.34 / 0.18 / 0.31 dB (기준 ≤ 0.5)</td><td><span class="chip pass"><i></i>통과</span></td></tr>
+        <tr><td class="id">B-S</td><td>바꿔치기된 프래그먼트 폐기율</td><td>F = 1에서 38% 폐기 (이론 39.3%)</td><td><span class="chip pass"><i></i>통과</span></td></tr>
+        <tr><td class="id">B-MD</td><td>기존 Z 판정기의 패킷 보장 (진단)</td><td>같은 채널 몰림: −82 dBm 3개 이상 통과 7건 대 독립 1.3건</td><td><span class="chip info"><i></i>진단</span></td></tr>
+        <tr><td class="id">B-1R</td><td>RIF 1·2·4개 구성</td><td>모두 모델 ±1.5 dB 안, 위치 정확도 1.000, 수락 0, 쌍 상관 ≤ 0.028</td><td><span class="chip watch"><i></i>통과 · 감시</span></td></tr>
+        <tr><td class="id">B-H0-3</td><td>잔여 CFO 0 (가장 납작한 자기잡음)</td><td>256심볼도 κ = 1. Λ̂ 꼬리 −82 dBm 약 1, −40 dBm 보수적. 수락 0</td><td><span class="chip watch"><i></i>통과 · 감시</span></td></tr>
+        <tr><td class="id">B-H1-3</td><td>멀티패스 감도와 위치 정확도</td><td>패킷 L90 −109.07 dBm, 위치 정확도 0.42~0.46</td><td><span class="chip info"><i></i>완료</span></td></tr>
+        <tr><td class="id">B-H1-2</td><td>64·128심볼 H1</td><td>B-H1에 포함</td><td><span class="chip pass"><i></i>통과</span></td></tr>
+        <tr><td class="id">B-H0-5</td><td>Tx off 열잡음 기준선</td><td>생략: B-H0 −120 dBm이 열잡음 조건(κ 0.37, Λ̂ 꼬리 약 1)</td><td><span class="chip info"><i></i>생략</span></td></tr>
+      </tbody>
+    </table></div>
+    <p class="cap">세부 수치와 명령은 <code>lambda_patch/TEST_PLAN.md</code> 3.3절과 <code>DECISIONS.md</code> "결정 1: LLS 검증", 항목별 원자료는 <a href="checklist.html">RIF 검증 체크리스트</a>에 있습니다.</p>
+  </div>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+  <div class="sec-head"><span class="no">4 · 감도</span><h2>패킷 판정은 모델대로, 프래그먼트보다 6 dB 이상 좋습니다</h2></div>
+  <figure class="plate">
+    <h3>검출 확률 대 입력 세기 (AWGN)</h3>
+    <div class="controls"><span>RIF 길이</span><div class="seg" id="g1-len"></div></div>
+    <div class="keys" id="k-g1"></div>
+    <svg class="ch" id="c-g1" viewBox="0 0 960 340" role="img" aria-label="판정기별 검출 확률 곡선"></svg>
+    <figcaption>세기당 4,000 프래그먼트(500패킷), 띠는 95% 구간입니다. 점선은 Pd 0.9와 0.99(L90, L99), 검은 눈금은 Λ̂ 패킷 소프트의 모델 L90입니다. 패킷 판정 두 가지는 패킷 오수락 10⁻⁶의 문턱이고, 프래그먼트 판정 두 가지는 각자의 프래그먼트 문턱(기존 Z는 MD 규칙, Λ̂는 1e-3)입니다. 곡선 위에 마우스나 손가락을 올리면 그 세기의 값이 나옵니다.</figcaption>
+  </figure>
+  <div class="two">
+    <figure class="plate">
+      <h3>구성별 감도: RIF 길이 × RIF 개수</h3>
+      <div class="controls"><div class="seg" id="g2-lv"></div></div>
+      <div class="keys" id="k-g2"></div>
+      <svg class="ch" id="c-g2" viewBox="0 0 520 340" role="img" aria-label="RIF 길이와 개수별 L90 또는 L99, 측정과 모델"></svg>
+      <figcaption>점은 LLS 측정, 파선은 모델입니다(아래로 갈수록 감도가 좋음). RIF 8개는 B-H1, 1·2·4개는 같은 8개 덤프를 K개씩 묶어 분석했습니다(B-1R). 16개 구성 모두 모델 ±1.5 dB 안입니다.</figcaption>
+    </figure>
+    <figure class="plate">
+      <h3>소프트 합의 공유 탭 손해</h3>
+      <div class="keys" id="k-g6"></div>
+      <svg class="ch" id="c-g6" viewBox="0 0 520 340" role="img" aria-label="RIF 개수에 따른 모델 대비 여유"></svg>
+      <figcaption>모델 − 측정(0보다 크면 LLS가 좋음). RIF 1개는 프래그먼트마다 자기 피크 탭을 써서 손해가 없습니다. 소프트 합은 패킷의 모든 프래그먼트가 탭 하나를 함께 쓰고, 2장의 톱니 때문에 4·8개 묶음은 약 0.75탭에 걸칩니다. 그래서 1개 대비 손해가 L90에서 2개 약 0.1, 4개 약 0.55, 8개 약 0.7 dB입니다. 연한 점은 길이별 값입니다.</figcaption>
+    </figure>
+  </div>
+  <div class="prose stack">
+    <ul>
+      <li><strong>모델 일치:</strong> RIF 8개 패킷 L90은 네 길이 모두 모델과 0.2 dB 안입니다. 기존 Z 판정기(프래그먼트) L90 −111.90 dBm은 기존 문서의 LLS 실측(−111.9 dBm)과 같아, 지금 LLS가 기존 측정 조건을 재현합니다.</li>
+      <li><strong>Λ̂의 비용:</strong> 프래그먼트 단계에서 Λ̂는 기존 Z보다 1.5 dB 나쁩니다(잡음 추정 비용). 대신 오검출이 공식으로 보장되어 소프트 합이 가능하고, 패킷 판정은 Λ̂ 프래그먼트보다 6.3~6.5 dB, 기존 Z보다 4.9 dB 좋습니다.</li>
+      <li><strong>L99:</strong> RIF 8개의 L99는 모델보다 0.3~0.65 dB 나쁩니다. 공유 탭 손해가 Pd 99% 근처에서 더 크게 보이기 때문입니다(오른쪽 그림의 L99 선).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+  <div class="sec-head"><span class="no">5 · 오검출</span><h2>꼬리 비율은 모든 조건에서 기준 안이고, 수락은 0입니다</h2></div>
+  <figure class="plate">
+    <h3>패킷 소프트 합의 꼬리 비율, 조건별</h3>
+    <div class="keys" id="k-g4"></div>
+    <svg class="ch" id="c-g4" viewBox="0 0 960 360" role="img" aria-label="조건별 패킷 꼬리 비율과 기준 띠"></svg>
+    <figcaption>측정한 꼬리 ÷ χ²₁₆ 꼬리입니다(1이면 공식대로, 띠는 기준 0.7~1.3, 낮은 쪽은 보수적). 오차막대는 Poisson 오차의 1.4배입니다. 한 프래그먼트의 잡음 추정이 탭 57개를 함께 움직여 초과 경로가 패킷 단위로 몰리므로, 실제 흔들림이 Poisson의 1.3~1.5배이기 때문입니다. ✱는 30,000개(3,750패킷) 조건입니다. 잔여 CFO 0의 −40 dBm이 0.2 근처로 낮은 것은 비원형성 상한에 걸린 보수적 동작입니다(7장).</figcaption>
+  </figure>
+  <div class="two">
+    <figure class="plate">
+      <h3>프래그먼트 오검출률 대 세기 (32심볼, AWGN)</h3>
+      <div class="keys" id="k-g3"></div>
+      <svg class="ch" id="c-g3" viewBox="0 0 520 360" role="img" aria-label="기존 Z 판정기와 Lambda-hat의 프래그먼트 오검출률"></svg>
+      <figcaption>기존 Z 판정기는 중간 세기(−76 ~ −88 dBm)에서 2~4.9%로 프래그먼트 1e-3을 크게 넘고, 모델 예측(속 빈 점)과 같은 모양입니다. Λ̂(95% 구간)는 세기와 무관하게 약 5e-4입니다. 속 빈 역삼각형은 0건일 때의 상한입니다.</figcaption>
+    </figure>
+    <figure class="plate">
+      <h3>5,000개 대 30,000개</h3>
+      <div class="keys" id="k-g11"></div>
+      <svg class="ch" id="c-g11" viewBox="0 0 520 360" role="img" aria-label="5천개와 3만개에서의 꼬리 비율"></svg>
+      <figcaption>5,000개에서 1.3을 넘거나 가까웠던 조건을 30,000개로 늘리면 모두 기준 안으로 들어왔습니다. 흔들림이었지 무거운 꼬리가 아니었다는 뜻입니다. 같은 이유로 5,000개에서 살짝 넘는 값은 표본을 늘려 판단했습니다.</figcaption>
+    </figure>
+  </div>
+  <div class="plate">
+    <h3>64~256심볼의 프래그먼트 오검출률</h3>
+    <div class="tbl-wrap"><table id="t-frag"></table></div>
+    <p class="cap">조건마다 5,000개(Λ̂의 64/−40, 64/−120은 30,000개). 길이가 길수록 기존 Z의 오검출이 줄어드는 것은 잔여 CFO가 자기잡음을 원형으로 만든 결과입니다(7장).</p>
+  </div>
+  <figure class="plate">
+    <h3>기존 Z 판정기의 패킷 안 몰림 (B-MD, 주거 LOS)</h3>
+    <div class="controls"><span>세기</span><div class="seg" id="g7-p"></div></div>
+    <div class="keys" id="k-g7"></div>
+    <svg class="ch" id="c-g7" viewBox="0 0 960 300" role="img" aria-label="패킷당 Z 통과 개수 분포와 독립 가정"></svg>
+    <figcaption>패킷마다 8개 중 몇 개가 기존 Z를 통과했는지의 분포입니다(3,750패킷, 로그 축). 같은 채널을 겪는 8개의 오검출이 몰려, −82 dBm에서 3개 이상 통과한 패킷이 독립 가정의 5.5배(7건 대 1.3건, P ≈ 4e-4)입니다. 패킷 확률은 p⁸이 아니라 E[p(채널)⁸]이고, 외삽하면 p⁸의 80~1만 배입니다. 이 채널에서는 그래도 10⁻⁶보다 아래지만, 값이 드물게 나쁜 채널에 좌우되어 공식으로 정할 수 없습니다. 같은 덤프에서 Λ̂ 소프트 판정(B-H0-4)은 꼬리 비율 약 1, 쌍 상관 약 0이었습니다.</figcaption>
+  </figure>
+</section>
+
+<!-- 6 -->
+<section id="s6">
+  <div class="sec-head"><span class="no">6 · 멀티패스</span><h2>판정은 동작하지만, 피크는 첫 경로가 아닙니다</h2></div>
+  <div class="two">
+    <figure class="plate">
+      <h3>검출 확률 (32심볼)</h3>
+      <div class="keys" id="k-g8a"></div>
+      <svg class="ch" id="c-g8a" viewBox="0 0 520 340" role="img" aria-label="주거 LOS 멀티패스의 검출 확률"></svg>
+      <figcaption>주거 LOS, 세기당 125패킷. 판정기는 탭 하나의 에너지를 보므로 다른 경로로 퍼진 에너지만큼 잃습니다(L90 6.5~7.7 dB). 한 패킷의 8개가 같은 채널을 겪어 결합이 채널 페이딩은 평균하지 못하므로, 패킷 이득은 AWGN의 6.4 dB에서 5.2 dB로 줄고 L99 − L90이 4.6 dB로 벌어집니다. Λ̂의 기존 Z 대비 손해(1.3 dB)는 AWGN과 같은 수준입니다.</figcaption>
+    </figure>
+    <figure class="plate">
+      <h3>위치 정확도 (피크가 첫 경로 ±2탭)</h3>
+      <div class="keys" id="k-g8b"></div>
+      <svg class="ch" id="c-g8b" viewBox="0 0 520 340" role="img" aria-label="주거 LOS 멀티패스의 위치 정확도"></svg>
+      <figcaption>강한 신호에서도 0.42~0.46이고 세기와 무관합니다(AWGN 1.00). 채널만 보면(1 ns 해상도) 57.5%인데, LLS CIR은 약 2 ns 펄스로 대역 제한되어 뒤쪽 탭이 앞뒤 광선을 모두 모으고 첫 탭은 한쪽만 모아 더 낮습니다. 문턱 근처에서 오르는 것은 첫 광선이 강한 채널만 검출되기 때문입니다.</figcaption>
+    </figure>
+  </div>
+  <div class="two">
+    <figure class="plate">
+      <h3>피크 위치 − 첫 경로 (−98 dBm)</h3>
+      <svg class="ch" id="c-g8c" viewBox="0 0 520 300" role="img" aria-label="피크 위치와 첫 경로의 차이 분포"></svg>
+      <figcaption>Λ̂ 검출 996개. 피크가 첫 경로(탭 125)보다 앞선 경우는 0건이라 수신기 타이밍 문제는 아닙니다. 피크가 첫 경로보다 11탭(약 3.3 m) 이상 늦는 경우가 30%입니다.</figcaption>
+    </figure>
+    <div class="plate">
+      <h3>첫 경로 / 피크 Λ̂</h3>
+      <div class="tbl-wrap"><table id="t-fp"></table></div>
+      <p class="cap">첫 경로 탐색의 출발점입니다. 강한 신호에서 첫 경로 탭의 Λ̂는 97.3%가 피크 −10 dB 안이고, 피크가 첫 경로보다 21탭 이상 늦는 경우가 10%라 앞쪽 탐색 창은 20~30탭 이상이어야 합니다. 약한 신호에서는 피크 기준 상대 문턱만으로는 잡음 탭이 넘으므로, 탐색 창 안의 오검출을 정한 절대 하한을 함께 둬야 합니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section id="s7">
+  <div class="sec-head"><span class="no">7 · 잔여 CFO 0</span><h2>비원형성이 가장 큰 조건에서도 Λ̂ 꼬리는 무거워지지 않았습니다</h2></div>
+  <div class="two">
+    <figure class="plate">
+      <h3>비원형성 κ (−40 dBm)</h3>
+      <div class="keys" id="k-g9"></div>
+      <svg class="ch" id="c-g9a" viewBox="0 0 520 300" role="img" aria-label="RIF 길이에 따른 kappa, 잔여 CFO 0.25ppm과 0"></svg>
+      <figcaption>잔여 CFO가 있으면 위상이 돌아 긴 RIF일수록 자기잡음이 원형에 가까워집니다(κ 0.98 → 0.38). CFO가 0이면 256심볼도 κ = 1로, 틀린 키 잡음이 한 축에 몰립니다. Λ̂의 Π̂ 보정이 가장 시험받는 조건입니다.</figcaption>
+    </figure>
+    <figure class="plate">
+      <h3>기존 Z 판정기 오검출 (−82 dBm)</h3>
+      <svg class="ch" id="c-g9b" viewBox="0 0 520 300" role="img" aria-label="RIF 길이에 따른 기존 Z 판정기 오검출률"></svg>
+      <figcaption>AWGN에서 길이가 길수록 기존 Z의 오검출이 줄던 것은 잔여 CFO 덕분이었습니다. CFO가 0이면 256심볼도 5.88%로 32심볼과 같습니다(같은 조건 Λ̂ 오검출 4건 대 Z 294건). 제어할 수 없는 잔여 CFO에 따라 달라지는 것도 기존 Z에 보장이 없는 이유입니다.</figcaption>
+    </figure>
+  </div>
+  <div class="plate">
+    <h3>B-H0-3 결과 (조건마다 5,000개)</h3>
+    <div class="tbl-wrap"><table id="t-cfo"></table></div>
+    <p class="cap">κ 0.85(−82 dBm)에서 Λ̂ 탭 꼬리가 1 근처라 Π̂ 보정이 맞습니다. κ 1(−40 dBm)에서는 비원형성 상한(<code>RhoMax</code> 0.98) 때문에 1보다 훨씬 가벼워 보수적입니다. 쌍 상관이 네 조건 모두 양수이고 256/−40 dBm은 +0.077로 기준 0.06을 넘었습니다. 그 조건의 패킷 꼬리는 0.21로 상관의 영향까지 포함해 설계보다 약 5배 가벼우므로 10⁻⁶을 깨지 않습니다(감시 항목).</p>
+  </div>
+</section>
+
+<!-- 8 -->
+<section id="s8">
+  <div class="sec-head"><span class="no">8 · 일관성 검사</span><h2>임시 고정 하한 F = 1의 기준선</h2></div>
+  <div class="plate">
+    <div class="tbl-wrap"><table id="t-cons"></table></div>
+    <p class="cap">일관성 검사는 패킷 안에서 튀는 프래그먼트(바꿔치기 등)를 거릅니다. 결정 6의 안 3(정상 폐기 0.1%)을 구현하기 전까지는 고정 하한 F = 1을 씁니다. 바꾼 틀린 키 프래그먼트의 Λ̂가 소프트 합의 피크 탭에서 χ²₂를 따른다는 결정 6의 가정이 LLS에서도 성립했습니다. −110 dBm은 32심볼 L90보다 6.8 dB 강해, 안 3을 구현하면 이 조건에서 약 99%를 잡을 것으로 봅니다.</p>
+  </div>
+</section>
+
+<!-- 9 -->
+<section id="s9">
+  <div class="sec-head"><span class="no">9 · 감시 항목과 남은 일</span><h2>결론은 유지, 확정용 선택 시험 두 개와 첫 경로 탐색</h2></div>
+  <figure class="plate">
+    <h3>감시 항목 1: RIF 4개, −40 dBm의 깊은 꼬리 (B-1R)</h3>
+    <div class="controls"><div class="seg" id="g10-k"></div></div>
+    <div class="keys" id="k-g10"></div>
+    <svg class="ch" id="c-g10" viewBox="0 0 960 320" role="img" aria-label="꼬리 깊이에 따른 경로 또는 패킷 초과 비율"></svg>
+    <figcaption>RIF 4개로 묶으면 −40 dBm 128·256심볼에서 깊어질수록 경로 비율이 오릅니다(t = 32에서 2.41, 1.81). 문턱은 탭 57개에 대한 합집합 한계로 정했으므로, 패킷 오수락에 직접 해당하는 값은 문턱을 넘은 <strong>패킷</strong> 수 ÷ 합집합 한계입니다. 이 값은 네 길이 합 0.80(95% 상한 1.02)으로 여유 1.5 안입니다. 넘은 패킷 하나에 경로가 1.5~2.8개씩 몰려 있어서입니다. 다만 문턱은 경로당 약 1e-8로 네 자릿수 더 깊어서 감시 항목으로 둡니다.</figcaption>
+  </figure>
+  <div class="prose stack">
+    <ul>
+      <li><strong>결론:</strong> 고정 칩 CIR 추정 Λ̂의 소프트 패킷 판정(10⁻⁶)은 지금 LLS에서 오수락과 감도 양쪽으로 사용할 수 있습니다. AWGN, 주거 LOS 멀티패스, 잔여 CFO 0, RIF 1·2·4·8개 구성에서 모두 기준 안이었습니다.</li>
+      <li><strong>감시 항목 1 (B-1R):</strong> 위 그림. 확정하려면 <code>h0_awgn</code>의 128·256심볼 −40 dBm을 30,000개로 늘려 t = 32와 36을 봅니다(선택).</li>
+      <li><strong>감시 항목 2 (B-H0-3):</strong> 잔여 CFO 0에서 패킷 안 쌍 상관이 양수입니다(256/−40 dBm +0.077). 꼬리가 1 근처인 256/−82 dBm(+0.036)을 30,000개로 늘려 확정할 수 있습니다(선택).</li>
+      <li><strong>첫 경로 탐색:</strong> 주거 LOS에서 피크가 첫 경로인 경우가 42~46%라, ToA에는 피크 앞쪽을 거슬러 찾는 첫 경로 탐색이 필요합니다(6장의 수치가 출발점).</li>
+      <li><strong>LLS와 silicon의 차이:</strong> LLS는 정답 오프셋으로 RIF 시작점을 옮겨 피크 이동이 1탭 안에 머뭅니다. silicon이 추정 오프셋으로 옮긴다면 오차가 접히지 않고 쌓이므로, 패킷 안 0.5탭을 지키려면 오차 ≤ 약 0.07 ppm이어야 합니다(결정 5).</li>
+      <li><strong>다음 단계:</strong> 단계 C(C++ 5열 덤프 구현과 bring-up), 단계 D(원시 샘플 Λ 최종 검증).</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>데이터: <code>lambda_patch/results/stage_b/notes/*.csv</code>(체크리스트 기록에서 <code>lambda_patch/model/stageb_notes_to_csv.py</code>로 뽑음, 기록의 알려진 오류는 바로잡음). 보고서용 정지 그림과 작성 지시는 같은 폴더의 <code>figures/</code>와 <code>REPORT_BRIEF.md</code>. 근거 문서: <code>lambda_patch/DECISIONS.md</code>("결정 1: LLS 검증", 결정 5·6), <code>lambda_patch/TEST_PLAN.md</code> 3.3절.</p>
+  <p>관련 페이지: <a href="checklist.html">RIF 검증 체크리스트</a>(시험 명령과 항목별 원자료), <a href="index.html">RIF Λ 판정기</a>(전체 해설), <a href="basis.html">RIF 판정 기준 전환</a>(패킷 10⁻⁶), <a href="consistency.html">RIF 일관성 검사 비교</a>, <a href="lamhat.html">Λ̂ 판정기 원리</a>.</p>
+</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var D = {"g1":{"32":{"dBm":[-100,-101,-102,-103,-104,-105,-106,-107,-108,-109,-110,-111,-112,-113,-114,-115,-116,-117,-118,-119,-120,-121,-122],"Z":[[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[0.99975,0.99861,0.99999,3999,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[0.997,0.99477,0.99845,3988,4000],[0.97775,0.97269,0.98209,3911,4000],[0.89175,0.88171,0.90121,3567,4000],[0.7385,0.72459,0.75206,2954,4000],[0.53275,0.51714,0.54831,2131,4000],[0.33675,0.3221,0.35164,1347,4000],[0.20325,0.19087,0.21606,813,4000],[0.1125,0.10287,0.1227,450,4000],[0.06,0.05284,0.06781,240,4000],[0.0295,0.02448,0.03522,118,4000],[0.01725,0.01345,0.02178,69,4000],[0.008,0.00548,0.01128,32,4000],[0.0055,0.00345,0.00831,22,4000]],"L":[[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[0.99975,0.99861,0.99999,3999,4000],[1.0,0.99908,1.0,4000,4000],[0.989,0.98526,0.992,3956,4000],[0.93775,0.92981,0.94504,3751,4000],[0.8295,0.81748,0.84103,3318,4000],[0.63675,0.62162,0.65168,2547,4000],[0.44675,0.43126,0.46232,1787,4000],[0.26125,0.24769,0.27516,1045,4000],[0.1435,0.13277,0.15475,574,4000],[0.086,0.07749,0.09512,344,4000],[0.048,0.04158,0.05509,192,4000],[0.02375,0.01926,0.02896,95,4000],[0.01375,0.01038,0.01786,55,4000],[0.0075,0.00507,0.01069,30,4000],[0.0025,0.0012,0.00459,10,4000],[0.00375,0.0021,0.00618,15,4000]],"soft8":[[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[0.998,0.98891,0.99995,499,500],[0.996,0.98563,0.99952,498,500],[0.978,0.96098,0.98897,489,500],[0.876,0.84387,0.90359,438,500],[0.644,0.60028,0.68601,322,500],[0.33,0.2889,0.37313,165,500],[0.108,0.08218,0.13856,54,500],[0.034,0.01993,0.05388,17,500],[0.008,0.00218,0.02036,4,500]],"kofn6":[[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[0.998,0.98891,0.99995,499,500],[1.0,0.99265,1.0,500,500],[0.96,0.9389,0.9754,480,500],[0.746,0.70546,0.7836,373,500],[0.354,0.31206,0.39768,177,500],[0.134,0.10538,0.16703,67,500],[0.024,0.01246,0.04155,12,500],[0.0,0.0,0.00735,0,500],[0.0,0.0,0.00735,0,500],[0.0,0.0,0.00735,0,500],[0.0,0.0,0.00735,0,500],[0.0,0.0,0.00735,0,500]]},"64":{"dBm":[-103,-104,-105,-106,-107,-108,-109,-110,-111,-112,-113,-114,-115,-116,-117,-118,-119,-120,-121,-122,-123,-124,-125],"Z":[[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[0.99975,0.99861,0.99999,3999,4000],[0.99975,0.99861,0.99999,3999,4000],[0.99625,0.99382,0.9979,3985,4000],[0.97125,0.96559,0.97621,3885,4000],[0.87775,0.8672,0.88775,3511,4000],[0.71,0.69566,0.72403,2840,4000],[0.515,0.49938,0.5306,2060,4000],[0.33225,0.31766,0.34709,1329,4000],[0.19625,0.18404,0.2089,785,4000],[0.1075,0.09806,0.11751,430,4000],[0.0565,0.04955,0.06411,226,4000],[0.02725,0.02243,0.03278,109,4000],[0.01775,0.01389,0.02234,71,4000],[0.0085,0.00589,0.01186,34,4000],[0.0035,0.00192,0.00587,14,4000]],"L":[[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[0.99975,0.99861,0.99999,3999,4000],[0.99875,0.99708,0.99959,3995,4000],[0.98975,0.98612,0.99264,3959,4000],[0.93625,0.92823,0.94363,3745,4000],[0.806,0.7934,0.81815,3224,4000],[0.6205,0.60525,0.63557,2482,4000],[0.42125,0.40589,0.43673,1685,4000],[0.25175,0.23836,0.2655,1007,4000],[0.15175,0.14076,0.16325,607,4000],[0.07575,0.06774,0.08439,303,4000],[0.0425,0.03646,0.04922,170,4000],[0.0215,0.01723,0.02649,86,4000],[0.01075,0.00779,0.01445,43,4000],[0.00525,0.00325,0.00801,21,4000],[0.004,0.00229,0.00649,16,4000],[0.00225,0.00103,0.00427,9,4000]],"soft8":[[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[0.996,0.98563,0.99952,498,500],[0.992,0.97964,0.99782,496,500],[0.968,0.94855,0.9816,484,500],[0.87,0.83732,0.89822,435,500],[0.608,0.56367,0.65104,304,500],[0.318,0.27736,0.36081,159,500],[0.108,0.08218,0.13856,54,500],[0.034,0.01993,0.05388,17,500],[0.008,0.00218,0.02036,4,500]],"kofn6":[[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[0.998,0.98891,0.99995,499,500],[0.952,0.92942,0.96901,476,500],[0.674,0.63097,0.71495,337,500],[0.33,0.2889,0.37313,165,500],[0.082,0.05949,0.1096,41,500],[0.03,0.01689,0.049,15,500],[0.002,5e-05,0.01109,1,500],[0.0,0.0,0.00735,0,500],[0.0,0.0,0.00735,0,500],[0.0,0.0,0.00735,0,500],[0.0,0.0,0.00735,0,500]]},"128":{"dBm":[-105,-106,-107,-108,-109,-110,-111,-112,-113,-114,-115,-116,-117,-118,-119,-120,-121,-122,-123,-124,-125,-126,-127],"Z":[[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[0.99625,0.99382,0.9979,3985,4000],[0.981,0.97628,0.985,3924,4000],[0.91925,0.91037,0.92751,3677,4000],[0.76625,0.75282,0.77929,3065,4000],[0.56325,0.54771,0.57869,2253,4000],[0.37675,0.3617,0.39198,1507,4000],[0.21475,0.20211,0.22781,859,4000],[0.11875,0.10888,0.12918,475,4000],[0.0655,0.05803,0.07361,262,4000],[0.034,0.0286,0.04009,136,4000],[0.01875,0.01478,0.02345,75,4000],[0.00925,0.00652,0.01273,37,4000],[0.00625,0.00405,0.00921,25,4000]],"L":[[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[0.99925,0.99781,0.99984,3997,4000],[0.993,0.9899,0.99534,3972,4000],[0.957,0.95025,0.96308,3828,4000],[0.8595,0.84834,0.87013,3438,4000],[0.7045,0.69009,0.71861,2818,4000],[0.462,0.44646,0.4776,1848,4000],[0.29925,0.28508,0.31371,1197,4000],[0.17625,0.16456,0.18842,705,4000],[0.0855,0.07702,0.0946,342,4000],[0.047,0.04065,0.05402,188,4000],[0.024,0.01948,0.02923,96,4000],[0.01025,0.00737,0.01388,41,4000],[0.00775,0.00527,0.01098,31,4000],[0.00175,0.0007,0.0036,7,4000],[0.0025,0.0012,0.00459,10,4000]],"soft8":[[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[0.994,0.98257,0.99876,497,500],[0.978,0.96098,0.98897,489,500],[0.918,0.8904,0.94051,459,500],[0.698,0.65567,0.73797,349,500],[0.382,0.33922,0.42618,191,500],[0.154,0.12349,0.18867,77,500],[0.066,0.04586,0.09144,33,500],[0.014,0.00565,0.02863,7,500]],"kofn6":[[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[0.98,0.96353,0.99037,490,500],[0.796,0.75797,0.83048,398,500],[0.424,0.38024,0.46866,212,500],[0.138,0.10898,0.17137,69,500],[0.03,0.01689,0.049,15,500],[0.008,0.00218,0.02036,4,500],[0.0,0.0,0.00735,0,500],[0.002,5e-05,0.01109,1,500],[0.0,0.0,0.00735,0,500],[0.0,0.0,0.00735,0,500]]},"256":{"dBm":[-105,-106,-107,-108,-109,-110,-111,-112,-113,-114,-115,-116,-117,-118,-119,-120,-121,-122,-123,-124,-125,-126,-127],"Z":[[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[0.99975,0.99861,0.99999,3999,4000],[0.99675,0.99445,0.99827,3987,4000],[0.97175,0.96613,0.97666,3887,4000],[0.87775,0.8672,0.88775,3511,4000],[0.716,0.70175,0.72994,2864,4000],[0.507,0.49138,0.52261,2028,4000],[0.32625,0.31173,0.34103,1305,4000],[0.19,0.17795,0.20251,760,4000],[0.1025,0.09327,0.11232,410,4000],[0.05625,0.04931,0.06385,225,4000],[0.03475,0.02929,0.0409,139,4000],[0.01375,0.01038,0.01786,55,4000],[0.0105,0.00758,0.01417,42,4000],[0.00525,0.00325,0.00801,21,4000]],"L":[[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[1.0,0.99908,1.0,4000,4000],[0.99925,0.99781,0.99984,3997,4000],[0.98625,0.98214,0.98962,3945,4000],[0.93425,0.92612,0.94174,3737,4000],[0.813,0.80056,0.82498,3252,4000],[0.62375,0.60853,0.63879,2495,4000],[0.40925,0.39396,0.42467,1637,4000],[0.25,0.23664,0.26372,1000,4000],[0.13475,0.12431,0.14572,539,4000],[0.07875,0.07059,0.08753,315,4000],[0.03675,0.03113,0.04305,147,4000],[0.02175,0.01746,0.02676,87,4000],[0.01275,0.00951,0.01673,51,4000],[0.006,0.00385,0.00891,24,4000],[0.00425,0.00248,0.0068,17,4000],[0.00225,0.00103,0.00427,9,4000]],"soft8":[[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[0.998,0.98891,0.99995,499,500],[1.0,0.99265,1.0,500,500],[0.996,0.98563,0.99952,498,500],[0.976,0.95845,0.98754,488,500],[0.852,0.8178,0.88197,426,500],[0.624,0.57991,0.66661,312,500],[0.356,0.31399,0.39972,178,500],[0.092,0.06814,0.12081,46,500],[0.024,0.01246,0.04155,12,500],[0.012,0.00442,0.02593,6,500]],"kofn6":[[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[1.0,0.99265,1.0,500,500],[0.968,0.94855,0.9816,484,500],[0.688,0.64536,0.7284,344,500],[0.298,0.25821,0.3402,149,500],[0.096,0.07163,0.12526,48,500],[0.016,0.00693,0.03128,8,500],[0.004,0.00049,0.01437,2,500],[0.002,5e-05,0.01109,1,500],[0.0,0.0,0.00735,0,500],[0.0,0.0,0.00735,0,500],[0.0,0.0,0.00735,0,500]]}},"lev":[{"set":"awgn","rule":"soft8","len":32.0,"L90":-116.76,"L99":-115.33,"model_L90":-116.7,"model_L99":-115.7},{"set":"awgn","rule":"kofn6","len":32.0,"L90":-113.28,"L99":-112.25,"model_L90":-112.5,"model_L99":-111.7},{"set":"awgn","rule":"fragZ","len":32.0,"L90":-111.9,"L99":-110.36,"model_L90":-111.3,"model_L99":-109.9},{"set":"awgn","rule":"fragL","len":32.0,"L90":-110.35,"L99":-108.9,"model_L90":-109.6,"model_L99":-108.1},{"set":"awgn","rule":"soft8","len":64.0,"L90":-119.69,"L99":-118.08,"model_L90":-119.5,"model_L99":-118.6},{"set":"awgn","rule":"kofn6","len":64.0,"L90":-116.19,"L99":-115.17,"model_L90":null,"model_L99":null},{"set":"awgn","rule":"fragZ","len":64.0,"L90":-114.76,"L99":-113.25,"model_L90":null,"model_L99":null},{"set":"awgn","rule":"fragL","len":64.0,"L90":-113.28,"L99":-111.97,"model_L90":null,"model_L99":null},{"set":"awgn","rule":"soft8","len":128.0,"L90":-122.08,"L99":-120.25,"model_L90":-121.9,"model_L99":-120.9},{"set":"awgn","rule":"kofn6","len":128.0,"L90":-118.43,"L99":-117.5,"model_L90":null,"model_L99":null},{"set":"awgn","rule":"fragZ","len":128.0,"L90":-117.13,"L99":-115.41,"model_L90":null,"model_L99":null},{"set":"awgn","rule":"fragL","len":128.0,"L90":-115.58,"L99":-114.08,"model_L90":null,"model_L99":null},{"set":"awgn","rule":"soft8","len":256.0,"L90":-121.61,"L99":-120.3,"model_L90":-121.5,"model_L99":-120.6},{"set":"awgn","rule":"kofn6","len":256.0,"L90":-118.24,"L99":-117.31,"model_L90":null,"model_L99":null},{"set":"awgn","rule":"fragZ","len":256.0,"L90":-116.76,"L99":-115.26,"model_L90":null,"model_L99":null},{"set":"awgn","rule":"fragL","len":256.0,"L90":-115.28,"L99":-113.71,"model_L90":null,"model_L99":null},{"set":"awgn","rule":"single1","len":32.0,"L90":-107.04,"L99":-105.52,"model_L90":-106.2,"model_L99":-104.8},{"set":"awgn","rule":"soft2","len":32.0,"L90":-111.26,"L99":-110.07,"model_L90":-110.5,"model_L99":-109.5},{"set":"awgn","rule":"soft4","len":32.0,"L90":-114.23,"L99":-113.13,"model_L90":-114.0,"model_L99":-112.9},{"set":"awgn","rule":"single1","len":64.0,"L90":-110.01,"L99":-108.59,"model_L90":-109.1,"model_L99":-107.8},{"set":"awgn","rule":"soft2","len":64.0,"L90":-114.11,"L99":-113.05,"model_L90":-113.4,"model_L99":-112.3},{"set":"awgn","rule":"soft4","len":64.0,"L90":-117.16,"L99":-116.09,"model_L90":-116.7,"model_L99":-115.7},{"set":"awgn","rule":"single1","len":128.0,"L90":-112.23,"L99":-110.83,"model_L90":-111.4,"model_L99":-110.1},{"set":"awgn","rule":"soft2","len":128.0,"L90":-116.45,"L99":-115.11,"model_L90":-115.7,"model_L99":-114.6},{"set":"awgn","rule":"soft4","len":128.0,"L90":-119.38,"L99":-118.16,"model_L90":-119.2,"model_L99":-118.0},{"set":"awgn","rule":"single1","len":256.0,"L90":-111.95,"L99":-110.51,"model_L90":-111.2,"model_L99":-109.8},{"set":"awgn","rule":"soft2","len":256.0,"L90":-116.19,"L99":-115.02,"model_L90":-115.5,"model_L99":-114.4},{"set":"awgn","rule":"soft4","len":256.0,"L90":-119.15,"L99":-118.03,"model_L90":-118.9,"model_L99":-117.7},{"set":"mp","rule":"fragZ","len":32.0,"L90":-105.15,"L99":-101.33,"model_L90":null,"model_L99":null},{"set":"mp","rule":"fragL","len":32.0,"L90":-103.85,"L99":-100.13,"model_L90":null,"model_L99":null},{"set":"mp","rule":"soft8","len":32.0,"L90":-109.07,"L99":-104.5,"model_L90":null,"model_L99":null}],"frag":[{"set":"awgn","len":32.0,"dBm":-40.0,"n_Z":5000.0,"Z_pfa":0.0014,"D_med_dB":29.8669,"kappa_med":0.9746,"L_k":3.0,"L_n":5000.0,"L_tail_t10":0.9,"L_tail_t14":0.8,"L_tail_t18":0.9,"L_pfa":0.0006,"L_lo":0.00012375,"L_hi":0.00175244},{"set":"awgn","len":32.0,"dBm":-60.0,"n_Z":5000.0,"Z_pfa":0.0044,"D_med_dB":23.9315,"kappa_med":0.9769,"L_k":1.0,"L_n":5000.0,"L_tail_t10":0.9,"L_tail_t14":0.9,"L_tail_t18":0.9,"L_pfa":0.0002,"L_lo":5.06e-06,"L_hi":0.00111382},{"set":"awgn","len":32.0,"dBm":-72.0,"n_Z":5000.0,"Z_pfa":0.0044,"D_med_dB":16.5817,"kappa_med":0.9587,"L_k":3.0,"L_n":5000.0,"L_tail_t10":0.9,"L_tail_t14":0.9,"L_tail_t18":0.9,"L_pfa":0.0006,"L_lo":0.00012375,"L_hi":0.00175244},{"set":"awgn","len":32.0,"dBm":-76.0,"n_Z":5000.0,"Z_pfa":0.0196,"D_med_dB":13.7014,"kappa_med":0.9346,"L_k":1.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.1,"L_tail_t18":1.0,"L_pfa":0.0002,"L_lo":5.06e-06,"L_hi":0.00111382},{"set":"awgn","len":32.0,"dBm":-78.0,"n_Z":5000.0,"Z_pfa":0.0364,"D_med_dB":12.0934,"kappa_med":0.9151,"L_k":2.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.0,"L_tail_t18":0.9,"L_pfa":0.0004,"L_lo":4.845e-05,"L_hi":0.00144418},{"set":"awgn","len":32.0,"dBm":-80.0,"n_Z":5000.0,"Z_pfa":0.0474,"D_med_dB":10.5563,"kappa_med":0.8792,"L_k":4.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.0,"L_tail_t18":1.1,"L_pfa":0.0008,"L_lo":0.00021801,"L_hi":0.00204704},{"set":"awgn","len":32.0,"dBm":-82.0,"n_Z":5000.0,"Z_pfa":0.049,"D_med_dB":8.9997,"kappa_med":0.8314,"L_k":1.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.1,"L_tail_t18":1.0,"L_pfa":0.0002,"L_lo":5.06e-06,"L_hi":0.00111382},{"set":"awgn","len":32.0,"dBm":-84.0,"n_Z":5000.0,"Z_pfa":0.041,"D_med_dB":7.5626,"kappa_med":0.7737,"L_k":4.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.1,"L_tail_t18":1.3,"L_pfa":0.0008,"L_lo":0.00021801,"L_hi":0.00204704},{"set":"awgn","len":32.0,"dBm":-86.0,"n_Z":5000.0,"Z_pfa":0.0308,"D_med_dB":6.3147,"kappa_med":0.6974,"L_k":5.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.0,"L_tail_t18":0.8,"L_pfa":0.001,"L_lo":0.00032477,"L_hi":0.00233211},{"set":"awgn","len":32.0,"dBm":-88.0,"n_Z":5000.0,"Z_pfa":0.0162,"D_med_dB":5.2787,"kappa_med":0.6057,"L_k":2.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.1,"L_tail_t18":1.0,"L_pfa":0.0004,"L_lo":4.845e-05,"L_hi":0.00144418},{"set":"awgn","len":32.0,"dBm":-90.0,"n_Z":5000.0,"Z_pfa":0.0056,"D_med_dB":4.4951,"kappa_med":0.5013,"L_k":2.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.0,"L_tail_t18":0.8,"L_pfa":0.0004,"L_lo":4.845e-05,"L_hi":0.00144418},{"set":"awgn","len":32.0,"dBm":-95.0,"n_Z":5000.0,"Z_pfa":0.0012,"D_med_dB":3.7102,"kappa_med":0.4003,"L_k":3.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.0,"L_tail_t18":1.2,"L_pfa":0.0006,"L_lo":0.00012375,"L_hi":0.00175244},{"set":"awgn","len":32.0,"dBm":-100.0,"n_Z":5000.0,"Z_pfa":0.001,"D_med_dB":3.647,"kappa_med":0.3792,"L_k":2.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.0,"L_tail_t18":1.0,"L_pfa":0.0004,"L_lo":4.845e-05,"L_hi":0.00144418},{"set":"awgn","len":32.0,"dBm":-120.0,"n_Z":5000.0,"Z_pfa":0.0002,"D_med_dB":3.5869,"kappa_med":0.3711,"L_k":2.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.0,"L_tail_t18":0.8,"L_pfa":0.0004,"L_lo":4.845e-05,"L_hi":0.00144418},{"set":"awgn","len":64.0,"dBm":-40.0,"n_Z":5000.0,"Z_pfa":0.0014,"D_med_dB":29.6014,"kappa_med":0.9052,"L_k":14.0,"L_n":30000.0,"L_tail_t10":1.0538,"L_tail_t14":1.0588,"L_tail_t18":1.0946,"L_pfa":0.00046666666666666666,"L_lo":0.00025515,"L_hi":0.00078286},{"set":"awgn","len":64.0,"dBm":-82.0,"n_Z":5000.0,"Z_pfa":0.0436,"D_med_dB":9.0415,"kappa_med":0.778,"L_k":0.0,"L_n":5000.0,"L_tail_t10":1.0368,"L_tail_t14":1.1236,"L_tail_t18":1.0804,"L_pfa":0.0,"L_lo":0.0,"L_hi":0.0007375},{"set":"awgn","len":64.0,"dBm":-120.0,"n_Z":5000.0,"Z_pfa":0.001,"D_med_dB":3.5711,"kappa_med":0.3745,"L_k":24.0,"L_n":30000.0,"L_tail_t10":1.0076,"L_tail_t14":1.0505,"L_tail_t18":1.1231,"L_pfa":0.0008,"L_lo":0.00051264,"L_hi":0.0011901},{"set":"awgn","len":128.0,"dBm":-40.0,"n_Z":5000.0,"Z_pfa":0.0,"D_med_dB":29.4536,"kappa_med":0.6618,"L_k":1.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":0.9,"L_tail_t18":0.9,"L_pfa":0.0002,"L_lo":5.06e-06,"L_hi":0.00111382},{"set":"awgn","len":128.0,"dBm":-82.0,"n_Z":5000.0,"Z_pfa":0.025,"D_med_dB":9.0838,"kappa_med":0.5918,"L_k":2.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.0,"L_tail_t18":1.0,"L_pfa":0.0004,"L_lo":4.845e-05,"L_hi":0.00144418},{"set":"awgn","len":128.0,"dBm":-120.0,"n_Z":5000.0,"Z_pfa":0.001,"D_med_dB":3.625,"kappa_med":0.3715,"L_k":2.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":0.9,"L_tail_t18":1.0,"L_pfa":0.0004,"L_lo":4.845e-05,"L_hi":0.00144418},{"set":"awgn","len":256.0,"dBm":-40.0,"n_Z":5000.0,"Z_pfa":0.0,"D_med_dB":29.456,"kappa_med":0.3815,"L_k":3.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.1,"L_tail_t18":1.5,"L_pfa":0.0006,"L_lo":0.00012375,"L_hi":0.00175244},{"set":"awgn","len":256.0,"dBm":-82.0,"n_Z":5000.0,"Z_pfa":0.0094,"D_med_dB":9.0723,"kappa_med":0.3737,"L_k":1.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.1,"L_tail_t18":0.9,"L_pfa":0.0002,"L_lo":5.06e-06,"L_hi":0.00111382},{"set":"awgn","len":256.0,"dBm":-120.0,"n_Z":5000.0,"Z_pfa":0.0006,"D_med_dB":3.5848,"kappa_med":0.3784,"L_k":4.0,"L_n":5000.0,"L_tail_t10":1.0,"L_tail_t14":1.0,"L_tail_t18":1.2,"L_pfa":0.0008,"L_lo":0.00021801,"L_hi":0.00204704},{"set":"cfo0","len":32.0,"dBm":-40.0,"n_Z":5000.0,"Z_pfa":0.002,"D_med_dB":30.62,"kappa_med":1.0,"L_k":0.0,"L_n":5000.0,"L_tail_t10":0.431,"L_tail_t14":0.585,"L_tail_t18":0.768,"L_pfa":0.0,"L_lo":0.0,"L_hi":0.0007375},{"set":"cfo0","len":32.0,"dBm":-82.0,"n_Z":5000.0,"Z_pfa":0.0502,"D_med_dB":8.91,"kappa_med":0.847,"L_k":5.0,"L_n":5000.0,"L_tail_t10":1.061,"L_tail_t14":1.062,"L_tail_t18":1.052,"L_pfa":0.001,"L_lo":0.00032477,"L_hi":0.00233211},{"set":"cfo0","len":256.0,"dBm":-40.0,"n_Z":5000.0,"Z_pfa":0.0032,"D_med_dB":30.67,"kappa_med":1.0,"L_k":0.0,"L_n":5000.0,"L_tail_t10":0.424,"L_tail_t14":0.354,"L_tail_t18":0.199,"L_pfa":0.0,"L_lo":0.0,"L_hi":0.0007375},{"set":"cfo0","len":256.0,"dBm":-82.0,"n_Z":5000.0,"Z_pfa":0.0588,"D_med_dB":8.82,"kappa_med":0.848,"L_k":4.0,"L_n":5000.0,"L_tail_t10":0.974,"L_tail_t14":1.05,"L_tail_t18":1.024,"L_pfa":0.0008,"L_lo":0.00021801,"L_hi":0.00204704},{"set":"mp","len":32.0,"dBm":-40.0,"n_Z":30000.0,"Z_pfa":0.0315,"D_med_dB":null,"kappa_med":null,"L_k":null,"L_n":null,"L_tail_t10":null,"L_tail_t14":null,"L_tail_t18":null},{"set":"mp","len":32.0,"dBm":-82.0,"n_Z":30000.0,"Z_pfa":0.01867,"D_med_dB":null,"kappa_med":null,"L_k":null,"L_n":null,"L_tail_t10":null,"L_tail_t14":null,"L_tail_t18":null}],"mz":[{"channel":"awgn","len":32.0,"dBm":-120.0,"Z_pfa_model":0.000938},{"channel":"awgn","len":32.0,"dBm":-88.0,"Z_pfa_model":0.017205},{"channel":"awgn","len":32.0,"dBm":-82.0,"Z_pfa_model":0.053241},{"channel":"awgn","len":32.0,"dBm":-40.0,"Z_pfa_model":0.002127},{"channel":"mp_tau20","len":32.0,"dBm":-40.0,"Z_pfa_model":0.042855},{"channel":"awgn","len":64.0,"dBm":-120.0,"Z_pfa_model":0.000751},{"channel":"awgn","len":64.0,"dBm":-88.0,"Z_pfa_model":0.013889},{"channel":"awgn","len":64.0,"dBm":-82.0,"Z_pfa_model":0.046359},{"channel":"awgn","len":64.0,"dBm":-40.0,"Z_pfa_model":0.001126},{"channel":"mp_tau20","len":64.0,"dBm":-40.0,"Z_pfa_model":0.036974},{"channel":"awgn","len":128.0,"dBm":-120.0,"Z_pfa_model":0.001251},{"channel":"awgn","len":128.0,"dBm":-88.0,"Z_pfa_model":0.009072},{"channel":"awgn","len":128.0,"dBm":-82.0,"Z_pfa_model":0.027277},{"channel":"awgn","len":128.0,"dBm":-40.0,"Z_pfa_model":0.000125},{"channel":"mp_tau20","len":128.0,"dBm":-40.0,"Z_pfa_model":0.021709},{"channel":"awgn","len":256.0,"dBm":-120.0,"Z_pfa_model":0.000563},{"channel":"awgn","len":256.0,"dBm":-88.0,"Z_pfa_model":0.006944},{"channel":"awgn","len":256.0,"dBm":-82.0,"Z_pfa_model":0.011199},{"channel":"awgn","len":256.0,"dBm":-40.0,"Z_pfa_model":0.0},{"channel":"mp_tau20","len":256.0,"dBm":-40.0,"Z_pfa_model":0.011261}],"pkt":[{"set":"awgn","K":8.0,"len":32.0,"dBm":-40.0,"packets":625.0,"accepts":0.0,"rhoPair":-0.0019,"pairRatio":1.5089,"r":[0.8477,0.5408,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-60.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0021,"pairRatio":0.9614,"r":[0.8927,0.9013,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-72.0,"packets":625.0,"accepts":0.0,"rhoPair":-0.002,"pairRatio":1.1053,"r":[0.873,0.7211,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-76.0,"packets":625.0,"accepts":0.0,"rhoPair":0.019,"pairRatio":1.0912,"r":[1.0583,1.0455,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-78.0,"packets":625.0,"accepts":0.0,"rhoPair":-0.0033,"pairRatio":0.9622,"r":[1.033,0.8292,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-80.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0002,"pairRatio":1.1509,"r":[1.0105,0.9013,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-82.0,"packets":625.0,"accepts":0.0,"rhoPair":0.016,"pairRatio":1.0248,"r":[1.0162,1.2258,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-84.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0002,"pairRatio":1.0404,"r":[1.0583,0.8292,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-86.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0285,"pairRatio":0.9025,"r":[0.9881,0.9374,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-88.0,"packets":625.0,"accepts":0.0,"rhoPair":-0.0156,"pairRatio":0.9415,"r":[0.8955,1.1176,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-90.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0045,"pairRatio":0.8618,"r":[0.9151,1.0455,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-95.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0209,"pairRatio":1.0096,"r":[0.96,0.8653,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-100.0,"packets":625.0,"accepts":0.0,"rhoPair":0.025,"pairRatio":1.1359,"r":[0.9179,0.6489,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":32.0,"dBm":-120.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0093,"pairRatio":1.0803,"r":[0.8814,0.6489,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":64.0,"dBm":-40.0,"packets":3750.0,"accepts":0.0,"rhoPair":-0.002635,"pairRatio":1.0638,"r":[1.0784,1.0636,0.7208],"err":[0.0303,0.1085,0.3069]},{"set":"awgn","K":8.0,"len":64.0,"dBm":-82.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0102,"pairRatio":1.0655,"r":[0.9909,1.0455,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":64.0,"dBm":-120.0,"packets":3750.0,"accepts":0.0,"rhoPair":0.010768,"pairRatio":1.0333,"r":[0.9918,0.9854,0.961],"err":[0.0303,0.1085,0.3069]},{"set":"awgn","K":8.0,"len":128.0,"dBm":-40.0,"packets":625.0,"accepts":0.0,"rhoPair":-0.0145,"pairRatio":0.6199,"r":[0.8281,1.0816,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":128.0,"dBm":-82.0,"packets":625.0,"accepts":0.0,"rhoPair":-0.0086,"pairRatio":0.8829,"r":[0.9881,1.0095,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":128.0,"dBm":-120.0,"packets":625.0,"accepts":0.0,"rhoPair":-0.0018,"pairRatio":1.0297,"r":[0.9011,0.7571,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":256.0,"dBm":-40.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0019,"pairRatio":1.1834,"r":[1.0527,0.9374,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":256.0,"dBm":-82.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0045,"pairRatio":1.1798,"r":[1.0246,0.8653,null],"err":[0.0742,0.2658,0.7517]},{"set":"awgn","K":8.0,"len":256.0,"dBm":-120.0,"packets":625.0,"accepts":0.0,"rhoPair":-0.0199,"pairRatio":1.1051,"r":[0.9993,0.7211,null],"err":[0.0742,0.2658,0.7517]},{"set":"mp","K":8.0,"len":32.0,"dBm":-40.0,"packets":3750.0,"accepts":0.0,"rhoPair":-0.0002,"pairRatio":null,"r":[1.0573,0.9494,1.0571],"err":[0.0303,0.1085,0.3069]},{"set":"mp","K":8.0,"len":32.0,"dBm":-82.0,"packets":3750.0,"accepts":0.0,"rhoPair":0.0148,"pairRatio":null,"r":[1.0031,1.0395,1.1532],"err":[0.0303,0.1085,0.3069]},{"set":"cfo0","K":8.0,"len":32.0,"dBm":-40.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0304,"pairRatio":0.457,"r":[0.255,0.216,null],"err":[0.0742,0.2658,0.7517]},{"set":"cfo0","K":8.0,"len":32.0,"dBm":-82.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0143,"pairRatio":1.143,"r":[1.061,0.937,null],"err":[0.0742,0.2658,0.7517]},{"set":"cfo0","K":8.0,"len":256.0,"dBm":-40.0,"packets":625.0,"accepts":0.0,"rhoPair":0.0766,"pairRatio":0.978,"r":[0.211,0.216,null],"err":[0.0742,0.2658,0.7517]},{"set":"cfo0","K":8.0,"len":256.0,"dBm":-82.0,"packets":625.0,"accepts":0.0,"rhoPair":0.036,"pairRatio":0.997,"r":[0.907,0.757,null],"err":[0.0742,0.2658,0.7517]}],"t530":[{"set":"awgn","len":64.0,"dBm":-40.0,"fragments":5000.0,"ratio_1e2":1.1397,"ratio_1e3":1.4782,"ratio_1e4":null},{"set":"awgn","len":64.0,"dBm":-40.0,"fragments":30000.0,"ratio_1e2":1.0784,"ratio_1e3":1.0636,"ratio_1e4":0.72076},{"set":"awgn","len":64.0,"dBm":-120.0,"fragments":5000.0,"ratio_1e2":1.0077,"ratio_1e3":0.9734,"ratio_1e4":null},{"set":"awgn","len":64.0,"dBm":-120.0,"fragments":30000.0,"ratio_1e2":0.99183,"ratio_1e3":0.98544,"ratio_1e4":0.96102},{"set":"mp","len":32.0,"dBm":-40.0,"fragments":5000.0,"ratio_1e2":1.2014,"ratio_1e3":1.3339,"ratio_1e4":null},{"set":"mp","len":32.0,"dBm":-82.0,"fragments":5000.0,"ratio_1e2":0.9684,"ratio_1e3":1.1176,"ratio_1e4":null},{"set":"mp","len":32.0,"dBm":-40.0,"fragments":30000.0,"ratio_1e2":1.0573,"ratio_1e3":0.9494,"ratio_1e4":1.0571},{"set":"mp","len":32.0,"dBm":-82.0,"fragments":30000.0,"ratio_1e2":1.0031,"ratio_1e3":1.0395,"ratio_1e4":1.1532}],"bmd":[{"dBm":-40.0,"passes_of_8":0.0,"packets_observed":2921.0,"packets_independent":2902.9,"p":0.0315,"packets":3750.0},{"dBm":-40.0,"passes_of_8":1.0,"packets_observed":725.0,"packets_independent":755.3,"p":0.0315,"packets":3750.0},{"dBm":-40.0,"passes_of_8":2.0,"packets_observed":94.0,"packets_independent":86.0,"p":0.0315,"packets":3750.0},{"dBm":-40.0,"passes_of_8":3.0,"packets_observed":8.0,"packets_independent":5.6,"p":0.0315,"packets":3750.0},{"dBm":-40.0,"passes_of_8":4.0,"packets_observed":2.0,"packets_independent":0.2,"p":0.0315,"packets":3750.0},{"dBm":-40.0,"passes_of_8":5.0,"packets_observed":0.0,"packets_independent":0.0,"p":0.0315,"packets":3750.0},{"dBm":-40.0,"passes_of_8":6.0,"packets_observed":0.0,"packets_independent":0.0,"p":0.0315,"packets":3750.0},{"dBm":-40.0,"passes_of_8":7.0,"packets_observed":0.0,"packets_independent":0.0,"p":0.0315,"packets":3750.0},{"dBm":-40.0,"passes_of_8":8.0,"packets_observed":0.0,"packets_independent":0.0,"p":0.0315,"packets":3750.0},{"dBm":-82.0,"passes_of_8":0.0,"packets_observed":3249.0,"packets_independent":3225.3,"p":0.01867,"packets":3750.0},{"dBm":-82.0,"passes_of_8":1.0,"packets_observed":449.0,"packets_independent":490.8,"p":0.01867,"packets":3750.0},{"dBm":-82.0,"passes_of_8":2.0,"packets_observed":45.0,"packets_independent":32.7,"p":0.01867,"packets":3750.0},{"dBm":-82.0,"passes_of_8":3.0,"packets_observed":7.0,"packets_independent":1.2,"p":0.01867,"packets":3750.0},{"dBm":-82.0,"passes_of_8":4.0,"packets_observed":0.0,"packets_independent":0.0,"p":0.01867,"packets":3750.0},{"dBm":-82.0,"passes_of_8":5.0,"packets_observed":0.0,"packets_independent":0.0,"p":0.01867,"packets":3750.0},{"dBm":-82.0,"passes_of_8":6.0,"packets_observed":0.0,"packets_independent":0.0,"p":0.01867,"packets":3750.0},{"dBm":-82.0,"passes_of_8":7.0,"packets_observed":0.0,"packets_independent":0.0,"p":0.01867,"packets":3750.0},{"dBm":-82.0,"passes_of_8":8.0,"packets_observed":0.0,"packets_independent":0.0,"p":0.01867,"packets":3750.0}],"mp":[{"dBm":-98.0,"fragments":1000.0,"Z_Pd":1.0,"L_Pd":0.996,"Z_PosAcc":0.421,"L_PosAcc":0.421,"packets":125.0,"pkt_Pd":1.0,"pkt_PosAcc":0.456},{"dBm":-100.0,"fragments":1000.0,"Z_Pd":0.996,"L_Pd":0.992,"Z_PosAcc":0.427,"L_PosAcc":0.426,"packets":125.0,"pkt_Pd":1.0,"pkt_PosAcc":0.448},{"dBm":-102.0,"fragments":1000.0,"Z_Pd":0.987,"L_Pd":0.962,"Z_PosAcc":0.43,"L_PosAcc":0.432,"packets":125.0,"pkt_Pd":1.0,"pkt_PosAcc":0.44},{"dBm":-104.0,"fragments":1000.0,"Z_Pd":0.959,"L_Pd":0.895,"Z_PosAcc":0.434,"L_PosAcc":0.445,"packets":125.0,"pkt_Pd":0.992,"pkt_PosAcc":0.46},{"dBm":-106.0,"fragments":1000.0,"Z_Pd":0.856,"L_Pd":0.756,"Z_PosAcc":0.423,"L_PosAcc":0.434,"packets":125.0,"pkt_Pd":0.984,"pkt_PosAcc":0.39},{"dBm":-108.0,"fragments":1000.0,"Z_Pd":0.679,"L_Pd":0.538,"Z_PosAcc":0.448,"L_PosAcc":0.463,"packets":125.0,"pkt_Pd":0.96,"pkt_PosAcc":0.392},{"dBm":-110.0,"fragments":1000.0,"Z_Pd":0.471,"L_Pd":0.331,"Z_PosAcc":0.454,"L_PosAcc":0.462,"packets":125.0,"pkt_Pd":0.848,"pkt_PosAcc":0.443},{"dBm":-112.0,"fragments":1000.0,"Z_Pd":0.286,"L_Pd":0.176,"Z_PosAcc":0.476,"L_PosAcc":0.5,"packets":125.0,"pkt_Pd":0.656,"pkt_PosAcc":0.463},{"dBm":-114.0,"fragments":1000.0,"Z_Pd":0.142,"L_Pd":0.086,"Z_PosAcc":0.535,"L_PosAcc":0.523,"packets":125.0,"pkt_Pd":0.416,"pkt_PosAcc":0.481},{"dBm":-116.0,"fragments":1000.0,"Z_Pd":0.07,"L_Pd":0.034,"Z_PosAcc":0.543,"L_PosAcc":0.588,"packets":125.0,"pkt_Pd":0.264,"pkt_PosAcc":0.576},{"dBm":-118.0,"fragments":1000.0,"Z_Pd":0.034,"L_Pd":0.014,"Z_PosAcc":0.647,"L_PosAcc":0.714,"packets":125.0,"pkt_Pd":0.16,"pkt_PosAcc":0.55},{"dBm":-120.0,"fragments":1000.0,"Z_Pd":0.01,"L_Pd":0.003,"Z_PosAcc":0.5,"L_PosAcc":0.333,"packets":125.0,"pkt_Pd":0.064,"pkt_PosAcc":0.625}],"off":[{"bin":"<=-6","lo":-99.0,"hi":-6.0,"count":0.0,"detections":996.0},{"bin":"-5..-3","lo":-5.0,"hi":-3.0,"count":0.0,"detections":996.0},{"bin":"-2..+2","lo":-2.0,"hi":2.0,"count":419.0,"detections":996.0},{"bin":"+3..+5","lo":3.0,"hi":5.0,"count":128.0,"detections":996.0},{"bin":"+6..+10","lo":6.0,"hi":10.0,"count":155.0,"detections":996.0},{"bin":"+11..+20","lo":11.0,"hi":20.0,"count":194.0,"detections":996.0},{"bin":">=+21","lo":21.0,"hi":99.0,"count":100.0,"detections":996.0}],"fp":[{"quantity":"first/peak dB, 10%","lls_cir":-4.98,"channel_only_1ns":-7.08},{"quantity":"first/peak dB, median","lls_cir":-0.98,"channel_only_1ns":-0.14},{"quantity":"first/peak dB, 90%","lls_cir":0.0,"channel_only_1ns":0.0},{"quantity":"share >= -10 dB","lls_cir":0.973,"channel_only_1ns":null},{"quantity":"strongest tap within +-2 of first path","lls_cir":0.421,"channel_only_1ns":0.575}],"traj":{"32sym_0.25ppm":{"1":[124.819,124.569,125.343,125.073,124.803,124.57,125.341,125.074],"2":[124.62,124.132,124.897,124.802,124.57,124.345,125.073,124.805],"3":[124.191,124.069,124.803,124.569,124.345,124.072,124.804,124.571],"4":[124.955,124.788,125.599,125.186,124.916,124.779,125.572,125.346],"5":[124.802,124.569,125.344,125.072,124.804,124.57,125.345,125.074],"6":[124.569,124.343,125.073,124.803,124.57,124.345,125.073,124.806]},"32sym_0.50ppm":{"1":[125.16,124.809,125.166,124.806,125.172,124.805,125.343,124.805],"2":[124.799,124.341,124.802,124.342,124.802,124.344,124.803,124.346],"3":[125.096,124.799,125.342,124.801,125.344,124.802,125.345,124.805],"4":[124.781,124.141,124.799,124.342,124.803,124.344,124.803,124.347],"5":[125.151,124.786,125.148,124.789,125.342,124.802,125.346,124.805],"6":[124.813,124.339,124.801,124.341,124.802,124.344,124.804,124.345]},"256sym_0.25ppm":{"1":[124.766,124.546,125.313,125.041,124.774,124.544,125.315,125.043],"2":[124.574,124.313,125.04,124.773,124.547,124.315,125.041,124.775],"3":[122.313,122.04,122.774,122.547,122.314,122.042,122.775,122.548],"4":[124.773,124.546,125.314,125.041,124.775,124.547,125.315,125.043],"5":[124.59,124.313,125.04,124.774,124.547,124.315,125.042,124.776],"6":[124.313,124.04,124.774,124.547,124.315,124.042,124.775,124.548]}},"chk":[{"len":32.0,"dBm":-40.0,"packets":1250.0,"t":21.0,"paths_over":460.0,"packets_over":214.0,"union_expected":509.254361,"path_ratio":0.903281,"packet_ratio":0.420222},{"len":32.0,"dBm":-40.0,"packets":1250.0,"t":27.0,"paths_over":42.0,"packets_over":22.0,"union_expected":50.372786,"path_ratio":0.833784,"packet_ratio":0.436744},{"len":32.0,"dBm":-40.0,"packets":1250.0,"t":32.0,"paths_over":6.0,"packets_over":4.0,"union_expected":6.63634,"path_ratio":0.904113,"packet_ratio":0.602742},{"len":64.0,"dBm":-40.0,"packets":7500.0,"t":21.0,"paths_over":3234.0,"packets_over":1321.0,"union_expected":3055.526169,"path_ratio":1.05841,"packet_ratio":0.432331},{"len":64.0,"dBm":-40.0,"packets":7500.0,"t":27.0,"paths_over":313.0,"packets_over":171.0,"union_expected":302.236713,"path_ratio":1.035612,"packet_ratio":0.565782},{"len":64.0,"dBm":-40.0,"packets":7500.0,"t":32.0,"paths_over":52.0,"packets_over":32.0,"union_expected":39.81804,"path_ratio":1.305941,"packet_ratio":0.803656},{"len":128.0,"dBm":-40.0,"packets":1250.0,"t":21.0,"paths_over":455.0,"packets_over":193.0,"union_expected":509.254361,"path_ratio":0.893463,"packet_ratio":0.378985},{"len":128.0,"dBm":-40.0,"packets":1250.0,"t":27.0,"paths_over":50.0,"packets_over":29.0,"union_expected":50.372786,"path_ratio":0.992599,"packet_ratio":0.575708},{"len":128.0,"dBm":-40.0,"packets":1250.0,"t":32.0,"paths_over":16.0,"packets_over":7.0,"union_expected":6.63634,"path_ratio":2.410968,"packet_ratio":1.054798},{"len":256.0,"dBm":-40.0,"packets":1250.0,"t":21.0,"paths_over":593.0,"packets_over":211.0,"union_expected":509.254361,"path_ratio":1.164448,"packet_ratio":0.414331},{"len":256.0,"dBm":-40.0,"packets":1250.0,"t":27.0,"paths_over":61.0,"packets_over":28.0,"union_expected":50.372786,"path_ratio":1.210971,"packet_ratio":0.555856},{"len":256.0,"dBm":-40.0,"packets":1250.0,"t":32.0,"paths_over":12.0,"packets_over":5.0,"union_expected":6.63634,"path_ratio":1.808226,"packet_ratio":0.753427}],"tsum":[{"K":2.0,"T":42.74,"t1":14.0,"t2":19.0,"t3":24.0,"mean_r1":0.997,"mean_r2":0.97,"mean_r3":0.993,"max_r1":1.065,"max_r2":1.152,"max_r3":1.406},{"K":4.0,"T":52.82,"t1":21.0,"t2":27.0,"t3":32.0,"mean_r1":0.998,"mean_r2":0.989,"mean_r3":0.916,"max_r1":1.164,"max_r2":1.35,"max_r3":2.411}],"tflag":[{"K":2.0,"len":32.0,"dBm":-76.0,"packets":2500.0,"r1":1.03,"r2":0.92,"r3":1.406},{"K":2.0,"len":32.0,"dBm":-78.0,"packets":2500.0,"r1":1.015,"r2":1.036,"r3":1.318},{"K":2.0,"len":32.0,"dBm":-84.0,"packets":2500.0,"r1":1.063,"r2":1.116,"r3":1.318},{"K":2.0,"len":32.0,"dBm":-86.0,"packets":2500.0,"r1":0.944,"r2":0.982,"r3":1.406},{"K":4.0,"len":32.0,"dBm":-76.0,"packets":1250.0,"r1":1.041,"r2":1.35,"r3":0.753},{"K":4.0,"len":32.0,"dBm":-82.0,"packets":1250.0,"r1":1.009,"r2":1.211,"r3":1.808},{"K":4.0,"len":64.0,"dBm":-40.0,"packets":7500.0,"r1":1.058,"r2":1.036,"r3":1.306},{"K":4.0,"len":128.0,"dBm":-40.0,"packets":1250.0,"r1":0.893,"r2":0.993,"r3":2.411},{"K":4.0,"len":256.0,"dBm":-40.0,"packets":1250.0,"r1":1.164,"r2":1.211,"r3":1.808}],"cons":[{"quantity":"B-F floor cost dB","len":32.0,"measured":0.32379,"model":0.2},{"quantity":"B-F floor cost dB","len":64.0,"measured":0.33762,"model":0.2},{"quantity":"B-F floor cost dB","len":128.0,"measured":0.18081,"model":0.2},{"quantity":"B-F floor cost dB","len":256.0,"measured":0.30546,"model":0.2},{"quantity":"B-S accepted, floor 0","len":32.0,"measured":1.0,"model":1.0},{"quantity":"B-S accepted, F = 1","len":32.0,"measured":0.62,"model":0.606531}]};
+  var NS = 'http://www.w3.org/2000/svg';
+  var LENS = ['32', '64', '128', '256'];
+  var DET = {soft8: {name: 'Λ̂ 패킷 소프트 (10⁻⁶)', c: 'var(--s1)', shape: 'circle'}, kofn6: {name: '6-of-8 패킷', c: 'var(--s5)', shape: 'diamond'},
+             Z: {name: '기존 Z (프래그먼트)', c: 'var(--s2)', shape: 'square'}, L: {name: 'Λ̂ 프래그먼트', c: 'var(--s3)', shape: 'triangle'}};
+  var KC = {'1': 'var(--s2)', '2': 'var(--s3)', '4': 'var(--s4)', '8': 'var(--s1)'};
+  var KS = {'1': 'square', '2': 'triangle', '4': 'diamond', '8': 'circle'};
+  var RULE = {'1': 'single1', '2': 'soft2', '4': 'soft4', '8': 'soft8'};
+
+  function el(tag, attrs, parent, text) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]);
+    if (text !== undefined) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function $(id) { return document.getElementById(id); }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+  function lin(d0, d1, r0, r1) { return function (v) { return r0 + (v - d0) / (d1 - d0) * (r1 - r0); }; }
+  function lg(d0, d1, r0, r1) { var a = Math.log(d0), b = Math.log(d1); return function (v) { return r0 + (Math.log(v) - a) / (b - a) * (r1 - r0); }; }
+  function num(v, d) { return v === null || v === undefined || isNaN(v) ? '–' : (v < 0 ? '−' : '') + Math.abs(v).toFixed(d === undefined ? 2 : d); }
+  function sci(v) {
+    if (v === null || v === undefined) return '–';
+    if (v === 0) return '0';
+    var e = Math.floor(Math.log10(Math.abs(v))), m = v / Math.pow(10, e);
+    return e >= -2 ? (v * 100).toFixed(v >= 0.1 ? 1 : 2) + '%' : m.toFixed(1) + 'e' + e;
+  }
+  function marker(g, shape, x, y, r, attrs) {
+    var a = attrs || {};
+    if (shape === 'circle') return el('circle', Object.assign({cx: x, cy: y, r: r}, a), g);
+    if (shape === 'square') return el('rect', Object.assign({x: x - r * 0.88, y: y - r * 0.88, width: r * 1.76, height: r * 1.76, rx: 1.5}, a), g);
+    if (shape === 'triangle') return el('path', Object.assign({d: 'M' + x + ' ' + (y - r * 1.1) + 'L' + (x + r) + ' ' + (y + r * 0.75) + 'L' + (x - r) + ' ' + (y + r * 0.75) + 'Z'}, a), g);
+    if (shape === 'tridown') return el('path', Object.assign({d: 'M' + x + ' ' + (y + r * 1.1) + 'L' + (x + r) + ' ' + (y - r * 0.75) + 'L' + (x - r) + ' ' + (y - r * 0.75) + 'Z'}, a), g);
+    return el('path', Object.assign({d: 'M' + x + ' ' + (y - r * 1.15) + 'L' + (x + r * 1.05) + ' ' + y + 'L' + x + ' ' + (y + r * 1.15) + 'L' + (x - r * 1.05) + ' ' + y + 'Z'}, a), g);
+  }
+  function keySvg(c, shape, dash, hollow, noLine) {
+    var s = '<svg viewBox="0 0 24 12" aria-hidden="true">';
+    if (!noLine) s += '<line x1="1" y1="6" x2="23" y2="6" stroke="' + c + '" stroke-width="2"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+    var f = hollow ? 'var(--surface)' : c;
+    if (shape === 'circle') s += '<circle cx="12" cy="6" r="3.6" fill="' + f + '" stroke="' + c + '" stroke-width="1.5"/>';
+    else if (shape === 'square') s += '<rect x="8.6" y="2.6" width="6.8" height="6.8" rx="1.2" fill="' + f + '" stroke="' + c + '" stroke-width="1.5"/>';
+    else if (shape === 'triangle') s += '<path d="M12 2L15.8 9.4H8.2Z" fill="' + f + '" stroke="' + c + '" stroke-width="1.5"/>';
+    else if (shape === 'diamond') s += '<path d="M12 1.8L16 6L12 10.2L8 6Z" fill="' + f + '" stroke="' + c + '" stroke-width="1.5"/>';
+    else if (shape === 'bar') s = '<svg viewBox="0 0 24 12" aria-hidden="true"><rect x="4" y="1" width="16" height="10" rx="2" fill="' + f + '" stroke="' + c + '" stroke-width="1.5"/>';
+    return s + '</svg>';
+  }
+  function keys(id, items) {
+    var box = $(id); box.innerHTML = '';
+    items.forEach(function (it) { var s = document.createElement('span'); s.className = 'key'; s.innerHTML = it.svg; s.appendChild(document.createTextNode(it.name)); box.appendChild(s); });
+  }
+  function seg(id, opts, init, on) {
+    var box = $(id); box.innerHTML = '';
+    opts.forEach(function (o) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = o[1]; b.setAttribute('aria-pressed', o[0] === init ? 'true' : 'false');
+      b.addEventListener('click', function () { box.querySelectorAll('button').forEach(function (q) { q.setAttribute('aria-pressed', q === b ? 'true' : 'false'); }); on(o[0]); });
+      box.appendChild(b);
+    });
+    on(init);
+  }
+  function tipFor(plate) {
+    var t = plate.querySelector('.tip');
+    if (!t) { t = document.createElement('div'); t.className = 'tip'; t.hidden = true; plate.appendChild(t); }
+    return t;
+  }
+  function showTip(svg, tip, html, vx, vy) {
+    tip.innerHTML = html; tip.hidden = false;
+    var plate = tip.parentNode, pr = plate.getBoundingClientRect(), sr = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+    var px = sr.left - pr.left + vx / vb.width * sr.width, py = sr.top - pr.top + vy / vb.height * sr.height;
+    var w = tip.offsetWidth, h = tip.offsetHeight, left = px + 14, top = py - h - 10;
+    if (left + w > pr.width - 6) left = px - w - 14;
+    if (left < 6) left = 6;
+    if (top < 6) top = py + 14;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  function svgPoint(svg, ev) { var r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; return [(ev.clientX - r.left) / r.width * vb.width, (ev.clientY - r.top) / r.height * vb.height]; }
+  function row(name, c, v) { return '<div class="r"><span><i style="background:' + c + '"></i>' + name + '</span><b>' + v + '</b></div>'; }
+
+  /* ---------------------------------------------------------------- generic line / point chart
+     o: {L,R,T,B, xd, yd, ylog, xt, yt, xf, yf, xl, yl, xcat (tick labels by value), band:[y0,y1], refs:[{y|x, t}],
+         series:[{name, c, shape, dash, hollow, line, band, err, w, r, faint, pts:[[x, y, lo, hi]], tip:fn(p)}], tipTitle:fn(x)} */
+  function plot(svg, o) {
+    clear(svg);
+    var vb = svg.viewBox.baseVal, W = vb.width, H = vb.height, L = o.L || 64, R = o.R || 24, T = o.T || 16, B = o.B || 46;
+    var x = lin(o.xd[0], o.xd[1], L, W - R), y = (o.ylog ? lg : lin)(o.yd[0], o.yd[1], H - B, T);
+    var yc = function (v) { return y(Math.min(Math.max(v, o.yd[0]), o.yd[1])); };
+    if (o.band) el('rect', {x: L, y: y(o.band[1]), width: W - L - R, height: y(o.band[0]) - y(o.band[1]), fill: 'var(--band)'}, svg);
+    o.yt.forEach(function (v) { el('line', {x1: L, x2: W - R, y1: y(v), y2: y(v), 'class': 'grid'}, svg); el('text', {x: L - 8, y: y(v) + 4, 'text-anchor': 'end'}, svg, o.yf ? o.yf(v) : v); });
+    el('line', {x1: L, x2: W - R, y1: H - B, y2: H - B, 'class': 'axis'}, svg);
+    o.xt.forEach(function (v) { el('line', {x1: x(v), x2: x(v), y1: H - B, y2: H - B + 5, 'class': 'axis'}, svg); el('text', {x: x(v), y: H - B + 18, 'text-anchor': 'middle'}, svg, o.xf ? o.xf(v) : v); });
+    if (o.xl) el('text', {x: (L + W - R) / 2, y: H - 8, 'text-anchor': 'middle', 'class': 'lab'}, svg, o.xl);
+    if (o.yl) el('text', {x: 14, y: (T + H - B) / 2, 'text-anchor': 'middle', 'class': 'lab', transform: 'rotate(-90 14 ' + (T + H - B) / 2 + ')'}, svg, o.yl);
+    (o.refs || []).forEach(function (f) {
+      if (f.y !== undefined) {
+        el('line', {x1: L, x2: W - R, y1: y(f.y), y2: y(f.y), 'class': 'ref'}, svg);
+        if (f.t) el('text', {x: f.tx !== undefined ? x(f.tx) : f.left ? L + 6 : W - R - 4, y: y(f.y) - 5, 'text-anchor': f.tx !== undefined || f.left ? 'start' : 'end'}, svg, f.t);
+      }
+      else { el('line', {x1: x(f.x), x2: x(f.x), y1: T, y2: H - B, 'class': 'ref'}, svg); if (f.t) el('text', {x: x(f.x) + 4, y: T + 10}, svg, f.t); }
+    });
+    var g = el('g', {}, svg);
+    o.series.forEach(function (s) {
+      var pts = s.pts.filter(function (p) { return p[1] !== null && p[1] !== undefined && !(o.ylog && p[1] <= 0); });
+      var op = s.faint ? 0.35 : 1;
+      if (s.band && pts.length) {
+        var up = pts.map(function (p) { return x(p[0]) + ' ' + yc(p[3]); }), dn = pts.slice().reverse().map(function (p) { return x(p[0]) + ' ' + yc(p[2]); });
+        el('path', {d: 'M' + up.join('L') + 'L' + dn.join('L') + 'Z', fill: s.c, opacity: 0.14}, g);
+      }
+      if (s.err) pts.forEach(function (p) { if (p[2] !== null && p[3] !== null) el('line', {x1: x(p[0]), x2: x(p[0]), y1: yc(p[2]), y2: yc(p[3]), stroke: s.c, 'stroke-width': 1.4, opacity: op}, g); });
+      if (s.line !== false && pts.length > 1) el('path', {d: 'M' + pts.map(function (p) { return x(p[0]) + ' ' + y(p[1]); }).join('L'), fill: 'none', stroke: s.c, 'stroke-width': s.w || 2, 'stroke-dasharray': s.dash || null, 'stroke-linejoin': 'round', opacity: op}, g);
+      if (s.shape) pts.forEach(function (p) { marker(g, s.shape, x(p[0]), y(p[1]), s.r || 4, {fill: s.hollow ? 'var(--surface)' : s.c, stroke: s.hollow ? s.c : 'var(--surface)', 'stroke-width': 1.5, opacity: op}); });
+      (s.extra || []).forEach(function (p) { marker(g, p[2], x(p[0]), y(p[1]), s.r || 4.2, {fill: 'var(--surface)', stroke: s.c, 'stroke-width': 1.5}); });
+    });
+    if (o.after) o.after(svg, x, y);
+    if (o.noHover) return;
+    var plate = svg.closest('.plate'), tip = tipFor(plate);
+    var xs = []; o.series.forEach(function (s) { s.pts.forEach(function (p) { if (xs.indexOf(p[0]) < 0) xs.push(p[0]); }); });
+    xs.sort(function (a, b) { return a - b; });
+    var cross = el('line', {y1: T, y2: H - B, 'class': 'cross', visibility: 'hidden'}, svg);
+    var hit = el('rect', {x: L, y: T, width: W - L - R, height: H - T - B, fill: 'transparent'}, svg);
+    function move(ev) {
+      var pt = svgPoint(svg, ev), best = null, bd = 1e9;
+      xs.forEach(function (v) { var d = Math.abs(x(v) - pt[0]); if (d < bd) { bd = d; best = v; } });
+      if (best === null) return;
+      cross.setAttribute('x1', x(best)); cross.setAttribute('x2', x(best)); cross.setAttribute('visibility', 'visible');
+      var html = '<div class="h">' + (o.tipTitle ? o.tipTitle(best) : best) + '</div>';
+      o.series.forEach(function (s) {
+        if (s.noTip) return;
+        var p = s.pts.filter(function (q) { return q[0] === best; })[0];
+        if (p) html += row(s.name, s.c, s.tip ? s.tip(p) : num(p[1]));
+      });
+      showTip(svg, tip, html, x(best), pt[1]);
+    }
+    hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+    hit.addEventListener('pointerleave', function () { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); });
+  }
+
+  /* ---------------------------------------------------------------- categorical dots / bars
+     o: {L,R,T,B, cats:[label], groups:[[i0, i1, label]], yd, ylog, yt, yf, yl, band, refs, bars:bool,
+         series:[{name, c, shape, hollow, vals:[v], err:[e], outline}], tip:fn(i)} */
+  function cats(svg, o) {
+    clear(svg);
+    var vb = svg.viewBox.baseVal, W = vb.width, H = vb.height, L = o.L || 64, R = o.R || 16, T = o.T || 16, B = o.B || 70;
+    var n = o.cats.length, cw = (W - L - R) / n, y = (o.ylog ? lg : lin)(o.yd[0], o.yd[1], H - B, T);
+    var yc = function (v) { return y(Math.min(Math.max(v, o.yd[0]), o.yd[1])); };
+    var cx = function (i) { return L + cw * (i + 0.5); };
+    if (o.band) el('rect', {x: L, y: y(o.band[1]), width: W - L - R, height: y(o.band[0]) - y(o.band[1]), fill: 'var(--band)'}, svg);
+    o.yt.forEach(function (v) { el('line', {x1: L, x2: W - R, y1: y(v), y2: y(v), 'class': 'grid'}, svg); el('text', {x: L - 8, y: y(v) + 4, 'text-anchor': 'end'}, svg, o.yf ? o.yf(v) : v); });
+    (o.refs || []).forEach(function (f) { el('line', {x1: L, x2: W - R, y1: y(f.y), y2: y(f.y), 'class': f.solid ? 'axis' : 'ref'}, svg); });
+    el('line', {x1: L, x2: W - R, y1: H - B, y2: H - B, 'class': 'axis'}, svg);
+    (o.groups || []).forEach(function (gr, k) {
+      if (k > 0) el('line', {x1: L + cw * gr[0], x2: L + cw * gr[0], y1: T, y2: H - B + 4, 'class': 'axis'}, svg);
+    });
+    o.cats.forEach(function (c, i) {
+      var t = el('text', {x: cx(i), y: H - B + 12, 'text-anchor': o.rot ? 'end' : 'middle', transform: o.rot ? 'rotate(-55 ' + cx(i) + ' ' + (H - B + 12) + ')' : null}, svg, c);
+    });
+    if (o.yl) el('text', {x: 14, y: (T + H - B) / 2, 'text-anchor': 'middle', 'class': 'lab', transform: 'rotate(-90 14 ' + (T + H - B) / 2 + ')'}, svg, o.yl);
+    var g = el('g', {}, svg), ns = o.series.length;
+    o.series.forEach(function (s, j) {
+      var off = o.bars ? (j - (ns - 1) / 2) * cw * 0.8 / ns : (j - (ns - 1) / 2) * Math.min(cw * 0.26, 12);
+      s.vals.forEach(function (v, i) {
+        if (v === null || v === undefined || (o.ylog && v <= 0)) return;
+        var xx = cx(i) + off;
+        if (o.bars) {
+          var bw = cw * 0.8 / ns - 2;
+          el('rect', {x: xx - bw / 2, y: y(v), width: bw, height: (H - B) - y(v), rx: 2, fill: s.outline ? 'var(--surface)' : s.c, stroke: s.c, 'stroke-width': s.outline ? 1.6 : 0, 'stroke-dasharray': s.outline ? '4 2' : null}, g);
+          return;
+        }
+        if (s.err && s.err[i]) el('line', {x1: xx, x2: xx, y1: yc(v - s.err[i]), y2: yc(v + s.err[i]), stroke: s.c, 'stroke-width': 1.3}, g);
+        marker(g, s.shape, xx, y(v), 4.2, {fill: s.hollow ? 'var(--surface)' : s.c, stroke: s.hollow ? s.c : 'var(--surface)', 'stroke-width': 1.5});
+      });
+    });
+    var plate = svg.closest('.plate'), tip = tipFor(plate);
+    var hl = el('rect', {y: T, height: H - T - B, width: cw, fill: 'var(--hair)', visibility: 'hidden'}, svg);
+    var hit = el('rect', {x: L, y: T, width: W - L - R, height: H - T - B, fill: 'transparent'}, svg);
+    function move(ev) {
+      var pt = svgPoint(svg, ev), i = Math.max(0, Math.min(n - 1, Math.floor((pt[0] - L) / cw)));
+      hl.setAttribute('x', L + cw * i); hl.setAttribute('visibility', 'visible');
+      showTip(svg, tip, o.tip(i), cx(i), pt[1]);
+    }
+    hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+    hit.addEventListener('pointerleave', function () { tip.hidden = true; hl.setAttribute('visibility', 'hidden'); });
+  }
+
+  /* ---------------------------------------------------------------- G5 peak sawtooth */
+  var SETS = [['32sym_0.25ppm', '32심볼 · 0.25 ppm'], ['32sym_0.50ppm', '32심볼 · 0.5 ppm'], ['256sym_0.25ppm', '256심볼 · 0.25 ppm']];
+  seg('g5-set', SETS, SETS[0][0], function (k) {
+    var tr = D.traj[k], ser = Object.keys(tr).map(function (p) {
+      return {name: '패킷 ' + p, c: 'var(--s1)', shape: 'circle', r: 3.4, w: 1.5, pts: tr[p].map(function (v, i) { return [i + 1, v]; }), tip: function (q) { return num(q[1], 2) + '탭'; }};
+    });
+    var lo = Math.min.apply(null, [].concat.apply([], Object.keys(tr).map(function (p) { return tr[p]; })));
+    plot($('c-g5'), {L: 64, xd: [0.7, 8.3], yd: [Math.floor(Math.min(lo, 123.5) * 2) / 2 - 0.3, 126], xt: [1, 2, 3, 4, 5, 6, 7, 8], yt: [122, 122.5, 123, 123.5, 124, 124.5, 125, 125.5, 126].filter(function (v) { return v >= Math.floor(Math.min(lo, 123.5) * 2) / 2 - 0.3; }),
+      yf: function (v) { return v.toFixed(1); }, xl: '패킷 안의 RIF 프래그먼트 순서', yl: '피크 위치 [탭]', series: ser, tipTitle: function (v) { return '프래그먼트 ' + v; }});
+  });
+
+  /* ---------------------------------------------------------------- G1 Pd curves */
+  keys('k-g1', ['soft8', 'kofn6', 'Z', 'L'].map(function (k) { return {svg: keySvg(DET[k].c, DET[k].shape), name: DET[k].name}; }).concat([{svg: '<svg viewBox="0 0 24 12" aria-hidden="true"><line x1="12" y1="0" x2="12" y2="12" stroke="var(--ink)" stroke-width="2.5"/></svg>', name: '모델 L90 (Λ̂ 패킷)'}]));
+  seg('g1-len', LENS.map(function (n) { return [n, n + '심볼']; }), '32', function (n) {
+    var e = D.g1[n], lv = D.lev.filter(function (q) { return q.set === 'awgn' && q.rule === 'soft8' && q.len === +n; })[0];
+    var ser = ['soft8', 'kofn6', 'Z', 'L'].map(function (k) {
+      return {name: DET[k].name, c: DET[k].c, shape: DET[k].shape, r: 3.2, band: true, pts: e.dBm.map(function (d, i) { var v = e[k][i]; return [d, v[0], v[1], v[2], v[3], v[4]]; }),
+              tip: function (p) { return p[1].toFixed(3) + ' (' + p[4] + '/' + p[5] + ')'; }};
+    });
+    var x0 = Math.min.apply(null, e.dBm), x1 = Math.max.apply(null, e.dBm), xt = [];
+    for (var v = Math.ceil(x0 / 2) * 2; v <= x1; v += 2) xt.push(v);
+    plot($('c-g1'), {xd: [x0 - 0.5, x1 + 0.5], yd: [0, 1.02], xt: xt, yt: [0, 0.2, 0.4, 0.6, 0.8, 1], yf: function (v) { return v.toFixed(1); },
+      xf: function (v) { return '−' + Math.abs(v); }, xl: '입력 세기 [dBm]', yl: '검출 확률 Pd', series: ser,
+      refs: [{y: 0.9, t: 'L90', left: true}, {y: 0.99, t: 'L99', left: true}], tipTitle: function (v) { return n + '심볼 · ' + num(v, 0) + ' dBm'; },
+      after: function (svg, x, y) { el('line', {x1: x(lv.model_L90), x2: x(lv.model_L90), y1: y(0.9) - 9, y2: y(0.9) + 9, stroke: 'var(--ink)', 'stroke-width': 2.5}, svg); }});
+  });
+
+  /* ---------------------------------------------------------------- G2 configurations, G6 margin */
+  keys('k-g2', ['1', '2', '4', '8'].map(function (K) { return {svg: keySvg(KC[K], KS[K], null, false, true), name: 'RIF ' + K + '개'}; }).concat([{svg: keySvg('var(--ink-2)', null, '5 4'), name: '모델'}]));
+  seg('g2-lv', [['L90', 'L90 (Pd 0.9)'], ['L99', 'L99 (Pd 0.99)']], 'L90', function (lv) {
+    var ser = [];
+    ['1', '2', '4', '8'].forEach(function (K) {
+      var rs = D.lev.filter(function (q) { return q.set === 'awgn' && q.rule === RULE[K]; }).sort(function (a, b) { return a.len - b.len; });
+      ser.push({name: 'RIF ' + K + '개 모델', c: KC[K], dash: '5 4', w: 1.5, line: true, noTip: true, pts: rs.map(function (q) { return [Math.log2(q.len), q['model_' + lv]]; })});
+      ser.push({name: 'RIF ' + K + '개', c: KC[K], shape: KS[K], r: 4.6, line: false, pts: rs.map(function (q) { return [Math.log2(q.len), q[lv], q['model_' + lv]]; }),
+                tip: function (p) { return num(p[1]) + ' (모델 ' + num(p[2], 1) + ')'; }});
+    });
+    plot($('c-g2'), {L: 58, xd: [4.6, 8.4], yd: [-123, -104], xt: [5, 6, 7, 8], yt: [-122, -119, -116, -113, -110, -107, -104], xf: function (v) { return Math.pow(2, v); },
+      yf: function (v) { return '−' + Math.abs(v); }, xl: 'RIF 길이 [심볼]', yl: lv + ' [dBm]', series: ser, tipTitle: function (v) { return Math.pow(2, v) + '심볼 · ' + lv; }});
+  });
+  (function () {
+    var ser = [], C2 = {L90: 'var(--s1)', L99: 'var(--s2)'}, SH = {L90: 'circle', L99: 'square'};
+    ['L90', 'L99'].forEach(function (lv) {
+      var mean = [], each = [];
+      ['1', '2', '4', '8'].forEach(function (K, i) {
+        var d = D.lev.filter(function (q) { return q.set === 'awgn' && q.rule === RULE[K]; }).map(function (q) { return q['model_' + lv] - q[lv]; });
+        d.forEach(function (v) { each.push([i, v]); });
+        mean.push([i, d.reduce(function (a, b) { return a + b; }, 0) / d.length, Math.min.apply(null, d), Math.max.apply(null, d)]);
+      });
+      ser.push({name: lv + ' (길이별)', c: C2[lv], shape: SH[lv], r: 3, faint: true, line: false, noTip: true, pts: each});
+      ser.push({name: lv + ' 평균', c: C2[lv], shape: SH[lv], r: 4.6, pts: mean, tip: function (p) { return (p[1] >= 0 ? '+' : '−') + Math.abs(p[1]).toFixed(2) + ' dB (' + num(p[2]) + '~' + num(p[3]) + ')'; }});
+    });
+    keys('k-g6', [{svg: keySvg('var(--s1)', 'circle'), name: 'L90 (네 길이 평균)'}, {svg: keySvg('var(--s2)', 'square'), name: 'L99 (네 길이 평균)'}]);
+    plot($('c-g6'), {L: 58, xd: [-0.4, 3.4], yd: [-0.8, 1.0], xt: [0, 1, 2, 3], yt: [-0.8, -0.4, 0, 0.4, 0.8], xf: function (v) { return ['1', '2', '4', '8'][v]; },
+      yf: function (v) { return (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(1); }, xl: '패킷당 RIF 프래그먼트 수', yl: '모델 − 측정 [dB]', series: ser,
+      refs: [{y: 0}], tipTitle: function (v) { return 'RIF ' + ['1', '2', '4', '8'][v] + '개'; }});
+  })();
+
+  /* ---------------------------------------------------------------- G4 packet tail ratios */
+  (function () {
+    var order = [];
+    var by = function (st, f, s) { return D.pkt.filter(function (q) { return q.set === st && f(q); }).sort(s); };
+    order = order.concat(by('awgn', function (q) { return q.len === 32; }, function (a, b) { return b.dBm - a.dBm; }));
+    var g1 = order.length;
+    order = order.concat(by('awgn', function (q) { return q.len !== 32; }, function (a, b) { return a.len - b.len || b.dBm - a.dBm; }));
+    var g2 = order.length;
+    order = order.concat(by('mp', function () { return true; }, function (a, b) { return b.dBm - a.dBm; }));
+    var g3 = order.length;
+    order = order.concat(by('cfo0', function () { return true; }, function (a, b) { return a.len - b.len || b.dBm - a.dBm; }));
+    var SER = [['1e-2', 'var(--s1)', 'circle'], ['1e-3', 'var(--s2)', 'square'], ['1e-4', 'var(--s3)', 'triangle']];
+    keys('k-g4', SER.map(function (s) { return {svg: keySvg(s[1], s[2], null, false, true), name: 'P = ' + s[0] + (s[0] === '1e-4' ? ' (30,000개만)' : '')}; }));
+    var tag = {awgn: '', mp: 'MP ', cfo0: 'CFO0 '};
+    var labels = order.map(function (q) { return tag[q.set] + q.len + '/' + num(q.dBm, 0) + (q.packets > 625 ? '✱' : ''); });
+    cats($('c-g4'), {L: 56, B: 92, rot: true, cats: labels, yd: [0, 1.75], yt: [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75], yf: function (v) { return v.toFixed(2); },
+      band: [0.7, 1.3], refs: [{y: 1, solid: true}], yl: '측정 ÷ χ² 꼬리',
+      groups: [[0, g1], [g1, g2], [g2, g3], [g3, order.length]],
+      series: SER.map(function (s, j) { return {name: s[0], c: s[1], shape: s[2], vals: order.map(function (q) { return q.r[j]; }), err: order.map(function (q) { return q.err[j]; })}; }),
+      tip: function (i) {
+        var q = order[i], set = {awgn: 'AWGN', mp: '주거 LOS', cfo0: '잔여 CFO 0'}[q.set];
+        return '<div class="h">' + set + ' · ' + q.len + '심볼 · ' + num(q.dBm, 0) + ' dBm</div>' + SER.map(function (s, j) { return row('P = ' + s[0], s[1], q.r[j] === null ? '–' : q.r[j].toFixed(2) + ' ± ' + q.err[j].toFixed(2)); }).join('') +
+          row('패킷 수', 'var(--axis)', q.packets.toLocaleString()) + row('수락', 'var(--good)', q.accepts) + row('쌍 상관', 'var(--axis)', (q.rhoPair >= 0 ? '+' : '−') + Math.abs(q.rhoPair).toFixed(3));
+      }});
+  })();
+
+  /* ---------------------------------------------------------------- G3 fragment false alarm, table */
+  (function () {
+    var a32 = D.frag.filter(function (q) { return q.set === 'awgn' && q.len === 32; }).sort(function (a, b) { return a.dBm - b.dBm; });
+    var mz = D.mz.filter(function (q) { return q.channel === 'awgn' && q.len === 32; }).sort(function (a, b) { return a.dBm - b.dBm; });
+    keys('k-g3', [{svg: keySvg('var(--s2)', 'square'), name: '기존 Z (LLS)'}, {svg: keySvg('var(--s2)', 'square', '5 4', true), name: '기존 Z (모델)'}, {svg: keySvg('var(--s3)', 'triangle', null, false, true), name: 'Λ̂ (LLS, 95% 구간)'}]);
+    var lam = a32.filter(function (q) { return q.L_k > 0; }).map(function (q) { return [q.dBm, q.L_pfa, Math.max(q.L_lo, 1e-5), q.L_hi, q.L_k, q.L_n]; });
+    var zero = a32.filter(function (q) { return q.L_k === 0; }).map(function (q) { return [q.dBm, q.L_hi, 'tridown']; });
+    plot($('c-g3'), {L: 58, xd: [-123, -37], yd: [3e-5, 0.15], ylog: true, xt: [-120, -100, -80, -60, -40], yt: [1e-4, 1e-3, 1e-2, 1e-1],
+      yf: function (v) { return v >= 0.01 ? (v * 100) + '%' : '1e' + Math.round(Math.log10(v)); }, xf: function (v) { return '−' + Math.abs(v); },
+      xl: '틀린 키 입력 세기 [dBm]', yl: '프래그먼트 오검출률', refs: [{y: 1e-3, t: '1e-3', tx: -116}],
+      series: [{name: '기존 Z (LLS)', c: 'var(--s2)', shape: 'square', pts: a32.map(function (q) { return [q.dBm, q.Z_pfa]; }), tip: function (p) { return sci(p[1]); }},
+               {name: '기존 Z (모델)', c: 'var(--s2)', shape: 'square', hollow: true, dash: '5 4', w: 1.5, pts: mz.map(function (q) { return [q.dBm, q.Z_pfa_model]; }), tip: function (p) { return sci(p[1]); }},
+               {name: 'Λ̂ (LLS)', c: 'var(--s3)', shape: 'triangle', line: false, err: true, pts: lam, extra: zero, tip: function (p) { return p[4] + '/' + p[5] + ' = ' + sci(p[1]); }}],
+      tipTitle: function (v) { return '32심볼 · ' + num(v, 0) + ' dBm'; }});
+    var t = $('t-frag'), h = '<thead><tr><th>RIF 길이</th><th>세기 [dBm]</th><th class="num">기존 Z</th><th class="num">기존 Z 모델</th><th class="num">Λ̂ 오검출</th><th class="num">κ</th></tr></thead><tbody>';
+    [64, 128, 256].forEach(function (ln, j) {
+      D.frag.filter(function (q) { return q.set === 'awgn' && q.len === ln; }).sort(function (a, b) { return a.dBm - b.dBm; }).forEach(function (q, i) {
+        var m = D.mz.filter(function (z) { return z.channel === 'awgn' && z.len === ln && z.dBm === q.dBm; })[0];
+        h += '<tr' + (i === 0 ? ' class="grp"' : '') + '><td>' + (i === 0 ? ln + '심볼' : '') + '</td><td class="num">' + num(q.dBm, 0) + '</td><td class="num">' + sci(q.Z_pfa) + '</td><td class="num">' + (m ? sci(m.Z_pfa_model) : '–') +
+             '</td><td class="num">' + q.L_k + ' / ' + q.L_n.toLocaleString() + '</td><td class="num">' + q.kappa_med.toFixed(3) + '</td></tr>';
+      });
+    });
+    t.innerHTML = h + '</tbody>';
+  })();
+
+  /* ---------------------------------------------------------------- G11 5k vs 30k */
+  (function () {
+    var cases = [['mp', 32, -40, 'MP 32/−40'], ['mp', 32, -82, 'MP 32/−82'], ['awgn', 64, -40, '64/−40'], ['awgn', 64, -120, '64/−120']];
+    var labs = [], v5 = [], v30 = [], meta = [];
+    cases.forEach(function (c) {
+      [['ratio_1e2', '1e-2'], ['ratio_1e3', '1e-3']].forEach(function (k) {
+        var a = D.t530.filter(function (q) { return q.set === c[0] && q.len === c[1] && q.dBm === c[2] && q.fragments === 5000; })[0];
+        var b = D.t530.filter(function (q) { return q.set === c[0] && q.len === c[1] && q.dBm === c[2] && q.fragments === 30000; })[0];
+        labs.push(c[3] + ' · ' + k[1]); v5.push(a[k[0]]); v30.push(b[k[0]]); meta.push([c[3], k[1]]);
+      });
+    });
+    keys('k-g11', [{svg: keySvg('var(--s2)', 'circle', null, true, true), name: '5,000개'}, {svg: keySvg('var(--s1)', 'circle', null, false, true), name: '30,000개'}]);
+    cats($('c-g11'), {L: 52, B: 96, rot: true, cats: labs, yd: [0.6, 1.6], yt: [0.6, 0.8, 1, 1.2, 1.4, 1.6], yf: function (v) { return v.toFixed(1); }, band: [0.7, 1.3], refs: [{y: 1, solid: true}],
+      yl: '패킷 꼬리 비율', series: [{name: '5,000', c: 'var(--s2)', shape: 'circle', hollow: true, vals: v5}, {name: '30,000', c: 'var(--s1)', shape: 'circle', vals: v30}],
+      tip: function (i) { return '<div class="h">' + meta[i][0] + ' · P = ' + meta[i][1] + '</div>' + row('5,000개', 'var(--s2)', v5[i].toFixed(2)) + row('30,000개', 'var(--s1)', v30[i].toFixed(2)); }});
+  })();
+
+  /* ---------------------------------------------------------------- G7 B-MD pass counts */
+  keys('k-g7', [{svg: keySvg('var(--s2)', 'bar'), name: '관측 패킷 수'}, {svg: keySvg('var(--s1)', 'bar', null, true), name: '독립 가정 (이항)'}]);
+  seg('g7-p', [['-40', '−40 dBm'], ['-82', '−82 dBm']], '-82', function (p) {
+    var rs = D.bmd.filter(function (q) { return q.dBm === +p; }).sort(function (a, b) { return a.passes_of_8 - b.passes_of_8; });
+    cats($('c-g7'), {L: 60, B: 52, bars: true, cats: rs.map(function (q) { return q.passes_of_8 + '개'; }), ylog: true, yd: [0.1, 6000], yt: [0.1, 1, 10, 100, 1000],
+      yl: '패킷 수 (3,750개 중)', series: [{name: '관측', c: 'var(--s2)', vals: rs.map(function (q) { return q.packets_observed; })}, {name: '독립', c: 'var(--s1)', outline: true, vals: rs.map(function (q) { return q.packets_independent; })}],
+      tip: function (i) { var q = rs[i]; return '<div class="h">' + num(+p, 0) + ' dBm · 8개 중 ' + q.passes_of_8 + '개 통과</div>' + row('관측', 'var(--s2)', q.packets_observed) + row('독립 가정', 'var(--s1)', q.packets_independent.toFixed(1)) + row('p', 'var(--axis)', (q.p * 100).toFixed(2) + '%'); }});
+  });
+
+  /* ---------------------------------------------------------------- G8 multipath */
+  (function () {
+    var mp = D.mp.slice().sort(function (a, b) { return a.dBm - b.dBm; }), a32 = D.g1['32'];
+    keys('k-g8a', [{svg: keySvg(DET.soft8.c, 'circle'), name: 'Λ̂ 패킷 (주거 LOS)'}, {svg: keySvg(DET.L.c, 'triangle'), name: 'Λ̂ 프래그먼트 (주거 LOS)'}, {svg: keySvg(DET.Z.c, 'square'), name: '기존 Z (주거 LOS)'}, {svg: keySvg(DET.soft8.c, null, '5 4'), name: 'Λ̂ 패킷 (AWGN)'}]);
+    plot($('c-g8a'), {L: 52, xd: [-127.5, -97], yd: [0, 1.02], xt: [-126, -122, -118, -114, -110, -106, -102, -98], yt: [0, 0.2, 0.4, 0.6, 0.8, 1], yf: function (v) { return v.toFixed(1); },
+      xf: function (v) { return '−' + Math.abs(v); }, xl: '입력 세기 [dBm]', yl: 'Pd', refs: [{y: 0.9}],
+      series: [{name: 'Λ̂ 패킷 (주거 LOS)', c: DET.soft8.c, shape: 'circle', r: 3.6, pts: mp.map(function (q) { return [q.dBm, q.pkt_Pd]; }), tip: function (p) { return p[1].toFixed(3); }},
+               {name: 'Λ̂ 프래그먼트 (주거 LOS)', c: DET.L.c, shape: 'triangle', r: 3.6, pts: mp.map(function (q) { return [q.dBm, q.L_Pd]; }), tip: function (p) { return p[1].toFixed(3); }},
+               {name: '기존 Z (주거 LOS)', c: DET.Z.c, shape: 'square', r: 3.4, pts: mp.map(function (q) { return [q.dBm, q.Z_Pd]; }), tip: function (p) { return p[1].toFixed(3); }},
+               {name: 'Λ̂ 패킷 (AWGN)', c: DET.soft8.c, dash: '5 4', w: 1.5, pts: a32.dBm.map(function (d, i) { return [d, a32.soft8[i][0]]; }), tip: function (p) { return p[1].toFixed(3); }}],
+      tipTitle: function (v) { return '32심볼 · ' + num(v, 0) + ' dBm'; }});
+    keys('k-g8b', [{svg: keySvg(DET.L.c, 'triangle'), name: 'Λ̂ 프래그먼트'}, {svg: keySvg(DET.soft8.c, 'circle'), name: 'Λ̂ 패킷'}]);
+    plot($('c-g8b'), {L: 52, xd: [-121, -97], yd: [0, 1.02], xt: [-120, -116, -112, -108, -104, -100], yt: [0, 0.2, 0.4, 0.6, 0.8, 1], yf: function (v) { return v.toFixed(1); },
+      xf: function (v) { return '−' + Math.abs(v); }, xl: '입력 세기 [dBm]', yl: '피크가 첫 경로 ±2탭', refs: [{y: 1, t: 'AWGN 1.00'}, {y: 0.575, t: '채널만 (1 ns) 0.575'}],
+      series: [{name: 'Λ̂ 프래그먼트', c: DET.L.c, shape: 'triangle', r: 3.6, pts: mp.map(function (q) { return [q.dBm, q.L_PosAcc]; }), tip: function (p) { return p[1].toFixed(3); }},
+               {name: 'Λ̂ 패킷', c: DET.soft8.c, shape: 'circle', r: 3.6, pts: mp.map(function (q) { return [q.dBm, q.pkt_PosAcc]; }), tip: function (p) { return p[1].toFixed(3); }}],
+      tipTitle: function (v) { return num(v, 0) + ' dBm'; }});
+    var off = D.off, tot = off[0].detections;
+    cats($('c-g8c'), {L: 52, B: 52, bars: true, cats: off.map(function (q) { return q.bin.replace('<=', '≤').replace('>=', '≥').replace(/-/g, '−'); }), yd: [0, 0.45], yt: [0, 0.1, 0.2, 0.3, 0.4],
+      yf: function (v) { return (v * 100).toFixed(0) + '%'; }, yl: '검출 비율', series: [{name: '검출', c: 'var(--s1)', vals: off.map(function (q) { return q.count / tot; })}],
+      tip: function (i) { var q = off[i]; return '<div class="h">피크 − 125: ' + q.bin + '</div>' + row('검출', 'var(--s1)', q.count + ' / ' + tot + ' (' + (q.count / tot * 100).toFixed(1) + '%)'); }});
+    var fp = D.fp, h = '<thead><tr><th>값</th><th class="num">LLS CIR (Λ̂)</th><th class="num">채널만 (1 ns)</th></tr></thead><tbody>';
+    var NM = {'first/peak dB, 10%': '첫 경로 / 피크, 하위 10%', 'first/peak dB, median': '첫 경로 / 피크, 중앙값', 'first/peak dB, 90%': '첫 경로 / 피크, 상위 90%',
+              'share >= -10 dB': '첫 경로가 피크 −10 dB 안', 'strongest tap within +-2 of first path': '피크가 첫 경로 ±2 안'};
+    fp.forEach(function (q) {
+      var dB = q.quantity.indexOf('dB,') > 0, f = function (v) { return v === null ? '–' : dB ? num(v) + ' dB' : (v * 100).toFixed(1) + '%'; };
+      h += '<tr><td>' + (NM[q.quantity] || q.quantity) + '</td><td class="num">' + f(q.lls_cir) + '</td><td class="num">' + f(q.channel_only_1ns) + '</td></tr>';
+    });
+    $('t-fp').innerHTML = h + '</tbody>';
+  })();
+
+  /* ---------------------------------------------------------------- G9 residual CFO, table */
+  (function () {
+    var C9 = {awgn: 'var(--s1)', cfo0: 'var(--s2)'}, S9 = {awgn: 'circle', cfo0: 'square'}, N9 = {awgn: '잔여 CFO 0.25 ppm (B-H0)', cfo0: '잔여 CFO 0 (B-H0-3)'};
+    keys('k-g9', [{svg: keySvg(C9.awgn, 'circle'), name: N9.awgn}, {svg: keySvg(C9.cfo0, 'square', null, false, true), name: N9.cfo0 + ', 32·256심볼'}]);
+    function ser(dbm, key) {
+      return ['awgn', 'cfo0'].map(function (st) {
+        var rs = D.frag.filter(function (q) { return q.set === st && q.dBm === dbm; }).sort(function (a, b) { return a.len - b.len; });
+        return {name: N9[st], c: C9[st], shape: S9[st], r: 4.6, line: st === 'awgn', pts: rs.map(function (q) { return [Math.log2(q.len), q[key]]; }),
+                tip: function (p) { return key === 'Z_pfa' ? sci(p[1]) : p[1].toFixed(3); }};
+      });
+    }
+    var common = {L: 56, xd: [4.6, 8.4], xt: [5, 6, 7, 8], xf: function (v) { return Math.pow(2, v); }, xl: 'RIF 길이 [심볼]', tipTitle: function (v) { return Math.pow(2, v) + '심볼'; }};
+    plot($('c-g9a'), Object.assign({yd: [0.3, 1.05], yt: [0.4, 0.6, 0.8, 1], yf: function (v) { return v.toFixed(1); }, yl: 'κ 중앙값', series: ser(-40, 'kappa_med')}, common));
+    plot($('c-g9b'), Object.assign({yd: [0, 0.065], yt: [0, 0.02, 0.04, 0.06], yf: function (v) { return (v * 100).toFixed(0) + '%'; }, yl: '기존 Z 오검출률', series: ser(-82, 'Z_pfa')}, common));
+    var rows = D.frag.filter(function (q) { return q.set === 'cfo0'; }).sort(function (a, b) { return a.len - b.len || b.dBm - a.dBm; });
+    var h = '<thead><tr><th>조건</th><th class="num">κ</th><th class="num">기존 Z</th><th class="num">Λ̂ 탭 꼬리 t = 10 / 14 / 18</th><th class="num">Λ̂ 오검출</th><th class="num">패킷 꼬리 1e-2 / 1e-3</th><th class="num">쌍 상관</th></tr></thead><tbody>';
+    rows.forEach(function (q) {
+      var p = D.pkt.filter(function (z) { return z.set === 'cfo0' && z.len === q.len && z.dBm === q.dBm; })[0];
+      h += '<tr><td>' + q.len + '심볼 · ' + num(q.dBm, 0) + ' dBm</td><td class="num">' + q.kappa_med.toFixed(3) + '</td><td class="num">' + sci(q.Z_pfa) + '</td><td class="num">' +
+           [q.L_tail_t10, q.L_tail_t14, q.L_tail_t18].map(function (v) { return v.toFixed(2); }).join(' / ') + '</td><td class="num">' + q.L_k + ' / ' + q.L_n.toLocaleString() +
+           '</td><td class="num">' + p.r[0].toFixed(2) + ' / ' + p.r[1].toFixed(2) + '</td><td class="num">' + (p.rhoPair >= 0 ? '+' : '−') + Math.abs(p.rhoPair).toFixed(3) + '</td></tr>';
+    });
+    $('t-cfo').innerHTML = h + '</tbody>';
+  })();
+
+  /* ---------------------------------------------------------------- consistency table */
+  (function () {
+    var h = '<thead><tr><th>시험</th><th class="num">RIF 길이</th><th class="num">측정</th><th class="num">모델 · 이론</th></tr></thead><tbody>';
+    D.cons.forEach(function (q) {
+      var cost = q.quantity.indexOf('cost') > 0;
+      var name = cost ? 'B-F: 하한 F = 1의 L90 비용' : q.quantity.indexOf('floor 0') > 0 ? 'B-S: 바꿔치기 패킷 수락, 하한 0' : 'B-S: 바꿔치기 패킷 수락, F = 1';
+      h += '<tr><td>' + name + '</td><td class="num">' + q.len + '</td><td class="num">' + (cost ? q.measured.toFixed(2) + ' dB' : q.measured.toFixed(2)) + '</td><td class="num">' + (cost ? '약 ' + q.model.toFixed(1) + ' dB (기준 ≤ 0.5)' : q.model.toFixed(3)) + '</td></tr>';
+    });
+    $('t-cons').innerHTML = h + '</tbody>';
+  })();
+
+  /* ---------------------------------------------------------------- G10 watch item */
+  keys('k-g10', LENS.map(function (n, i) { return {svg: keySvg(['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'][i], ['circle', 'square', 'triangle', 'diamond'][i]), name: n + '심볼'}; }).concat([{svg: keySvg('var(--ink)', 'circle'), name: '네 길이 합'}]));
+  seg('g10-k', [['packet_ratio', '패킷 초과 ÷ 합집합 한계'], ['path_ratio', '경로 초과 ÷ 합집합 한계']], 'packet_ratio', function (key) {
+    var ser = LENS.map(function (n, i) {
+      var rs = D.chk.filter(function (q) { return q.len === +n; }).sort(function (a, b) { return a.t - b.t; });
+      return {name: n + '심볼', c: ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'][i], shape: ['circle', 'square', 'triangle', 'diamond'][i], r: 4.2,
+              pts: rs.map(function (q) { return [q.t, q[key], key === 'packet_ratio' ? q.packets_over : q.paths_over, q.union_expected]; }),
+              tip: function (p) { return p[1].toFixed(2) + ' (' + p[2] + ' / ' + p[3].toFixed(1) + ')'; }};
+    });
+    var pooled = [21, 27, 32].map(function (t) {
+      var rs = D.chk.filter(function (q) { return q.t === t; }), k = rs.reduce(function (a, q) { return a + (key === 'packet_ratio' ? q.packets_over : q.paths_over); }, 0), e = rs.reduce(function (a, q) { return a + q.union_expected; }, 0);
+      return [t, k / e, k, e];
+    });
+    ser.push({name: '네 길이 합', c: 'var(--ink)', shape: 'circle', w: 2.6, r: 4.6, pts: pooled, tip: function (p) { return p[1].toFixed(2) + ' (' + p[2] + ' / ' + p[3].toFixed(1) + ')'; }});
+    plot($('c-g10'), {xd: [20, 33], yd: [0, 2.6], xt: [21, 27, 32], yt: [0, 0.5, 1, 1.5, 2, 2.5], yf: function (v) { return v.toFixed(1); },
+      xf: function (v) { return 't = ' + v; }, xl: '꼬리 깊이 t (경로 하나의 χ²₈ 꼬리 7e-3, 7e-4, 9e-5)', yl: '초과 수 ÷ 합집합 기대', series: ser,
+      refs: [{y: 1, t: '합집합 한계'}, {y: 1.5, t: '문턱 여유 1.5'}], tipTitle: function (v) { return 't = ' + v + ', −40 dBm, RIF 4개'; }});
+  });
+})();
+</script>
+<script>
+(function () {
+  /* theme toggle: system -> light -> dark */
+  var themeBtn = document.getElementById('theme-btn');
+  function themeLabel() {
+    var t = document.documentElement.getAttribute('data-theme');
+    themeBtn.textContent = '테마: ' + (t === 'light' ? '라이트' : t === 'dark' ? '다크' : '시스템');
+  }
+  themeBtn.addEventListener('click', function () {
+    var t = document.documentElement.getAttribute('data-theme');
+    var next = t === null ? 'light' : t === 'light' ? 'dark' : null;
+    if (next) document.documentElement.setAttribute('data-theme', next); else document.documentElement.removeAttribute('data-theme');
+    try { if (next) localStorage.setItem('rif-theme', next); else localStorage.removeItem('rif-theme'); } catch (e) {}
+    themeLabel();
+  });
+  themeLabel();
+})();
+</script>
+</body>
+</html>
