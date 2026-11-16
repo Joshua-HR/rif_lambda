@@ -206,7 +206,7 @@ details[open] > summary{margin-bottom:8px}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-16 갱신 (B-1R 결과)</span>
+  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-16 갱신 (B-1R·B-F·B-S 결과)</span>
   <h1>RIF 검증 체크리스트</h1>
   <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾸고, 합성 시험이 RIF 길이 32·64·128·256을 지원하게 된 지금의 master로 직접 돌려 볼 시험입니다. 바로 아래 "할 일 순서"를 위에서부터 따라가세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남고, 순서표의 상태와 "다음" 표시도 따라 바뀝니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
@@ -669,7 +669,7 @@ R1p.pkt.L99, R1a.pkt.L99, R1c.L99                               % L99 (Pd 99%)</
     <div class="item-head"><span class="iid">B-F</span><h3>일관성 하한의 감도 비용</h3><span class="tags"><span class="tag">권장</span></span></div>
     <div class="cmd-box"><pre class="cmd"><code>R1f0 = h1_pd_analyze('D:/rif/h1_awgn', 'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', A.suggest.Drift, 'Floor', 0);
 R1p.pkt.L90 - R1f0.pkt.L90     % 하한 F = 1의 비용 [dB]</code></pre></div>
-    <dl class="expect"><dt>기준</dt><dd>≤ 0.5 dB (모델 약 0.2 dB)</dd></dl>
+    <dl class="expect"><dt>기준</dt><dd>≤ 0.5 dB (모델 약 0.2 dB)</dd><dt>결과</dt><dd>2026-11-13, 32 / 64 / 128 / 256심볼: 0.32 / 0.34 / 0.18 / 0.31 dB(평균 0.29) → <b>통과</b>. 모델보다 약 0.1 dB 크고 결정 6 안 1 시뮬레이션(0.2~0.3)과 비슷함. 하한을 소프트 합의 피크 탭에서 보므로 소수 탭 어긋남(결정 5)이 조금 보탰을 수 있음. F = 1은 결정 6(안 3) 구현 전까지의 임시 하한(<code>DECISIONS.md</code> 결정 6 "LLS 기준선")</dd></dl>
     <div class="rec"><label for="st-B-F">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-F"></select><span class="meta" id="mt-B-F"></span></div><textarea id="nt-B-F" placeholder="예: 0.21 dB"></textarea></div></div>
   </article>
 
@@ -683,7 +683,7 @@ r.Lam_W(:, i5) = r0.Lam_W(:, 1:numel(i5));                 % 5번 RIF를 틀린 
 P0 = rif_packet(r, 'Combine', 'soft', 'Floor', 0);
 P1 = rif_packet(r, 'Combine', 'soft', 'Floor', 1);
 [mean(P0.valid), mean(P1.valid)]                           % 기대: 약 1.0, 약 0.6</code></pre></div>
-    <dl class="expect"><dt>기대</dt><dd>F = 1에서 약 40% 폐기 (= 1 − e^(−F/2))</dd></dl>
+    <dl class="expect"><dt>기대</dt><dd>F = 1에서 약 40% 폐기 (= 1 − e^(−F/2))</dd><dt>결과</dt><dd>2026-11-13: 하한 0 수락 1.00, F = 1 수락 0.62 → 38% 폐기(이론 39.3%, 500패킷이면 ±2.2%). 바꾼 틀린 키 프래그먼트의 Λ̂가 소프트 합의 피크 탭에서 LLS에서도 χ²₂를 따름 → 결정 6 탐지 곡선의 가정 성립. −110 dBm은 32심볼 L90보다 6.8 dB 강해, 안 3을 구현하면 약 99%를 잡을 것으로 봄. 안 3 구현 뒤 같은 코드로 다시 잼(<code>DECISIONS.md</code> 결정 6 "LLS 기준선")</dd></dl>
     <div class="rec"><label for="st-B-S">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-S"></select><span class="meta" id="mt-B-S"></span></div><textarea id="nt-B-S" placeholder="예: 0.99 / 0.62 → 37% 폐기"></textarea></div></div>
   </article>
 
