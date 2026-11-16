@@ -787,6 +787,7 @@ R1n.pkt.L99, R1.L99, R1c.L99                 % L99 (Pd 99%)
 | 같은 채널 확인 (B-CH) | B-CH 코드의 두 상관, 또는 채널 생성 위치(파일·함수) |
 | 패킷 판정 표 (H0 근거, H1 패킷 Pd·L90·L99) | `h0_pfa_analyze` "Packet decision" 표와 `h0_packet.png`, `h1_pd_analyze` 패킷 표와 그림 |
 | RIF 1·2·4개 구성 | `R0k`·`R1k`(또는 `R0one`·`R1one`)의 패킷 표와 L90·L99 |
+| 보고서 그래프용 곡선 (단계 B) | `export_stageb_csv` → `lambda_patch/results/stage_b/*.csv` (파일 설명은 같은 폴더의 `README.md`) |
 
 결과 변수(`R0.cond`, `R0.EL`, `R1.cond`, `R1.L90` 등)는 `.mat`으로 저장해 두면 단계 간 비교가 쉽습니다.
 

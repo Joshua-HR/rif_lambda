@@ -179,6 +179,7 @@ momPi[k] += z * z;           // z^2 (복소)
 | `test/gen_synthetic_dumps.m` | 신규 | 파형 모델로 5열(또는 2열) 합성 덤프 생성. RIF 길이 `'N'`(32·64·128·256), 잔여 CFO `'Ppm'`, 이동량 `'Drift'` 또는 `'Sco'` + `'FragInterval'`(기본은 잔여 CFO와 연동), 루트에 생성 조건 파일 `synthetic_set.txt` (7.4절) |
 | `rif_packet.m` | 신규 | 패킷 판정 (FiRa medium, 9장) |
 | `check_packet_assumptions.m` | 신규 | LLS 덤프로 패킷 전제 확인 (9.5절) |
+| `export_stageb_csv.m` | 신규 | 단계 B 결과(Pd 곡선, 오검출률, 꼬리 곡선)를 보고서 그래프용 CSV로 저장 (`results/stage_b/`, 같은 폴더의 README) |
 | `rif_series_style.m` | 신규 | 그림 계열의 색·선 모양. 색은 세기마다 하나(10개까지 구분색, 그 이상은 순서 있는 색), 선 모양은 RIF 길이마다 하나라 모든 조건이 구분됨. 원본 `h0_pfa_analyze`의 주 그림은 길이마다 색 하나라 같은 길이의 세기들이 같은 색이었고, MATLAB `lines()`는 8번째 계열부터 색이 반복됨 |
 | `test/run_synthetic_test.m` | 신규 | 합성 덤프로 자동 확인 (5열: 10단계 94개 항목, 2열: 6단계 49개 항목). 생성 조건 파일에서 길이·CFO·이동량·Scale을 읽고, 범위는 `synthetic_expect(N)`에서 가져와 조건에 맞게 옮기거나 `[INFO]`로 둠 (7.4절) |
 | `test/synthetic_expect.m` | 생성 | 판정 143개 × 길이 4개의 범위, 중심값, 분류. `model/build_expect.py`가 만들며 손으로 고치지 않음 |
