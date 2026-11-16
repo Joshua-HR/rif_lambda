@@ -1,0 +1,6 @@
+quantity,lls_cir,channel_only_1ns,source
+"first/peak dB, 10%",-4.98,-7.08,B-R (b); channel: LLS-source agent 2026-11-16
+"first/peak dB, median",-0.98,-0.14,same
+"first/peak dB, 90%",0.0,0.0,same
+share >= -10 dB,0.973,,B-R (b)
+strongest tap within +-2 of first path,0.421,0.575,B-R (2) at -98 dBm; channel: LLS-source agent

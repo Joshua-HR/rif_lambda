@@ -1,8 +1,20 @@
-# 단계 B 그래프용 CSV
+# 단계 B 그래프용 데이터
 
-현재 LLS(2열 덤프)로 한 단계 B 검증의 곡선 데이터입니다. 체크리스트 메모와 `TEST_PLAN.md` 3.3절에는 요약값만 있으므로, 보고서 그래프는 이 파일들로 그립니다.
+현재 LLS(2열 덤프)로 한 단계 B 검증의 데이터와 그림입니다. 보고서 작성 지시는 `REPORT_BRIEF.md`에 있습니다.
 
-## 만드는 방법
+| 위치 | 내용 | 만드는 방법 |
+|---|---|---|
+| `notes/*.csv` | 체크리스트 기록(`docs/checklist.html`의 사본)에서 뽑은 수치와 모델 값. 기록의 알려진 오류는 바로잡음 | `python3 lambda_patch/model/stageb_notes_to_csv.py` |
+| 이 폴더의 `h0_*.csv`, `h1_*.csv` | MATLAB으로 다시 돌린 전체 곡선 (아래) | MATLAB `export_stageb_csv` |
+| `figures/*.png` | 보고서 그림 G1~G11 | `python3 lambda_patch/model/plot_stageb.py` (matplotlib) |
+
+`notes/` 파일: `h0_frag.csv`(조건별 기존 Z·Λ̂ 오검출률, κ, Λ̂ 탭 꼬리), `h0_pkt.csv`(조건별 소프트 꼬리 비율·수락·쌍 상관), `tail_5k_vs_30k.csv`, `h1_levels.csv`(L90·L99와 모델), `h1_pkt_pd_awgn_transition.csv`, `h1_mp_pd.csv`·`h1_mp_peak_offset.csv`·`h1_mp_firstpath.csv`(주거 LOS), `b0_peak_trajectories.csv`, `bmd_pass_count.csv`, `b1r_tail_summary.csv`·`b1r_tail_flagged.csv`·`b1r_packet_check.csv`, `consistency.csv`, `model_z_pfa.csv`. 각 행의 `source` 열에 출처가 있습니다.
+
+## MATLAB 전체 곡선 (`export_stageb_csv`)
+
+체크리스트 메모와 `TEST_PLAN.md` 3.3절에는 요약값만 있으므로, 전체 곡선은 아래 방법으로 만듭니다.
+
+### 만드는 방법
 
 MATLAB에서 `lambda_patch`를 경로에 두고 실행합니다(덤프 루트 `D:/rif`, 출력은 이 폴더).
 
@@ -14,7 +26,7 @@ export_stageb_csv                 % = export_stageb_csv('D:/rif', '<이 폴더>'
 - 옵션은 `TEST_PLAN.md` 3.2절과 같습니다: Λ̂ 패킷은 `'Chip', 'fixed', 'Profile', 'fira-medium', 'Drift', 0`, 위치 정확도는 `'PeakTap', 125`(`'Tol'` AWGN 3, 멀티패스 2).
 - H0는 `h0_stats_cache.mat`를 써서 빠르고, H1은 8번 모든 덤프를 다시 읽어 가장 오래 걸립니다.
 
-## 파일
+### 파일
 
 세기는 dBm(음수)입니다. 판정기: Z = 기존 Z 판정기, L = CIR 추정 Λ̂(프래그먼트).
 
@@ -28,7 +40,7 @@ export_stageb_csv                 % = export_stageb_csv('D:/rif', '<이 폴더>'
 | `h0_pkt.csv` | set, K, len, dBm, packets, accepts, rhoPair, pairRatio, t1~t3, ratio1~ratio3 (P(χ²₂K ≥ t)가 1e-2 / 1e-3 / 1e-4 아래로 처음 내려가는 격자점의 꼬리 비율, 기대 개수가 5 미만이면 NaN) | 패킷 오검출 근거(꼬리 비율) |
 | `h0_pkt_tail.csv` | set, K, len, dBm, t, count, paths, P_meas, P_chi2_2K (이동 0 소프트 합 경로에서 S ≥ t, 정수 격자 0:ceil(T)) | 패킷 꼬리 곡선 |
 
-## 읽을 때 주의
+### 읽을 때 주의
 
 - 패킷 수락은 모든 조건에서 0이라, 10⁻⁶ 자체는 셀 수 없습니다. 판정 근거는 꼬리 비율이고, 조건마다 5,000개(625패킷)에서는 실제 흔들림이 Poisson 오차의 1.3~1.5배입니다(`TEST_PLAN.md` 3.3절 "단계 B 결론").
 - RIF 4개 −40 dBm처럼 경로 꼬리 비율이 깊어질수록 오르는 조건은, 경로 수가 아니라 패킷 수 ÷ 합집합 한계로 판단합니다("B-1R 결과").

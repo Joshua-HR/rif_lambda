@@ -1,0 +1,32 @@
+set,rule,len,L90,L99,L90loc,model_L90,model_L99,source
+awgn,soft8,32,-116.76,-115.33,,-116.7,-115.7,checklist 2026-11-16 B-H1
+awgn,kofn6,32,-113.28,-112.25,,-112.5,-111.7,checklist 2026-11-16 B-H1
+awgn,fragZ,32,-111.9,-110.36,,-111.3,-109.9,checklist 2026-11-16 B-H1
+awgn,fragL,32,-110.35,-108.9,,-109.6,-108.1,checklist 2026-11-16 B-H1
+awgn,soft8,64,-119.69,-118.08,,-119.5,-118.6,checklist 2026-11-16 B-H1
+awgn,kofn6,64,-116.19,-115.17,,,,checklist 2026-11-16 B-H1
+awgn,fragZ,64,-114.76,-113.25,,,,checklist 2026-11-16 B-H1
+awgn,fragL,64,-113.28,-111.97,,,,checklist 2026-11-16 B-H1
+awgn,soft8,128,-122.08,-120.25,,-121.9,-120.9,checklist 2026-11-16 B-H1
+awgn,kofn6,128,-118.43,-117.5,,,,checklist 2026-11-16 B-H1
+awgn,fragZ,128,-117.13,-115.41,,,,checklist 2026-11-16 B-H1
+awgn,fragL,128,-115.58,-114.08,,,,checklist 2026-11-16 B-H1
+awgn,soft8,256,-121.61,-120.3,,-121.5,-120.6,checklist 2026-11-16 B-H1
+awgn,kofn6,256,-118.24,-117.31,,,,checklist 2026-11-16 B-H1
+awgn,fragZ,256,-116.76,-115.26,,,,checklist 2026-11-16 B-H1
+awgn,fragL,256,-115.28,-113.71,,,,checklist 2026-11-16 B-H1
+awgn,single1,32,-107.04,-105.52,,-106.2,-104.8,checklist 2026-11-16 B-1R
+awgn,soft2,32,-111.26,-110.07,,-110.5,-109.5,checklist 2026-11-16 B-1R
+awgn,soft4,32,-114.23,-113.13,,-114.0,-112.9,checklist 2026-11-16 B-1R
+awgn,single1,64,-110.01,-108.59,,-109.1,-107.8,checklist 2026-11-16 B-1R
+awgn,soft2,64,-114.11,-113.05,,-113.4,-112.3,checklist 2026-11-16 B-1R
+awgn,soft4,64,-117.16,-116.09,,-116.7,-115.7,checklist 2026-11-16 B-1R
+awgn,single1,128,-112.23,-110.83,,-111.4,-110.1,checklist 2026-11-16 B-1R
+awgn,soft2,128,-116.45,-115.11,,-115.7,-114.6,checklist 2026-11-16 B-1R
+awgn,soft4,128,-119.38,-118.16,,-119.2,-118.0,checklist 2026-11-16 B-1R
+awgn,single1,256,-111.95,-110.51,,-111.2,-109.8,checklist 2026-11-16 B-1R
+awgn,soft2,256,-116.19,-115.02,,-115.5,-114.4,checklist 2026-11-16 B-1R
+awgn,soft4,256,-119.15,-118.03,,-118.9,-117.7,checklist 2026-11-16 B-1R
+mp,fragZ,32,-105.15,-101.33,,,,checklist 2026-11-16 B-R (B-H1-3)
+mp,fragL,32,-103.85,-100.13,,,,checklist 2026-11-16 B-R (B-H1-3)
+mp,soft8,32,-109.07,-104.5,,,,checklist 2026-11-16 B-R (B-H1-3)

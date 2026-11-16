@@ -1,0 +1,7 @@
+quantity,len,measured,model,source
+B-F floor cost dB,32,0.32379,0.2,checklist 2026-11-16 B-F
+B-F floor cost dB,64,0.33762,0.2,checklist 2026-11-16 B-F
+B-F floor cost dB,128,0.18081,0.2,checklist 2026-11-16 B-F
+B-F floor cost dB,256,0.30546,0.2,checklist 2026-11-16 B-F
+"B-S accepted, floor 0",32,1.0,1.0,checklist 2026-11-16 B-S
+"B-S accepted, F = 1",32,0.62,0.606531,checklist 2026-11-16 B-S
