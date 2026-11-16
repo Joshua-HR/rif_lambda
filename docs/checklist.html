@@ -206,7 +206,7 @@ details[open] > summary{margin-bottom:8px}
 <div class="wrap">
 
 <header class="hero">
-  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-13 갱신 (단계 B 결론)</span>
+  <span class="eyebrow">lambda_patch · master 기준 · 2026-11-16 갱신 (B-1R 결과)</span>
   <h1>RIF 검증 체크리스트</h1>
   <p class="lede">판정 기준을 패킷 오수락 10⁻⁶으로 바꾸고, 합성 시험이 RIF 길이 32·64·128·256을 지원하게 된 지금의 master로 직접 돌려 볼 시험입니다. 바로 아래 "할 일 순서"를 위에서부터 따라가세요. 항목마다 상태를 고르고 측정값을 적으면 기록이 남고, 순서표의 상태와 "다음" 표시도 따라 바뀝니다. 명령과 기준의 출처는 <code>lambda_patch/TEST_PLAN.md</code>입니다.</p>
   <div class="sync" id="sync" data-mode="pending"><span class="dot"></span><span id="sync-text">기록 저장소에 연결하는 중입니다.</span></div>
@@ -738,7 +738,32 @@ R1one = h1_pd_analyze('D:/rif/h1_1rif', 'Chip', 'fixed', 'Profile', 'fira-medium
         <tr><td>RIF 8개 (B-H1)</td><td class="num">−116.7 / −115.7</td><td class="num">−119.5 / −118.6</td><td class="num">−121.9 / −120.9</td><td class="num">−121.5 / −120.6</td></tr>
       </tbody>
     </table></div>
-    <dl class="expect"><dt>기대</dt><dd>표는 Λ̂ 소프트 패킷 L90 / L99 [dBm] 모델 값(<code>model/results/pooled_moments.json</code>, <code>l99.json</code>). 64·128심볼은 B-H1-2 덤프가 있을 때. RIF 1개는 모든 규칙이 single, 문턱 36.53. B-H1에서 프래그먼트마다 자기 탭을 쓰는 판정은 모델보다 0.6~0.8 dB 좋고 소프트 합은 0.1 dB만 좋았으므로, 1개는 모델보다 0.5~0.8 dB 좋고 2·4개는 그 사이로 예상</dd><dt>기준</dt><dd>H0 (1): 수락 0, 꼬리 비율 0.7~1.3(1e-2, 1e-3), 쌍 상관 ≤ 약 0.06. RIF 1개는 소프트 합이 없어 꼬리 비율과 쌍 상관이 NaN인 것이 정상이고, 근거는 B-H0의 Λ̂ 탭 꼬리 비율(t ≤ 18, 문턱까지는 외삽). H1 (2): 모델 ±1.5 dB. 위치 정확도 (3): ≥ 98%</dd><dt>이동</dt><dd>모든 구성 <code>'Drift'</code> 0. LLS는 RIF 시작점을 정수 샘플로 옮겨 피크가 1탭 안에 머묾(결정 5)</dd><dt>시간</dt><dd><code>h0_pfa_analyze</code>는 B-H0의 캐시를 써서 빠르고, <code>h1_pd_analyze</code>는 구성마다 <code>h1_awgn</code>을 다시 읽어 B-H1의 약 세 배</dd></dl>
+    <dl class="expect"><dt>기대</dt><dd>표는 Λ̂ 소프트 패킷 L90 / L99 [dBm] 모델 값(<code>model/results/pooled_moments.json</code>, <code>l99.json</code>). 64·128심볼은 B-H1-2 덤프가 있을 때. RIF 1개는 모든 규칙이 single, 문턱 36.53. B-H1에서 프래그먼트마다 자기 탭을 쓰는 판정은 모델보다 0.6~0.8 dB 좋고 소프트 합은 0.1 dB만 좋았으므로, 1개는 모델보다 0.5~0.8 dB 좋고 2·4개는 그 사이로 예상</dd><dt>기준</dt><dd>H0 (1): 수락 0, 꼬리 비율 0.7~1.3(1e-2, 1e-3), 쌍 상관 ≤ 약 0.06. RIF 1개는 소프트 합이 없어 꼬리 비율과 쌍 상관이 NaN인 것이 정상이고, 근거는 B-H0의 Λ̂ 탭 꼬리 비율(t ≤ 18, 문턱까지는 외삽). H1 (2): 모델 ±1.5 dB. 위치 정확도 (3): ≥ 98%. 깊은 꼬리의 경로 비율이 1.3을 넘으면, 문턱을 넘은 패킷 수 ÷ 합집합 한계 ≤ 1.5로 판단(아래 감시 항목 확인 코드)</dd><dt>이동</dt><dd>모든 구성 <code>'Drift'</code> 0. LLS는 RIF 시작점을 정수 샘플로 옮겨 피크가 1탭 안에 머묾(결정 5)</dd><dt>시간</dt><dd><code>h0_pfa_analyze</code>는 B-H0의 캐시를 써서 빠르고, <code>h1_pd_analyze</code>는 구성마다 <code>h1_awgn</code>을 다시 읽어 B-H1의 약 세 배</dd><dt>결과</dt><dd>2026-11-16 → <b>통과</b>. 패킷 L90 / L99(32 / 64 / 128 / 256심볼): 1개 −107.04 / −105.52, −110.01 / −108.59, −112.23 / −110.83, −111.95 / −110.51. 2개 −111.26 / −110.07, −114.11 / −113.05, −116.45 / −115.11, −116.19 / −115.02. 4개 −114.23 / −113.13, −117.16 / −116.09, −119.38 / −118.16, −119.15 / −118.03 dBm. 모델보다 L90 1 / 2 / 4 / 8개 0.83 / 0.73 / 0.28 / 0.13 dB 좋음(예상대로 개수가 늘수록 소수 탭 손해가 커짐: 1개 기준 2개 약 0.1, 4개 약 0.55, 8개 약 0.7 dB). 위치 정확도 1.000. H0: 패킷 165,000 / 82,500 / 41,250개에서 수락 0, 쌍 상관 ≤ 0.028. 꼬리 비율 조건 평균 2개 0.997 / 0.970 / 0.993(t = 14 / 19 / 24), 4개 0.998 / 0.989 / 0.916(t = 21 / 27 / 32), 1개는 single이라 NaN</dd><dt>감시</dt><dd>RIF 4개 −40 dBm 128·256심볼: 경로 꼬리 비율이 깊어질수록 오름(128심볼 0.89 / 0.99 / 2.41, 256심볼 1.16 / 1.21 / 1.81. 32심볼은 0.90 / 0.83 / 0.90). 문턱을 넘은 패킷 수 ÷ 합집합 한계(문턱을 정한 기준)는 −40 dBm 네 길이 합 0.42 / 0.55 / 0.80(95% 상한 1.02), t = 32에서 길이별 0.60 / 0.80 / 1.05 / 0.75 → 측정한 깊이까지는 여유 1.5 안. 넘은 패킷 하나에 경로 1.5~2.8개가 몰림(프래그먼트 하나의 잡음 추정이 탭 57개를 함께 움직임). 문턱은 경로당 약 1e-8로 네 자릿수 더 깊어서, 확정하려면 128·256심볼 −40 dBm을 30,000개로 늘리고 아래 코드를 다시 돌림(선택, t = 36까지 봄)</dd></dl>
+    <div class="cmd-box"><pre class="cmd"><code>% 감시 항목 확인: RIF 2·4개 꼬리 점과 1.3을 넘는 조건, 그리고 RIF 4개 -40 dBm의 경로·패킷 초과를 합집합 한계와 비교
+for i = 2:3
+    P = R0k{i}.PK;  tr = vertcat(P.tailRatio);
+    fprintf('K=%d  규칙 %s  T %.2f  꼬리 점 %s  평균 %.3f %.3f %.3f  최대 %.3f %.3f %.3f\n', K(i), ...
+            R0k{i}.pkInfo.rule, R0k{i}.pkInfo.T, mat2str(P(1).tailT), mean(tr, 1, 'omitnan'), max(tr, [], 1));
+    for c = find(any(tr &gt; 1.3, 2)).'
+        fprintf('   %d심볼 %d dBm  %s  패킷 %d\n', P(c).len, -P(c).pow, mat2str(round(tr(c, :), 3)), P(c).nPkt);
+    end
+end
+root = 'D:/rif/h0_awgn';
+t = [21 27 32 36];  q = [7.1474e-3 7.0699e-4 9.3142e-5 1.7560e-5];      % P(chi2_8 &gt;= t): RIF 4개 소프트 합
+for L = [32 64 128 256]
+    d = dir(fullfile(root, sprintf('c%d_m40_j*', L)));  nPk = 0;  nPath = 0;  pc = zeros(1, 4);  kc = zeros(1, 4);
+    if isempty(d), fprintf('%3d심볼 -40 dBm  폴더 없음\n', L); continue; end
+    for f = 1:numel(d)
+        r = rif_cir_analyze(fullfile(root, d(f).name, 'bin'), 'Plot', 'none', 'Quiet', true, 'Chip', 'fixed');
+        [~, ~, pid] = unique([r.frame(:), floor((r.frag(:) - 1) / 4)], 'rows');     % 프레임 안 4개씩
+        S = zeros(size(r.Lam_W, 1), max(pid));
+        for i = 1:numel(pid), S(:, pid(i)) = S(:, pid(i)) + double(r.Lam_W(:, i)); end
+        nPk = nPk + size(S, 2);  nPath = nPath + numel(S);
+        for j = 1:4, pc(j) = pc(j) + sum(S(:) &gt;= t(j));  kc(j) = kc(j) + sum(max(S, [], 1) &gt;= t(j)); end
+    end
+    fprintf('%3d심볼 -40 dBm  패킷 %d | 경로 초과 %s | 패킷 초과 %s | 합집합 기대 %s\n', L, nPk, ...
+            mat2str(pc), mat2str(kc), mat2str(round(nPath * q, 1)));
+end</code></pre></div>
     <div class="rec"><label for="st-B-1R">상태 · 결과</label><div class="fields"><div class="row"><select id="st-B-1R"></select><span class="meta" id="mt-B-1R"></span></div><textarea id="nt-B-1R" placeholder="예: 32심볼 L90 1개 −106.4, 2개 −110.3, 4개 −113.8 / H0 꼬리 0.9~1.1, 수락 0"></textarea></div></div>
   </article>
 
