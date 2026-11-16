@@ -5,14 +5,14 @@
 | 위치 | 내용 | 만드는 방법 |
 |---|---|---|
 | `notes/*.csv` | 체크리스트 기록(`docs/checklist.html`의 사본)에서 뽑은 수치와 모델 값. 기록의 알려진 오류는 바로잡음 | `python3 lambda_patch/model/stageb_notes_to_csv.py` |
-| 이 폴더의 `h0_*.csv`, `h1_*.csv` | MATLAB으로 다시 돌린 전체 곡선 (아래) | MATLAB `export_stageb_csv` |
 | `figures/*.png` | 보고서 그림 G1~G11 | `python3 lambda_patch/model/plot_stageb.py` (matplotlib) |
+| (선택) 이 폴더의 `h0_*.csv`, `h1_*.csv` | MATLAB으로 다시 돌린 추가 곡선 (아래). 보고서 그림에는 필요 없고 지금은 없음 | MATLAB `export_stageb_csv` |
 
-`notes/` 파일: `h0_frag.csv`(조건별 기존 Z·Λ̂ 오검출률, κ, Λ̂ 탭 꼬리), `h0_pkt.csv`(조건별 소프트 꼬리 비율·수락·쌍 상관), `tail_5k_vs_30k.csv`, `h1_levels.csv`(L90·L99와 모델), `h1_pkt_pd_awgn_transition.csv`, `h1_mp_pd.csv`·`h1_mp_peak_offset.csv`·`h1_mp_firstpath.csv`(주거 LOS), `b0_peak_trajectories.csv`, `bmd_pass_count.csv`, `b1r_tail_summary.csv`·`b1r_tail_flagged.csv`·`b1r_packet_check.csv`, `consistency.csv`, `model_z_pfa.csv`. 각 행의 `source` 열에 출처가 있습니다.
+`notes/` 파일: `h0_frag.csv`(조건별 기존 Z·Λ̂ 오검출률, κ, Λ̂ 탭 꼬리), `h0_pkt.csv`(조건별 소프트 꼬리 비율·수락·쌍 상관), `tail_5k_vs_30k.csv`, `h1_levels.csv`(L90·L99와 모델), `h1_awgn_pd.csv`(AWGN 세기별 검출 수·Pd·95% 구간, 기존 Z·Λ̂ 프래그먼트와 Λ̂ 패킷 소프트·6-of-8, B-H1 메모 "G1 데이터"), `h1_pkt_pd_awgn_transition.csv`, `h1_mp_pd.csv`·`h1_mp_peak_offset.csv`·`h1_mp_firstpath.csv`(주거 LOS), `b0_peak_trajectories.csv`, `bmd_pass_count.csv`, `b1r_tail_summary.csv`·`b1r_tail_flagged.csv`·`b1r_packet_check.csv`, `consistency.csv`, `model_z_pfa.csv`. 각 행의 `source` 열에 출처가 있습니다.
 
-## MATLAB 전체 곡선 (`export_stageb_csv`)
+## (선택) MATLAB 추가 곡선 (`export_stageb_csv`)
 
-체크리스트 메모와 `TEST_PLAN.md` 3.3절에는 요약값만 있으므로, 전체 곡선은 아래 방법으로 만듭니다.
+보고서 그림 G1~G11은 `notes/`만으로 그려집니다. 아래는 RIF 1·2·4개의 세기별 Pd, Λ̂ 탭 꼬리 곡선, 패킷 꼬리 곡선처럼 메모에 없는 추가 곡선이 필요할 때 씁니다.
 
 ### 만드는 방법
 

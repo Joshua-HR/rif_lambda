@@ -95,7 +95,28 @@ def save(fig, name, note=None):
     print('wrote', name)
 
 
-def g1(lev, trans, full_frag, full_pkt):
+def g1(lev, trans, full_frag, full_pkt, memo_full=None):
+    if memo_full:                                  # B-H1 memo "G1 데이터" (notes/h1_awgn_pd.csv)
+        fig, axs = plt.subplots(1, 4, figsize=(14, 3.8), sharey=True)
+        for ax, ln in zip(axs, LENS):
+            rs = sorted([r for r in memo_full if r['len'] == ln], key=lambda r: r['dBm'])
+            x = [r['dBm'] for r in rs]
+            for key, col in (('Z', 'fragZ'), ('L', 'fragL'), ('kofn6', 'kofn6'), ('soft8', 'soft8')):
+                c, m, lab = DET[col]
+                ax.fill_between(x, [r[key + '_lo'] for r in rs], [r[key + '_hi'] for r in rs], color=c, alpha=0.15, lw=0)
+                ax.plot(x, [r[key + '_Pd'] for r in rs], color=c, marker=m, ms=3.5, lw=1.4, label=lab)
+            l90 = [r for r in lev if r['set'] == 'awgn' and r['rule'] == 'soft8' and r['len'] == ln][0]
+            ax.plot([l90['model_L90']], [0.9], marker='|', ms=12, mew=2, color=INK)
+            ax.axhline(0.9, color=INK2, lw=0.8, ls=':'); ax.axhline(0.99, color=INK2, lw=0.8, ls=':')
+            ax.set_title('%d symbols' % ln); ax.set_xlabel('input power [dBm]')
+        axs[0].set_ylabel('detection probability Pd')
+        axs[0].legend(loc='upper center', bbox_to_anchor=(2.2, -0.2), ncol=4, fontsize=8)
+        save(fig, 'g1_sensitivity_curves.png', 'AWGN, residual offset 0.25 ppm, h1_awgn, per power 4,000 fragments / 500 '
+             'packets. Bands: 95% Clopper-Pearson. Dotted: Pd 0.9 / 0.99 (L90 / L99). Black tick: model L90 of the '
+             + LHAT + ' soft packet decision. Packet rules use the per-packet false-accept target $10^{-6}$; the fragment '
+             'detectors use their own fragment thresholds (Z: existing rule, ' + LHAT + ': $10^{-3}$). '
+             'Source: B-H1 checklist memo, G1 section (notes/h1_awgn_pd.csv).')
+        return
     if full_frag and full_pkt:
         fig, axs = plt.subplots(1, 4, figsize=(13, 3.6), sharey=True)
         for ax, ln in zip(axs, LENS):
@@ -374,7 +395,7 @@ def main():
     N = lambda n: read(os.path.join(NOTES, n))
     lev, trans = N('h1_levels.csv'), N('h1_pkt_pd_awgn_transition.csv')
     full_frag, full_pkt = read(os.path.join(BASE, 'h1_frag.csv')), read(os.path.join(BASE, 'h1_pkt.csv'))
-    g1(lev, trans, full_frag, full_pkt)
+    g1(lev, trans, full_frag, full_pkt, N('h1_awgn_pd.csv'))
     g2(lev)
     g3(N('h0_frag.csv'), N('model_z_pfa.csv'))
     g4(N('h0_pkt.csv'))

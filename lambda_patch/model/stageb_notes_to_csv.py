@@ -8,6 +8,8 @@
 #   - B-H0 (2) was printed with a common 1e3 scale (tail ratios to 0.1, counts exact)
 #   - B-H0 30,000-fragment table: the row "60 120" is 64 symbols / -120 dBm
 #   - B-H1 (2): the position-accuracy column used the old PeakTap 127 +- 2 and is not exported
+#   - B-H1 "G1 데이터" (full Pd curves, typed into the memo 2026-11-16): checked k <= n and 92 rows; the two
+#     transcription slips found then (32/-113 packets, 128/-122 Z) were fixed in the memo itself
 #   - B-1R: the first three (1) lines are a mixed printout (use the re-print); the "기대" column of the
 #     packet check was computed wrongly in that session (recomputed here from P(chi2_8 >= t))
 # Usage: python3 lambda_patch/model/stageb_notes_to_csv.py
@@ -51,6 +53,35 @@ def chi2tail(t, K):
             term *= h / i
         s += term
     return math.exp(-h) * s
+
+
+def binom_cdf(k, n, p):
+    if k < 0:
+        return 0.0
+    if p <= 0:
+        return 1.0
+    if p >= 1:
+        return 0.0 if k < n else 1.0
+    lp, lq = math.log(p), math.log1p(-p)
+    return min(1.0, sum(math.exp(math.lgamma(n + 1) - math.lgamma(i + 1) - math.lgamma(n - i + 1) + i * lp + (n - i) * lq)
+                        for i in range(int(k) + 1)))
+
+
+def cp(k, n, conf=0.95):
+    """two-sided Clopper-Pearson interval"""
+    a = (1 - conf) / 2
+    def bis(fn):
+        lo, hi = 0.0, 1.0
+        for _ in range(60):
+            m = (lo + hi) / 2
+            if fn(m):
+                lo = m
+            else:
+                hi = m
+        return (lo + hi) / 2
+    lo = 0.0 if k == 0 else bis(lambda p: 1 - binom_cdf(k - 1, n, p) < a)
+    hi = 1.0 if k == n else bis(lambda p: binom_cdf(k, n, p) > a)
+    return lo, hi
 
 
 def write(name, header, data):
@@ -169,6 +200,24 @@ def main():
         rule = 'fragZ' if name.startswith('Z') else ('fragL' if '프래그먼트' in name else 'soft8')
         lev.append(['mp', rule, 32, float(a), float(b), f(c), float('nan'), float('nan'), src + ' B-R (B-H1-3)'])
     write('h1_levels.csv', ['set', 'rule', 'len', 'L90', 'L99', 'L90loc', 'model_L90', 'model_L99', 'source'], lev)
+
+    # ------------------------------------------------------------ H1 full Pd curves (B-H1 memo, "G1 데이터")
+    g1 = part(h1, 'G1 데이터')
+    full = []
+    for ln, dbm, nf, kz, kl, npk, ks, ka in rows(g1, r'^(32|64|128|256) (-\d+)\s*\| (\d+) (\d+) (\d+) \| (\d+) (\d+) (\d+)\s*$'):
+        nf, kz, kl, npk, ks, ka = (int(v) for v in (nf, kz, kl, npk, ks, ka))
+        if max(kz, kl) > nf or max(ks, ka) > npk:
+            raise ValueError('G1 data: detections exceed trials at %s %s' % (ln, dbm))
+        r = [int(ln), int(dbm), nf, npk]
+        for k, n in ((kz, nf), (kl, nf), (ks, npk), (ka, npk)):
+            lo, hi = cp(k, n)
+            r += [k, k / n, lo, hi]
+        full.append(r + [src + ' B-H1 "G1 데이터"'])
+    if len(full) != 92:
+        raise ValueError('G1 data: expected 92 rows (4 lengths x 23 powers), got %d' % len(full))
+    write('h1_awgn_pd.csv', ['len', 'dBm', 'fragments', 'packets', 'Z_k', 'Z_Pd', 'Z_lo', 'Z_hi', 'L_k', 'L_Pd', 'L_lo',
+                             'L_hi', 'soft8_k', 'soft8_Pd', 'soft8_lo', 'soft8_hi', 'kofn6_k', 'kofn6_Pd', 'kofn6_lo',
+                             'kofn6_hi', 'source'], full)
 
     # ------------------------------------------------------------ H1 Pd points
     pd = part(h1, '(2) 패킷 Pd', '(3) 스윕')

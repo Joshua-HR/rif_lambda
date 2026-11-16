@@ -59,7 +59,7 @@
 
 | # | 그림 파일 | 내용 | 데이터 | 상태 |
 |---|---|---|---|---|
-| G1 | `g1_packet_pd_awgn_transition.png` (전체판: `g1_sensitivity_curves.png`) | 감도 곡선: Pd 대 입력 세기 | `notes/h1_pkt_pd_awgn_transition.csv`, 전체판은 `h1_frag.csv`·`h1_pkt.csv` | **일부.** 지금은 패킷 곡선의 전이 구간만 있음. 전체판(Λ̂ 패킷, 6-of-8, 기존 Z, Λ̂ 프래그먼트와 95% 구간)은 MATLAB 내보내기 뒤 생김 |
+| G1 | `g1_sensitivity_curves.png` | 감도 곡선: Pd 대 입력 세기, 길이 4개, Λ̂ 패킷 소프트·6-of-8·기존 Z 프래그먼트·Λ̂ 프래그먼트와 95% 구간, 모델 L90 표시 | `notes/h1_awgn_pd.csv` (B-H1 메모 "G1 데이터": 세기별 검출 수와 표본 수, 이 데이터로 보간한 L90·L99가 기록값과 0.01 dB 안에서 일치) | 완료 |
 | G2 | `g2_sensitivity_by_configuration.png` | 감도 요약: L90·L99 대 RIF 길이, RIF 1·2·4·8개, 측정 대 모델 | `notes/h1_levels.csv` | 완료 |
 | G3 | `g3_fragment_false_alarm.png` | 프래그먼트 오검출률 대 입력 세기: 기존 Z(측정·모델) 대 Λ̂ | `notes/h0_frag.csv`, `notes/model_z_pfa.csv` | 완료 |
 | G4 | `g4_packet_tail_ratio.png` | 패킷 오검출 근거: 조건별 소프트 꼬리 비율, 0.7~1.3 띠, 수락 0 | `notes/h0_pkt.csv` | 완료 (꼬리 곡선 P(S ≥ t)는 `h0_pkt_tail.csv`가 생기면 추가 가능) |
@@ -77,11 +77,11 @@
 | 단계 | 명령 | 만드는 것 |
 |---|---|---|
 | 체크리스트 기록 → CSV | `python3 lambda_patch/model/stageb_notes_to_csv.py` | `notes/*.csv` (6장의 오류를 코드에서 바로잡음) |
-| MATLAB 전체 곡선 (사람이 실행) | MATLAB: `export_stageb_csv` (덤프 `D:/rif`) | `h1_frag.csv`, `h1_pkt.csv`, `h1_levels.csv`, `h0_frag.csv`, `h0_frag_tail.csv`, `h0_pkt.csv`, `h0_pkt_tail.csv` (`README.md`) |
-| 그림 | `python3 lambda_patch/model/plot_stageb.py` (matplotlib 필요) | `figures/*.png`. MATLAB CSV가 있으면 G1 전체판을 그림 |
+| 그림 | `python3 lambda_patch/model/plot_stageb.py` (matplotlib 필요) | `figures/*.png` (G1~G11) |
+| (선택) MATLAB 추가 곡선, 사람이 실행 | MATLAB: `export_stageb_csv` (덤프 `D:/rif`) | 보고서에 꼭 필요하지 않은 추가 곡선: RIF 1·2·4개의 세기별 Pd, Λ̂ 탭 꼬리 곡선, 패킷 꼬리 곡선 P(S ≥ t) 등 (`README.md`). 지금은 저장소에 없음 |
 
-- 다른 에이전트는 MATLAB과 덤프에 접근할 수 없습니다. 필요한 데이터가 저장소에 없으면 만들어 내지 말고 "데이터 필요"로 표시하고 무엇이 필요한지 적어 주세요.
-- G1 전체판, 꼬리 곡선, 다른 조건이 필요하면 맡긴 사람이 MATLAB에서 `export_stageb_csv`를 돌려 CSV를 이 폴더에 커밋합니다.
+- 그림 G1~G11에 필요한 데이터는 모두 `notes/*.csv`에 있습니다.
+- 다른 에이전트는 MATLAB과 덤프에 접근할 수 없습니다. 위 선택 곡선처럼 저장소에 없는 데이터가 필요하면 만들어 내지 말고 "데이터 필요"로 표시하고 무엇이 필요한지 적어 주세요.
 - 체크리스트에 새 결과가 적히면 Pages 사본(`docs/checklist.html`)을 먼저 갱신한 뒤 `stageb_notes_to_csv.py`를 다시 돌립니다.
 
 ## 6. 지켜야 할 것
