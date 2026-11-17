@@ -1,0 +1,1677 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RIF Λ̂ 판정기 F/W 구현 가이드</title>
+<meta name="description" content="고정 칩(프래그먼트마다 RIF CIR만 얻음)에서 CIR 추정 Λ̂ 패킷 판정을 F/W로 구현하기 위한 수식, 상수, 예외 처리, 정밀도 예산, 확인 절차와 C 구현 (FW_GUIDE.md에서 변환)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M5 22h4l3-12 4 16 3-10 2 6h6' fill='none' stroke='white' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- 외부 폰트는 렌더링을 막지 않게 불러온다. 사내망에서 막혀도 시스템 글꼴로 표시된다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<script>
+  (function () {  /* 저장된 테마를 첫 렌더링 전에 적용 */
+    try { var t = localStorage.getItem('rif-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  })();
+</script>
+<style>
+/* Layout: RIF 페이지들과 같은 체계(같은 색 토큰과 글꼴). 머리말(핵심 상수 6개) → 왼쪽 고정 목차 + 본문(0~8장, 부록 A·B).
+   넓은 화면에서는 목차가 왼쪽에 붙고, 좁은 화면에서는 머리말 아래 칩 목차가 된다. 본문은 FW_GUIDE.md를 build_fwguide.py가 변환해 넣음.
+   Color: 페이지 강조는 파랑(--s1) 하나. 코드 블록은 --code-bg, 주석은 --muted. */
+:root{
+  --bg:#f1f2ef; --surface:#fcfcfb; --raised:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#6f6d67;
+  --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.11);
+  --s1:#2a78d6; --good:#0c9a3e; --crit:#d03b3b;
+  --wash:#e6eef9; --code-bg:#e9eae6;
+  --f-sans:"RIF Q", "RIF Greek", "IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --f-mono:"RIF Q Mono", "RIF Greek", "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+    --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+    --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+    --s1:#5b9cec; --good:#2fb55f; --crit:#e05252;
+    --wash:#1b2636; --code-bg:#242422;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e0e0d; --surface:#1a1a19; --raised:#232322;
+  --ink:#f3f3f1; --ink-2:#c3c2b7; --muted:#9d9b92;
+  --grid:#2c2c2a; --axis:#45443f; --hair:rgba(255,255,255,.11);
+  --s1:#5b9cec; --good:#2fb55f; --crit:#e05252;
+  --wash:#1b2636; --code-bg:#242422;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:36px 80px;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:clamp(28px,4.4vw,38px);font-weight:700;letter-spacing:-0.02em}
+h2{font-size:clamp(21px,2.6vw,25px);font-weight:700;letter-spacing:-0.01em}
+h3{font-size:17px;font-weight:600;margin-top:10px;scroll-margin-top:16px}
+p,ul,ol{margin:0}
+ul,ol{padding-left:1.3em}
+li + li{margin-top:6px}
+li > ul,li > ol{margin-top:6px}
+a{color:var(--s1)}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+strong{font-weight:600}
+:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+
+/* header */
+.hero{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font:500 12.5px/1.5 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.hero .md{max-width:78ch;color:var(--ink-2)}
+.consts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.const{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:13px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.const .k{font:600 12px var(--f-mono);letter-spacing:.04em;color:var(--muted)}
+.const .v{font:600 24px/1.2 var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+.const .v small{font-size:14px;font-weight:500;color:var(--ink-2);margin-left:4px}
+.const .d{font-size:13.5px;color:var(--ink-2);line-height:1.55}
+@media (max-width:860px){.consts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.consts{grid-template-columns:1fr}}
+
+/* contents */
+.toc-inline{display:flex;flex-wrap:wrap;gap:6px 8px;padding:0;margin:0;list-style:none}
+.toc-inline li{margin:0}
+.toc-inline a{display:inline-flex;gap:7px;align-items:baseline;text-decoration:none;color:var(--ink-2);font-size:14px;padding:4px 10px;border-radius:999px;border:1px solid var(--hair);background:var(--surface)}
+.toc-inline a:hover{color:var(--ink);border-color:var(--axis)}
+.toc-inline .n,.side .n{font:500 12px var(--f-mono);color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:44px;align-items:start}
+.side{display:none}
+@media (min-width:1060px){
+  .layout{grid-template-columns:230px minmax(0,1fr)}
+  .side{display:block;position:sticky;top:calc(env(safe-area-inset-top, 0px) + 18px);max-height:calc(100vh - 36px);overflow:auto;padding-right:4px}
+  .toc-inline{display:none}
+}
+.side .lbl{font:600 12px var(--f-mono);letter-spacing:.06em;color:var(--muted);margin:0 0 8px 8px;text-transform:uppercase}
+.side ol{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:1px}
+.side li{margin:0}
+.side a{display:grid;grid-template-columns:3.4em minmax(0,1fr);gap:4px;padding:4px 8px;border-radius:6px;text-decoration:none;color:var(--ink-2);font-size:13.5px;line-height:1.45}
+.side a:hover{color:var(--ink);background:var(--surface)}
+.side a.on{background:var(--wash);color:var(--ink)}
+
+/* body */
+.doc{display:flex;flex-direction:column;gap:56px;min-width:0}
+section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:16px;min-width:0}
+.sec-head{display:flex;align-items:baseline;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--hair)}
+.sec-head .no{font:600 14px var(--f-mono);color:var(--s1);white-space:nowrap}
+.md{display:flex;flex-direction:column;gap:14px;min-width:0}
+.md > p,.md > ul,.md > ol{max-width:76ch}
+.tbl-wrap{overflow-x:auto;max-width:100%;background:var(--surface);border:1px solid var(--hair);border-radius:10px}
+table{border-collapse:collapse;font-size:13.5px;min-width:100%;line-height:1.55}
+th,td{text-align:left;padding:7px 11px;border-bottom:1px solid var(--grid);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-weight:600;color:var(--ink-2);font-size:12.5px;background:var(--raised)}
+td code,th code{white-space:nowrap}
+.codeblock{background:var(--code-bg);border-radius:10px;min-width:0;max-width:100%;display:flex;flex-direction:column}
+.code-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 10px 0 14px}
+.code-bar .lang{font:500 11.5px var(--f-mono);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy{font:500 12px var(--f-sans);border:1px solid var(--axis);background:var(--raised);color:var(--ink-2);border-radius:6px;padding:2px 10px;cursor:pointer}
+.copy:hover{color:var(--ink)}
+pre.code{margin:0;padding:8px 14px 14px;overflow-x:auto;font:13px/1.6 var(--f-mono);white-space:pre;tab-size:4;color:var(--ink)}
+pre.code code{background:none;padding:0;font-size:inherit;border-radius:0}
+pre.code .cm{color:var(--muted)}
+.flow{margin:0;background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.flow-scroll{overflow-x:auto;max-width:100%}
+.flow figcaption{font-size:13.5px;color:var(--ink-2);line-height:1.65;max-width:86ch}
+svg.fl{display:block;width:100%;min-width:720px;height:auto}
+.fl text{font-family:var(--f-sans);font-size:12.5px;fill:var(--ink);text-anchor:middle}
+.fl text.t{font-weight:600}
+.fl text.m{font-family:var(--f-mono);font-size:11.5px;fill:var(--ink-2)}
+.fl text.lab{font-size:11.5px;fill:var(--ink-2)}
+.fl text.s{text-anchor:start}
+.fl text.lane{font:600 11.5px var(--f-mono);letter-spacing:.06em;fill:var(--muted);text-anchor:start}
+.fl .node{fill:var(--raised);stroke:var(--axis);stroke-width:1}
+.fl .node.ok{stroke:var(--good);stroke-width:1.6}
+.fl .node.no{stroke:var(--crit);stroke-width:1.6}
+.fl .dec{fill:var(--wash);stroke:var(--s1);stroke-width:1.2}
+.fl .ed{fill:none;stroke:var(--muted);stroke-width:1.3}
+.fl .ah{fill:var(--muted)}
+.foot{border-top:1px solid var(--hair);padding-top:20px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:8px}
+.foot ul{display:flex;flex-wrap:wrap;gap:4px 18px;list-style:none;padding:0}
+.foot li{margin:0}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none !important}}
+/* rif-mark-fonts: hatted symbols (Λ̂ Π̂ Σ̂ κ̂ λ̂ Q̂) drawn with the hat on the letter. Built by make_markfonts.py from IBM Plex Sans / Mono (SIL OFL 1.1). */
+@font-face{font-family:"RIF Greek";src:url(data:font/woff2;base64,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) format("woff2");font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+0370-03FF,U+0302}
+@font-face{font-family:"RIF Q";src:url(data:font/woff2;base64,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) format("woff2");font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+0051,U+0302}
+@font-face{font-family:"RIF Q Mono";src:url(data:font/woff2;base64,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) format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0051,U+0302}
+@font-face{font-family:"RIF Q Mono";src:url(data:font/woff2;base64,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) format("woff2");font-weight:500;font-style:normal;font-display:swap;unicode-range:U+0051,U+0302}
+@font-face{font-family:"RIF Q Mono";src:url(data:font/woff2;base64,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) format("woff2");font-weight:600;font-style:normal;font-display:swap;unicode-range:U+0051,U+0302}
+/* /rif-mark-fonts */
+.theme-btn{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 12px);right:12px;z-index:40;font:500 12.5px var(--f-sans);padding:6px 11px;border-radius:999px;border:1px solid var(--hair);background:var(--raised);color:var(--ink-2);cursor:pointer}
+.theme-btn:hover{color:var(--ink);border-color:var(--axis)}
+</style>
+</head>
+<body>
+<button type="button" class="theme-btn" id="theme-btn" aria-label="테마 바꾸기">테마: 시스템</button>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">F/W 구현 가이드 · 고정 칩 (프래그먼트마다 RIF CIR만 얻음) · LLS 단계 B 검증 기준</div>
+    <h1>RIF Λ̂ 판정기 F/W 구현 가이드</h1>
+    <div class="md"><p>고정 칩(프래그먼트마다 RIF CIR 256탭만 얻는 경우)에서 <strong>CIR 추정 Λ̂ 패킷 판정</strong>을 F/W로 구현하기 위한 수식, 설정값, 수치 구현 조건, 확인 절차를 정리합니다.</p>
+<ul>
+<li><strong>입력:</strong> 프래그먼트마다 RIF CIR <code>C[k] = x[k] + j·y[k]</code>, k = 0..255 (LLS 2열 덤프와 같은 정보). 원시 샘플 모멘트(5열 덤프의 Q·Π)는 쓰지 않습니다.</li>
+<li><strong>검증 상태:</strong> LLS 단계 B 완료(2026-11-16). 오수락 10⁻⁶(FiRa medium)과 감도를 LLS 2열 덤프로 확인했습니다(<code>DECISIONS.md</code> "결정 1: LLS 검증", 결과 페이지 <a href="lls.html"><code>docs/lls.html</code></a>).</li>
+<li><strong>참조 구현:</strong> MATLAB <code>rif_cir_analyze(..., 'Chip', 'fixed')</code> → <code>rif_packet(R)</code>(기본값: 소프트 결합, 10⁻⁶, 여유 1.5, 하한 1, 이동 후보 0). 이 문서의 식과 상수는 그 코드와 같습니다(부록 A). 3장의 실수 2차형식은 참조 코드의 복소 식과 수치로 같음을 확인했습니다(차이 4e-15).</li>
+</ul>
+<p>용어: 다상 성분 e = k mod 8, 신호 창 W_s, 잡음 탭(신호 창 밖), 소프트 합 S, 패킷 = 한 수신기의 거리 측정 1회에 쓰는 RIF 프래그먼트 K개.</p></div>
+    <div class="consts" aria-label="핵심 상수">
+      <div class="const"><span class="k">신호 창 W_s</span><span class="v">119–175<small>57탭</small></span><span class="d">덤프 탭 번호 기준. LLS 피크 탭 125</span></div>
+      <div class="const"><span class="k">위상별 잡음 탭 n_e</span><span class="v">25<small>e = 7은 24</small></span><span class="d">신호 창 밖 199탭을 k mod 8로 나눔</span></div>
+      <div class="const"><span class="k">비원형 계수 상한</span><span class="v">0.98</span><span class="d">|π_e|가 넘으면 크기만 줄임 (RHO_CLAMP)</span></div>
+      <div class="const"><span class="k">패킷 문턱 T_K</span><span class="v">69.61<small>K = 8</small></span><span class="d">K = 1 · 2 · 4: 36.53 · 42.75 · 52.82 (10⁻⁶, 여유 1.5, 올림)</span></div>
+      <div class="const"><span class="k">잡음 바닥 Q_MIN</span><span class="v">4<small>LSB²</small></span><span class="d">위상별 Q̂_e가 이보다 작으면 판정 불가 (제안)</span></div>
+      <div class="const"><span class="k">Λ̂ 정밀도</span><span class="v">≤ 0.01</span><span class="d">프래그먼트당 같은 방향 오차. K = 8에서 오수락 1.03배</span></div>
+    </div>
+    <ol class="toc-inline" aria-label="목차"><li><a href="#sec-0"><span class="n">0</span>한 장 요약</a></li><li><a href="#sec-1"><span class="n">1</span>왜 이 판정기인가</a></li><li><a href="#sec-2"><span class="n">2</span>입력과 설정값</a></li><li><a href="#sec-3"><span class="n">3</span>프래그먼트 처리</a></li><li><a href="#sec-4"><span class="n">4</span>패킷 판정</a></li><li><a href="#sec-5"><span class="n">5</span>수치 구현</a></li><li><a href="#sec-6"><span class="n">6</span>검증된 성능 (LLS 단계 B, 2026-11-16)</a></li><li><a href="#sec-7"><span class="n">7</span>F/W 구현 확인 절차</a></li><li><a href="#sec-8"><span class="n">8</span>미정 항목 (F/W 관점)</a></li><li><a href="#appx-a"><span class="n">부록 A</span>참조 코드 위치</a></li><li><a href="#appx-b"><span class="n">부록 B</span>C 구현 (예외 처리 포함, float32, HPRF)</a></li></ol>
+  </header>
+
+  <div class="layout">
+    <nav class="side" aria-label="목차">
+      <p class="lbl">목차</p>
+      <ol><li><a href="#sec-0"><span class="n">0</span><span>한 장 요약</span></a></li><li><a href="#sec-1"><span class="n">1</span><span>왜 이 판정기인가</span></a></li><li><a href="#sec-2"><span class="n">2</span><span>입력과 설정값</span></a></li><li><a href="#sec-3"><span class="n">3</span><span>프래그먼트 처리</span></a></li><li><a href="#sec-4"><span class="n">4</span><span>패킷 판정</span></a></li><li><a href="#sec-5"><span class="n">5</span><span>수치 구현</span></a></li><li><a href="#sec-6"><span class="n">6</span><span>검증된 성능 (LLS 단계 B, 2026-11-16)</span></a></li><li><a href="#sec-7"><span class="n">7</span><span>F/W 구현 확인 절차</span></a></li><li><a href="#sec-8"><span class="n">8</span><span>미정 항목 (F/W 관점)</span></a></li><li><a href="#appx-a"><span class="n">부록 A</span><span>참조 코드 위치</span></a></li><li><a href="#appx-b"><span class="n">부록 B</span><span>C 구현 (예외 처리 포함, float32, HPRF)</span></a></li></ol>
+    </nav>
+    <main class="doc"><section id="sec-0" aria-labelledby="sec-0-h"><div class="sec-head"><span class="no">0</span><h2 id="sec-0-h">한 장 요약</h2></div><div class="md"><div class="codeblock"><div class="code-bar"><span class="lang"></span><button type="button" class="copy">복사</button></div><pre class="code"><code>프래그먼트 f마다  (C[k] = x[k] + j·y[k], k = 0..255)
+  1) 잡음 모멘트: 다상 성분 e = 0..7마다 잡음 탭 N_e = {k ∉ W_s, k mod 8 = e} (n_e = 25, e = 7만 24)
+       Q̂_e = (1/n_e) Σ (x² + y²)
+       π_e = u_e + j·v_e,   u_e = Σ (x² − y²) / Σ (x² + y²),   v_e = Σ 2xy / Σ (x² + y²)
+       |π_e| &gt; 0.98 이면 π_e ← π_e · 0.98/|π_e|
+  2) 위상별 계수:  g_e = 2 / (Q̂_e (1 − |π_e|²)),  a_e = g_e (1 − u_e),  b_e = g_e (1 + u_e),  c_e = −2 g_e v_e
+  3) 신호 창 탭 k ∈ W_s = [119, 175] (57개), e = k mod 8:
+       T²[k]  = a_e x² + b_e y² + c_e x y
+       Λ̂_f[k] = (n_e − 1) · ln(1 + T²[k] / n_e)          ← H0에서 정확히 χ²₂
+
+패킷(프래그먼트 K개)마다
+  4) S[j] = Σ_{f=1..K} Λ̂_f[j]  (j ∈ W_s),   S* = max_j S[j],   j* = argmax (같으면 앞 탭)
+  5) 수락:  S* ≥ T_K   그리고   모든 f에서 Λ̂_f[j*] ≥ 1
+       T_K (W = 57, 이동 후보 1개, 올림) = 36.53 (K=1) / 42.75 (K=2) / 52.82 (K=4) / 69.61 (K=8)
+  6) 출력: 수락 여부, 피크 탭 j*, S*, 프래그먼트별 Λ̂_f[j*] (무결성 플래그용)
+</code></pre></div>
+<figure class="flow"><div class="flow-scroll"><svg class="fl" viewBox="0 0 980 372" role="img" aria-label="프래그먼트마다 CIR에서 Λ̂를 만들고, 패킷마다 소프트 합을 문턱과 하한으로 판정하는 처리 흐름"><defs><marker id="fl-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs><text class="lane" x="16" y="16">프래그먼트마다</text><rect class="node" x="16" y="52" width="150" height="66" rx="8"/><text class="t" x="91.0" y="72.0">RIF CIR</text><text class="m" x="91.0" y="89.0">C[k] = x + j·y</text><text class="m" x="91.0" y="106.0">k = 0..255</text><rect class="node" x="198" y="52" width="170" height="66" rx="8"/><text class="t" x="283.0" y="72.0">잡음 모멘트</text><text class="m" x="283.0" y="89.0">위상 e별, W_s 밖</text><text class="m" x="283.0" y="106.0">Q̂_e, π_e</text><rect class="node" x="400" y="52" width="140" height="66" rx="8"/><text class="t" x="470.0" y="72.0">위상별 계수</text><text class="m" x="470.0" y="89.0">a_e, b_e, c_e</text><text class="m" x="470.0" y="106.0">|π| ≤ 0.98</text><rect class="node" x="572" y="52" width="180" height="66" rx="8"/><text class="t" x="662.0" y="72.0">백색화 (W_s 57탭)</text><text class="m" x="662.0" y="89.0">T² = a x² + b y²</text><text class="m" x="662.0" y="106.0">+ c x y</text><rect class="node" x="784" y="52" width="180" height="66" rx="8"/><text class="t" x="874.0" y="72.0">χ²₂ 환산</text><text class="m" x="874.0" y="89.0">Λ̂ = (n−1)·ln(1+T²/n)</text><text class="m" x="874.0" y="106.0">K × 57 저장</text><polyline class="ed" points="166,85 196,85" marker-end="url(#fl-ah)"/><polyline class="ed" points="368,85 398,85" marker-end="url(#fl-ah)"/><polyline class="ed" points="540,85 570,85" marker-end="url(#fl-ah)"/><polyline class="ed" points="752,85 782,85" marker-end="url(#fl-ah)"/><polyline class="ed" points="91,52 91,36 662,36 662,50" marker-end="url(#fl-ah)"/><text class="lab" x="376" y="30">신호 창 탭 x, y</text><text class="lane" x="16" y="172">패킷마다</text><polyline class="ed" points="874,118 874,150 145,150 145,194" marker-end="url(#fl-ah)"/><text class="lab" x="510" y="144">패킷의 프래그먼트 K개 (시간 순)</text><rect class="node" x="40" y="196" width="210" height="68" rx="8"/><text class="t" x="145.0" y="217.0">소프트 합</text><text class="m" x="145.0" y="234.0">S[j] = Σ_f Λ̂_f[j]</text><text class="m" x="145.0" y="251.0">S* = max, j* = argmax</text><polygon class="dec" points="370,184 455,230 370,276 285,230"/><text class="t" x="370" y="225.5">S* ≥ T_K ?</text><text class="m" x="370" y="242.5">K = 8: 69.61</text><polygon class="dec" points="590,180 695,230 590,280 485,230"/><text class="t" x="590" y="225.5">모든 f에서</text><text class="m" x="590" y="242.5">Λ̂_f[j*] ≥ 하한 ?</text><rect class="node ok" x="760" y="196" width="170" height="68" rx="8"/><text class="t" x="845.0" y="225.5">합격</text><text class="m" x="845.0" y="242.5">피크 탭 j*, S*</text><rect class="node no" x="300" y="312" width="140" height="50" rx="8"/><text class="t" x="370.0" y="332.5">불합격</text><text class="m" x="370.0" y="349.5">문턱 미만</text><rect class="node no" x="500" y="312" width="180" height="50" rx="8"/><text class="t" x="590.0" y="332.5">불합격</text><text class="m" x="590.0" y="349.5">하한 실패 + 플래그</text><polyline class="ed" points="250,230 283,230" marker-end="url(#fl-ah)"/><polyline class="ed" points="455,230 483,230" marker-end="url(#fl-ah)"/><text class="lab" x="469" y="222">예</text><polyline class="ed" points="695,230 758,230" marker-end="url(#fl-ah)"/><text class="lab" x="726" y="222">예</text><polyline class="ed" points="370,276 370,310" marker-end="url(#fl-ah)"/><text class="lab s" x="378" y="297">아니오</text><polyline class="ed" points="590,280 590,310" marker-end="url(#fl-ah)"/><text class="lab s" x="598" y="299">아니오</text></svg></div><figcaption>윗줄은 프래그먼트마다, 아랫줄은 패킷(프래그먼트 K개)마다 한 번 실행합니다. CIR의 잡음 탭(신호 창 밖)은 모멘트에, 신호 창 탭은 백색화에 쓰입니다. 판정 불가, 포화, 하한 실패 뒤 다시 판정 같은 예외 경로는 5.5절, 코드는 부록 B입니다.</figcaption></figure>
+<p>예외 처리(프래그먼트 누락, 잡음 바닥, 포화, NaN, 하한 실패 뒤 다시 판정, 설정 오류), 이동 후보 d, K = 1의 로그 없는 판정까지 넣은 코드는 <strong>부록 B</strong>이고, 예외별 처리 규칙은 5.5절입니다.</p></div></section>
+<section id="sec-1" aria-labelledby="sec-1-h"><div class="sec-head"><span class="no">1</span><h2 id="sec-1-h">왜 이 판정기인가</h2></div><div class="md"><div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>항목</th>
+<th>기존 Z 판정기 (피크 / 최대 위상 바닥, 두 단계 문턱)</th>
+<th>CIR 추정 Λ̂ 패킷 판정</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H0 분포</td>
+<td>채널·CFO·길이에 따라 바뀜</td>
+<td>탭마다 정확히 χ²₂ (잡음 세기·모양과 무관)</td>
+</tr>
+<tr>
+<td>패킷 보장</td>
+<td>없음. 같은 채널을 겪는 8개의 오검출이 패킷 안에 몰림(B-MD: 3개 이상 통과가 독립 가정의 5배)</td>
+<td>프래그먼트가 H0에서 독립(B-0 쌍 상관 +0.006)이라 패킷 문턱을 닫힌 식으로 정함</td>
+</tr>
+<tr>
+<td>잔여 CFO 0</td>
+<td>오검출 증가(B-H0-3: 256심볼 −82 dBm 0.94% → 5.88%)</td>
+<td>영향 없음. κ = 1에서는 보수적</td>
+</tr>
+<tr>
+<td>감도 (32심볼, AWGN)</td>
+<td>프래그먼트 L90 −111.90 dBm</td>
+<td>패킷(K = 8) L90 −116.76 dBm (4.9 dB 좋음)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Λ̂는 같은 다상 성분의 잡음 탭으로 그 프래그먼트의 잡음 세기(Q̂)와 모양(Π̂)을 재고, 신호 창의 각 탭을 그 잡음으로 백색화한 값입니다. 백색화한 값의 분포가 잡음 조건과 무관하게 고정되므로 문턱을 미리 계산한 상수로 둘 수 있습니다.</p></div></section>
+<section id="sec-2" aria-labelledby="sec-2-h"><div class="sec-head"><span class="no">2</span><h2 id="sec-2-h">입력과 설정값</h2></div><div class="md"><div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>이름</th>
+<th>값</th>
+<th>뜻</th>
+<th>근거·검증</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CIR</td>
+<td><code>C[k]</code>, k = 0..255, 복소 정수</td>
+<td>프래그먼트마다 하나</td>
+<td>LLS 덤프 값은 정수. 반올림 잡음의 몫 1.6e-5 (B-0)</td>
+</tr>
+<tr>
+<td>주기 P</td>
+<td>8</td>
+<td>HPRF 펄스 간격(다상 성분 수)</td>
+<td>BPRF는 16이지만 검증 안 됨</td>
+</tr>
+<tr>
+<td>신호 창 W_s</td>
+<td>[119, 175], W = 57</td>
+<td>피크(첫 경로) 후보 탭</td>
+<td>LLS 피크 탭 125 (설계 기본 127)</td>
+</tr>
+<tr>
+<td>잡음 탭 N_e</td>
+<td>W_s 밖 전부 (199탭)</td>
+<td>위상 e의 잡음 표본</td>
+<td>n_e = 25 (e = 0..6), 24 (e = 7)</td>
+</tr>
+<tr>
+<td>RhoMax</td>
+<td>0.98</td>
+<td>비원형 계수 |π| 상한</td>
+<td>B-H0-3 (κ = 1에서 보수적)</td>
+</tr>
+<tr>
+<td>PfaTarget</td>
+<td>10⁻⁶</td>
+<td>패킷 오수락 목표</td>
+<td>결정 1·2</td>
+</tr>
+<tr>
+<td>Margin</td>
+<td>1.5</td>
+<td>문턱 여유 (목표/1.5로 설계)</td>
+<td>단계 B 꼬리 비율 ≈ 1</td>
+</tr>
+<tr>
+<td>K</td>
+<td>1 / 2 / 4 / 8</td>
+<td>패킷당 RIF 프래그먼트 수 (NumRIF = 4 → 8)</td>
+<td>B-H1 (8개), B-1R (1·2·4개)</td>
+</tr>
+<tr>
+<td>이동 후보 d</td>
+<td>LLS: {0}</td>
+<td>패킷 안 피크 이동 탐색</td>
+<td>silicon 미정 (4.2절, 결정 5)</td>
+</tr>
+<tr>
+<td>하한 F_floor</td>
+<td>1 (임시)</td>
+<td>선택 경로에서 프래그먼트별 최소 Λ̂</td>
+<td>B-F·B-S. 결정 6 안 3으로 바꿀 예정 (4.5절)</td>
+</tr>
+<tr>
+<td>잡음 바닥 최솟값 Q_MIN</td>
+<td>4 LSB²</td>
+<td>위상별 Q̂_e가 이보다 작으면 판정 불가</td>
+<td>정수 CIR 시뮬레이션 (5.5절, 제안)</td>
+</tr>
+<tr>
+<td>포화 코드 SAT</td>
+<td>부호 있는 N비트 CIR이면 2^(N−1) − 1 (HW 포화 플래그가 있으면 그것을 씀)</td>
+<td>잡음 탭이 잘리면 판정 불가, 신호 창 탭만 잘리면 정보 플래그</td>
+<td>제안 (5.5절). 0이면 검사 안 함. LLS 단계 B에는 포화 조건이 없었음</td>
+</tr>
+<tr>
+<td>용도</td>
+<td>보안 판단 / 일반 용도</td>
+<td>걸렸을 때 폐기 / 빼고 다시 판정</td>
+<td>결정 7 (세션 설정)</td>
+</tr>
+<tr>
+<td>m_max</td>
+<td>K = 8: 2, K = 2·4: 1, K = 1: 0</td>
+<td>일반 용도에서 뺄 수 있는 최대 프래그먼트 수</td>
+<td>결정 7 제안</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>신호 창과 잡음 탭을 정할 때</strong></p>
+<ul>
+<li>W_s는 기대 피크 위치(타이밍 불확실성 포함)를 모두 덮어야 합니다. 넓히면 문턱이 오릅니다(K = 8: W = 114이면 71.32, 약 0.25 dB 손해).</li>
+<li>잡음 탭에는 신호(멀티패스 꼬리 포함)가 없어야 합니다. 신호가 섞이면 Q̂가 커져 감도가 떨어지고 Π̂가 틀어집니다.</li>
+<li>잡음 탭은 W_s 밖을 <strong>모두</strong> 씁니다. 표본이 줄면 추정 잡음 때문에 문턱 상승이 커집니다(n = 25: 알려진 잡음 대비 약 2.4 dB, n = 10: 약 7.0 dB).</li>
+<li>W_s를 바꾸면 n_e도 다시 셉니다(설정마다 정해지는 상수). 아래 식은 모두 위상별 n_e를 씁니다.</li>
+</ul></div></section>
+<section id="sec-3" aria-labelledby="sec-3-h"><div class="sec-head"><span class="no">3</span><h2 id="sec-3-h">프래그먼트 처리</h2></div><div class="md"><h3 id="sec-3-1">3.1 다상 성분별 잡음 모멘트</h3>
+<p>HPRF CIR에서 탭 k = 127 + 8m + e의 H0 값(열잡음과 틀린 키 신호의 자기잡음)은 위상 e의 펄스 모양에 서로 독립인 랜덤 합을 곱한 것입니다. 그래서 같은 위상의 탭은 위치와 무관하게 같은 분포를 따르고 서로 독립입니다(주기정상 잡음). 위상마다 세기가 다르므로(위상 간 바닥비 D) 모멘트는 <strong>위상별로</strong> 잽니다.</p>
+<div class="codeblock"><div class="code-bar"><span class="lang"></span><button type="button" class="copy">복사</button></div><pre class="code"><code>Q̂_e = (1/n_e) Σ_{k∈N_e} |C[k]|²          (잡음 세기)
+Π̂_e = (1/n_e) Σ_{k∈N_e} C[k]²             (잡음 모양, 의사 분산)
+π_e = Π̂_e / Q̂_e,   |π_e| ≤ 1               (비원형 계수, κ와 같은 성질)
+</code></pre></div>
+<p>실수 연산으로는 <code>C² = (x² − y²) + j·2xy</code>이므로 세 합 <code>Σ(x² + y²)</code>, <code>Σ(x² − y²)</code>, <code>Σ 2xy</code>만 누적하면 됩니다. π_e는 비율이라 1/n_e가 지워집니다.</p>
+<h3 id="sec-3-2">3.2 비원형 보정과 상한</h3>
+<ul>
+<li>잔여 CFO가 작으면 틀린 키 신호의 자기잡음이 반송파 위상으로 돌지 않아 잡음이 복소평면의 한 방향으로 몰립니다(|π| → 1, B-H0-3에서 잔여 CFO 0이면 길이와 무관하게 κ = 1). Π̂를 빼고 원형 잡음으로 가정하면 이 조건에서 오검출이 늘어납니다.</li>
+<li>|π_e| &gt; 0.98이면 크기만 0.98로 줄입니다(방향 유지): <code>π_e ← π_e · 0.98/|π_e|</code>. κ = 1에서 Λ̂가 χ²₂보다 작아지므로 보수적입니다(LLS −40 dBm 탭 꼬리 비율 0.20~0.77, κ = 1 합성 잡음 0.14~0.28).</li>
+</ul>
+<h3 id="sec-3-3">3.3 탭 통계량 T² (2×2 백색화)</h3>
+<p>복소 식(참조 코드 <code>lambda_stat</code>):</p>
+<div class="codeblock"><div class="code-bar"><span class="lang"></span><button type="button" class="copy">복사</button></div><pre class="code"><code>T²[k] = 2 (|C[k]|² − Re(π_e* · C[k]²)) / (Q̂_e (1 − |π_e|²))
+</code></pre></div>
+<p>실수 2차형식(구현용, 같은 값):</p>
+<div class="codeblock"><div class="code-bar"><span class="lang"></span><button type="button" class="copy">복사</button></div><pre class="code"><code>g_e = 2 / (Q̂_e (1 − u_e² − v_e²))
+a_e = g_e (1 − u_e),   b_e = g_e (1 + u_e),   c_e = −2 g_e v_e
+T²[k] = a_e x[k]² + b_e y[k]² + c_e x[k] y[k]
+</code></pre></div>
+<ul>
+<li>탭 (x, y)를 잡음 공분산 추정값으로 백색화한 마할라노비스 거리입니다. |π| &lt; 1이면 양의 정부호라 T² ≥ 0입니다.</li>
+<li>위상별 계수 3개를 프래그먼트마다 한 번 계산하면, 탭마다 곱셈 5번과 덧셈 2번입니다. 나눗셈은 위상당 1번입니다.</li>
+<li>H0에서 T²는 Hotelling 분포를 따릅니다: <code>P(T² ≥ t) = (1 + t/n)^(−(n−1)/2)</code> (n → ∞이면 e^(−t/2)). 잡음을 n개 표본으로 추정했기 때문에 χ²₂보다 꼬리가 두껍습니다.</li>
+</ul>
+<h3 id="sec-3-4">3.4 χ²₂ 환산 Λ̂</h3>
+<div class="codeblock"><div class="code-bar"><span class="lang"></span><button type="button" class="copy">복사</button></div><pre class="code"><code>Λ̂[k] = (n_e − 1) · ln(1 + T²[k] / n_e)          H0: P(Λ̂ ≥ λ) = e^(−λ/2)  (정확히 χ²₂)
+</code></pre></div>
+<ul>
+<li>이 변환은 Hotelling 꼬리를 정확히 χ²₂로 바꿉니다. 그래서 K개의 합이 H0에서 χ²_{2K}를 따르고, 패킷 문턱을 닫힌 식(4.3절)으로 정할 수 있습니다. 변환하지 않은 T²를 더하면 꼬리가 두꺼워 같은 문턱에서 오수락이 목표를 넘습니다.</li>
+<li>Λ̂는 잡음 통계까지 추정하는 문제의 일반화 우도비 2·ln GLR = (n+1)·ln(1 + T²/n)의 (n−1)/(n+1)배입니다(<a href="glr.html"><code>docs/glr.html</code></a>).</li>
+<li>신호가 강하면 로그 때문에 값이 눌립니다(예: T² = 1000이면 Λ̂ ≈ 89). 판정은 문턱 근처만 중요하므로 문제없지만, 신호 크기 추정에 Λ̂를 그대로 쓰면 안 됩니다(4.5절).</li>
+<li><strong>K = 1이면 로그가 필요 없습니다.</strong> <code>Λ̂ ≥ T</code> ⇔ <code>T² ≥ n_e (e^(T/(n_e−1)) − 1)</code>이므로 위상별 T² 문턱(T = 36.53에서 n_e = 25: 89.55, n_e = 24: 93.49, 올림)과 비교하면 됩니다. 위상 안에서는 Λ̂가 T²에 단조이므로 피크 위치와 출력용 Λ̂도 위상별 최대 T² 8개만 로그를 취하면 정확히 나옵니다(부록 B).</li>
+</ul>
+<h3 id="sec-3-5">3.5 F/W에 유리한 성질</h3>
+<ul>
+<li><strong>스케일 무관:</strong> C 전체에 상수를 곱해도 T²와 Λ̂는 그대로입니다. 프래그먼트마다 AGC 이득이 달라도(LLS AGC 표준편차 2.8 dB) 정규화가 필요 없습니다.</li>
+<li><strong>프래그먼트마다 독립 추정:</strong> Q̂·Π̂는 프래그먼트마다 새로 잽니다. 패킷의 여러 프래그먼트에서 모으면 반송파 위상이 달라 유효 표본이 줄고 감도가 0.4~1.4 dB 나빠집니다(결정 9).</li>
+<li><strong>로그와 T²는 신호 창 57탭만:</strong> 잡음 탭 199개는 모멘트 누적에만 씁니다.</li>
+</ul></div></section>
+<section id="sec-4" aria-labelledby="sec-4-h"><div class="sec-head"><span class="no">4</span><h2 id="sec-4-h">패킷 판정</h2></div><div class="md"><h3 id="sec-4-1">4.1 패킷 구성</h3>
+<ul>
+<li>한 수신기의 한 거리 측정에 쓰는 RIF 프래그먼트 K개(시간 순 f = 1..K)가 한 패킷입니다. NumRIF = 4면 K = 8입니다.</li>
+<li>STS가 심볼마다 바뀌어 H0에서 프래그먼트는 서로 독립입니다(B-0: 쌍 상관 +0.006, 기준 ±0.0125).</li>
+<li>패킷의 프래그먼트가 K개보다 적으면(누락) 참조 코드는 그 패킷을 버립니다. F/W는 없는 프래그먼트를 판정 불가로 표시하고, 보안 판단이면 폐기, 일반 용도면 남은 개수의 문턱으로 판정합니다(5.5절).</li>
+</ul>
+<h3 id="sec-4-2">4.2 소프트 합과 이동 후보</h3>
+<div class="codeblock"><div class="code-bar"><span class="lang"></span><button type="button" class="copy">복사</button></div><pre class="code"><code>S_d[j] = Σ_{f=1..K} Λ̂_f[ j + round(d · (f − 1)) ]       (경로의 모든 탭이 W_s 안인 j만)
+S* = max_{d, j} S_d[j]
+</code></pre></div>
+<ul>
+<li>경로 하나가 프래그먼트마다 같은(또는 이동한) 탭을 더합니다. H0에서 S_d[j]는 χ²_{2K}입니다.</li>
+<li><strong>LLS (검증 조건):</strong> 이동 후보 d = 0 하나. LLS는 RIF 시작점을 설정 오프셋으로 옮겨 피크가 1탭 폭 톱니 안에 머뭅니다(B-0). 이 소수 탭 어긋남의 손해(L90 약 0.5 dB, L99 약 1 dB)는 단계 B 감도에 이미 들어 있습니다.</li>
+<li><strong>silicon (미정, 결정 5):</strong> 오프셋을 어떻게 추정하고 쓸지에 따라 후보 수가 정해집니다.</li>
+</ul>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>silicon 방식</th>
+<th>패킷 안 피크 이동</th>
+<th>이동 후보</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>시작점을 옮기지 않음</td>
+<td>오프셋 × RIF 간격만큼 계속 밀림 (1 ms 간격이면 1 ppm당 약 1탭)</td>
+<td>후보 간격 1/(K−1), 범위는 최대 오프셋 (±0.5 ppm, K = 8이면 9개)</td>
+</tr>
+<tr>
+<td>추정 오프셋으로 시작점을 옮김</td>
+<td>1탭 톱니 + 추정 오차만큼 밀림</td>
+<td>오차 ≤ 약 0.07 ppm이면 1개, 넘으면 오차 범위만큼</td>
+</tr>
+<tr>
+<td>정답에 가까운 오프셋으로 옮김 (LLS와 같음)</td>
+<td>1탭 톱니</td>
+<td>1개</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="sec-4-3">4.3 문턱</h3>
+<div class="codeblock"><div class="code-bar"><span class="lang"></span><button type="button" class="copy">복사</button></div><pre class="code"><code>W · N_d · P(χ²_{2K} &gt; T) = PfaTarget / Margin
+P(χ²_{2K} &gt; T) = e^(−T/2) · Σ_{i=0..K−1} (T/2)^i / i!
+K = 1:  T = 2 ln(W / PfaTarget) + 2 ln(Margin)
+</code></pre></div>
+<p>탭 57개 × 후보 N_d개의 경로에 대한 합집합 상한입니다. F/W는 설정별 상수로 둡니다(W = 57, 10⁻⁶, 여유 1.5).</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>K \ N_d</th>
+<th>1</th>
+<th>3</th>
+<th>7</th>
+<th>9</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>36.53</td>
+<td>(해당 없음)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>42.75</td>
+<td>45.05</td>
+<td>46.81</td>
+<td>47.34</td>
+</tr>
+<tr>
+<td>4</td>
+<td>52.82</td>
+<td>55.28</td>
+<td>57.17</td>
+<td>57.73</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>69.61</strong></td>
+<td>72.33</td>
+<td>74.41</td>
+<td>75.02</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>상수는 <strong>올림</strong>으로 저장합니다(내림은 오수락을 늘림. K = 8에서 0.25 내리면 오수락 1.04배). 표는 소수 둘째 자리 올림 값이라, 다른 문서의 반올림 표기(K = 2: 42.74)와 0.01 다를 수 있습니다.</li>
+<li>W, N_d, 목표를 바꾸면 위 식으로 다시 계산합니다(참조 코드 <code>soft_threshold</code>, 이분법).</li>
+</ul>
+<h3 id="sec-4-4">4.4 하한 검사 (현재 구현)</h3>
+<div class="codeblock"><div class="code-bar"><span class="lang"></span><button type="button" class="copy">복사</button></div><pre class="code"><code>수락 조건에 추가:  모든 f에서 Λ̂_f[ j* + round(d* (f − 1)) ] ≥ F_floor  (F_floor = 1)
+</code></pre></div>
+<ul>
+<li>"프래그먼트 하나라도 비어 있으면 폐기"의 첫 단계입니다. H0에서는 조건을 하나 더 거는 것이라 오수락을 늘리지 않습니다.</li>
+<li>바꿔치기(빈 프래그먼트)의 Λ̂는 그 탭에서 χ²₂이므로 그 패킷을 버릴 확률은 1 − e^(−F/2) = 39.3%입니다(LLS B-S 38%).</li>
+<li>비용: 패킷 L90 0.18~0.34 dB (B-F).</li>
+</ul>
+<h3 id="sec-4-5">4.5 일관성 검사 안 3 (결정 6, 잠정, 도구 미구현)</h3>
+<p>목표: 맞는 키 패킷이 검사 때문에 버려지는 비율을 <strong>모든 세기에서 0.1%</strong>로 두고, 강한 신호에서는 바꿔치기를 거의 모두 잡습니다(+6.5 dB에서 약 99%).</p>
+<p>Λ̂로 구현할 때는 신호 크기 추정과 분위수를 <strong>Λ̂(또는 T²) 영역에서</strong> 만들어야 합니다. 설계 페이지의 비중심 χ²₂ 분위수는 잡음을 아는 Λ 기준이라, 강한 신호에서 로그로 눌리는 Λ̂에 그대로 쓰면 틀립니다. 아래는 그 변환 제안입니다(미검증).</p>
+<div class="codeblock"><div class="code-bar"><span class="lang"></span><button type="button" class="copy">복사</button></div><pre class="code"><code>H1에서 T²의 분포 (같은 다상 성분의 잡음 표본 n개, 신호 크기 λ):
+    (n − 1)/(2n) · T² ~ 비중심 F(2, n − 1; λ),     E[T²] = n (2 + λ) / (n − 3)
+선택 경로에서 프래그먼트별 T²를 되돌림:  T²_f = n (e^(Λ̂_f/(n−1)) − 1)
+신호 크기 추정:   λ̂ = max(0, (n − 3)/n · mean_f T²_f − 2)
+하한 (LUT):      F(λ̂) = (n − 1) · ln(1 + 2 q / (n − 1)),   q = 비중심 F(2, n−1; λ̂)의 p 분위수,   p = 1 − 0.999^(1/K)
+</code></pre></div>
+<p>T²의 H1 분포가 비중심 F임은 몬테카를로로 확인했습니다(n = 25, λ = 0~100에서 분위수 10⁻³~0.9가 1% 안, 평균식 일치). 예시 LUT(n = 25):</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>λ (프래그먼트당)</th>
+<th>0</th>
+<th>10</th>
+<th>20</th>
+<th>40</th>
+<th>80</th>
+<th>160</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F (Λ̂ 영역), K = 8</td>
+<td>0.00</td>
+<td>0.04</td>
+<td>0.98</td>
+<td>5.76</td>
+<td>15.22</td>
+<td>28.09</td>
+</tr>
+<tr>
+<td>참고: Λ 영역(잡음 앎), K = 8</td>
+<td>0.00</td>
+<td>0.04</td>
+<td>1.07</td>
+<td>7.73</td>
+<td>28.66</td>
+<td>81.61</td>
+</tr>
+<tr>
+<td>F (Λ̂ 영역), K = 4</td>
+<td>0.00</td>
+<td>0.07</td>
+<td>1.31</td>
+<td>6.42</td>
+<td>16.06</td>
+<td>28.99</td>
+</tr>
+<tr>
+<td>F (Λ̂ 영역), K = 2</td>
+<td>0.00</td>
+<td>0.13</td>
+<td>1.70</td>
+<td>7.15</td>
+<td>16.96</td>
+<td>29.95</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>K = 8 소프트 합의 L90은 프래그먼트당 λ ≈ 9.6입니다. 감도 부근에서는 하한이 거의 0이라 정상 패킷을 버리지 않습니다(그 영역의 빈 프래그먼트는 오수락 10⁻⁶을 깨지 못함, 결정 6).</li>
+<li>구현 전에 도구에 넣고 LLS로 정상 폐기율 0.1%와 바꿔치기 탐지를 다시 재야 합니다(B-F·B-S를 같은 코드로, 결정 6 "아직 하지 않은 것").</li>
+</ul>
+<h3 id="sec-4-6">4.6 걸렸을 때의 처리 (결정 7)</h3>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>용도 (세션 설정)</th>
+<th>처리</th>
+<th>보고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>보안 판단: 출입, 결제, 거리 기반 인증</td>
+<td>그 측정 폐기</td>
+<td>STS 실패 상태 + 무결성 플래그</td>
+</tr>
+<tr>
+<td>일반 용도: 측위, 추적, 보정</td>
+<td>걸린 프래그먼트 m개를 빼고 K − m개로 다시 판정</td>
+<td>측정값 + 무결성 플래그</td>
+</tr>
+</tbody>
+</table></div>
+<p>뺄 때의 문턱: 어느 m개를 뺄지 값을 보고 고르므로 선택 수 C(K, m)을 합집합 상한에 곱합니다.</p>
+<div class="codeblock"><div class="code-bar"><span class="lang"></span><button type="button" class="copy">복사</button></div><pre class="code"><code>W · N_d · C(K, m) · P(χ²_{2(K−m)} &gt; T_{K,m}) = PfaTarget / Margin
+</code></pre></div>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>(N_d = 1)</th>
+<th>K = 2, m = 1</th>
+<th>K = 4, m = 1</th>
+<th>K = 4, m = 2</th>
+<th>K = 8, m = 1</th>
+<th>K = 8, m = 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_{K,m}</td>
+<td>37.92</td>
+<td>51.03</td>
+<td>46.49</td>
+<td>70.67</td>
+<td>69.39</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>빼는 근거는 검사에 걸린 사실뿐입니다. 합을 최대로 만드는 선택 등 다른 기준으로 고르지 않습니다.</li>
+<li>미정: 최대 m(제안: K = 8이면 1~2, K = 2·4면 1), 세션 설정 이름과 기본값(제안: 보안 판단 = 폐기), 플래그 형식. RIF 1개 구성에는 이 검사가 없습니다.</li>
+</ul>
+<h3 id="sec-4-7">4.7 출력</h3>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>출력</th>
+<th>뜻</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>수락 여부</td>
+<td>S* ≥ T 그리고 하한(또는 일관성) 검사 통과</td>
+</tr>
+<tr>
+<td>피크 탭</td>
+<td>119 + j* (LLS 피크 125). 소프트 합의 argmax이며 첫 경로가 아닐 수 있음</td>
+</tr>
+<tr>
+<td>S*, d*</td>
+<td>소프트 합과 선택한 이동 후보 (진단, 신호 크기 추정)</td>
+</tr>
+<tr>
+<td>Λ̂_f[j*]</td>
+<td>프래그먼트별 값 (무결성 플래그에 어느 프래그먼트인지 표시)</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>ToA:</strong> 피크 탭은 |C|²나 Λ̂의 최대 위치입니다. 멀티패스(주거 LOS)에서 첫 경로 125 ± 2 안에 들어오는 비율은 0.42~0.46입니다(B-H1-3). ToA에는 별도의 첫 경로 탐색이 필요하고, 탭마다 χ²₂인 Λ̂는 그 문턱 설계의 근거로 쓸 수 있습니다.</li>
+</ul></div></section>
+<section id="sec-5" aria-labelledby="sec-5-h"><div class="sec-head"><span class="no">5</span><h2 id="sec-5-h">수치 구현</h2></div><div class="md"><h3 id="sec-5-1">5.1 연산 형식</h3>
+<ul>
+<li><strong>float32 권장.</strong> float64와의 차이는 Λ̂ 최대 1.5e-6입니다(합성 CIR로 확인). 비원형 보정 분자는 |π| ≤ 0.98에서 최대 약 50배 상쇄(6비트)라 float32 가수 24비트로 충분합니다.</li>
+<li><strong>고정소수점(FPU 없음):</strong> 모멘트 합은 입력 비트의 2배 + 5비트(199탭)가 필요합니다. 스케일 무관이므로 프래그먼트마다 블록 지수(최대 Q̂_e 기준 시프트)를 써도 됩니다. 계수 a·b·c와 T²는 블록 부동소수점, ln은 표(5.3절)로 둡니다. 비트폭은 미정입니다(설계 문서 10장).</li>
+</ul>
+<h3 id="sec-5-2">5.2 정밀도 예산</h3>
+<p>프래그먼트마다 Λ̂에 같은 방향의 오차 δ가 있으면 패킷 오수락이 늘어납니다(문턱 근처, 여유 1.5 중 사용분):</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>프래그먼트당 Λ̂ 오차 δ</th>
+<th>0.01</th>
+<th>0.05</th>
+<th>0.1</th>
+<th>0.25</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>오수락 배수, K = 8</td>
+<td>1.03</td>
+<td>1.18</td>
+<td>1.38</td>
+<td>2.23</td>
+</tr>
+<tr>
+<td>오수락 배수, K = 4</td>
+<td>1.02</td>
+<td>1.09</td>
+<td>1.20</td>
+<td>1.56</td>
+</tr>
+<tr>
+<td>오수락 배수, K = 1</td>
+<td>1.005</td>
+<td>1.03</td>
+<td>1.05</td>
+<td>1.13</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>목표: 같은 방향 오차 |δ| ≤ 0.01</strong> (여유 1.5의 5% 이하 사용).</p>
+<h3 id="sec-5-3">5.3 ln 구현</h3>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>방법</th>
+<th>Λ̂ 최대 오차 (n − 1 = 24배)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>log1pf</code> (float32)</td>
+<td>1e-6 이하</td>
+</tr>
+<tr>
+<td>log₂ 지수 분리 + 가수 표 32칸 + 선형 보간</td>
+<td>0.0028 (목표 안)</td>
+</tr>
+<tr>
+<td>같은 방식 16칸</td>
+<td>0.011 (경계)</td>
+</tr>
+<tr>
+<td>같은 방식 64칸</td>
+<td>0.0007</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>작은 T²에서 <code>logf(1 + x)</code>는 상대 오차가 커지지만 Λ̂ 절대 오차는 작아 판정에는 영향이 없습니다. <code>log1pf</code>가 있으면 그것을 씁니다.</li>
+</ul>
+<h3 id="sec-5-4">5.4 연산량과 메모리 (프래그먼트 하나)</h3>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>단계</th>
+<th>연산</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>모멘트</td>
+<td>잡음 탭 199개 × (제곱 2, 곱 1, 덧셈 3)</td>
+</tr>
+<tr>
+<td>위상 계수</td>
+<td>8위상 × (나눗셈 2~3, 곱 약 8, 비교 1, 필요 시 제곱근 1)</td>
+</tr>
+<tr>
+<td>Λ̂</td>
+<td>신호 창 57탭 × (곱 5, 덧셈 2, 상수 곱 2, ln 1)</td>
+</tr>
+<tr>
+<td>패킷 (N_d = 1)</td>
+<td>57 × K 덧셈, 최댓값 탐색 57, 하한 비교 K</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>저장: Λ̂_f[57] × K (K = 8, float32이면 1,824바이트). 하한·일관성 검사와 빼고 다시 판정(4.6절)에 프래그먼트별 값이 필요하므로 합만 누적하지 말고 K×57을 남깁니다.</li>
+<li>시점: 프래그먼트 처리는 그 CIR이 나오면 바로 하고, 패킷 판정은 마지막 프래그먼트 뒤에 합니다.</li>
+</ul>
+<h3 id="sec-5-5">5.5 예외 처리 (제안: 시뮬레이션 근거, LLS·silicon 미확인)</h3>
+<p>부록 B의 코드가 아래 규칙대로 처리합니다.</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>경우</th>
+<th>검사 위치</th>
+<th>플래그</th>
+<th>처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CIR 없음 (수신 실패, 시간 초과, 패킷의 프래그먼트 수 부족)</td>
+<td>프래그먼트 입력</td>
+<td><code>FF_MISSING</code></td>
+<td>판정 불가</td>
+</tr>
+<tr>
+<td>어느 위상이든 Q̂_e &lt; Q_MIN (0, NaN 포함)</td>
+<td>모멘트 누적 뒤</td>
+<td><code>FF_LOWNOISE</code></td>
+<td>판정 불가</td>
+</tr>
+<tr>
+<td>잡음 탭 포화 (|x| 또는 |y| ≥ 포화 코드)</td>
+<td>모멘트 누적 중</td>
+<td><code>FF_SAT_NOISE</code></td>
+<td>판정 불가</td>
+</tr>
+<tr>
+<td>T² 또는 Λ̂가 NaN/Inf (고정소수점이면 누산기 포화도)</td>
+<td>신호 창 계산</td>
+<td><code>FF_NUMERIC</code></td>
+<td>판정 불가</td>
+</tr>
+<tr>
+<td>신호 창 탭 포화</td>
+<td>모멘트 누적 중</td>
+<td><code>FF_SAT_SIG</code></td>
+<td>정보만, 판정은 함. 신호 창에서만 잘리는 것은 맞는 키의 센 피크일 때뿐 (아래 "포화 처리")</td>
+</tr>
+<tr>
+<td>|π_e| &gt; 0.98</td>
+<td>위상 계수</td>
+<td><code>FF_RHO_CLAMP</code></td>
+<td>정보만. 잔여 CFO ≈ 0의 정상 경로 (3.2절)</td>
+</tr>
+<tr>
+<td>선택 경로에서 Λ̂_f &lt; 하한</td>
+<td>패킷</td>
+<td><code>FF_FLOOR</code></td>
+<td>보안 판단: 폐기. 일반 용도: 빼고 한 번 다시 판정</td>
+</tr>
+<tr>
+<td>피크가 신호 창 끝 탭</td>
+<td>패킷</td>
+<td><code>edge</code></td>
+<td>정보만. 창 배치(타이밍) 확인</td>
+</tr>
+<tr>
+<td>설정 오류 (창 범위, 위상당 잡음 탭 &lt; 5, K, 이동 후보 수, 인자 범위)</td>
+<td>설정</td>
+<td><code>RIF_ECFG_*</code></td>
+<td>판정하지 않음</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>잡음 바닥 최솟값 Q_MIN = 4 LSB²</strong></p>
+<ul>
+<li>참조 코드는 <code>max(Q, realmin)</code>이라, 한 위상의 잡음 탭이 모두 0이고 신호 창 탭에 값이 있으면 Λ̂가 거의 무한대가 됩니다(오수락). 0이 아니어도 너무 작으면 반올림 때문에 잡음이 몇 개의 정수 값만 가져 χ²₂ 전제가 깨집니다.</li>
+<li>정수 CIR 시뮬레이션 (원형 가우스 잡음, 프래그먼트 20,000개, H0 탭 꼬리 비율 <code>P(Λ̂ ≥ t) / e^(−t/2)</code>):</li>
+</ul>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>성분당 잡음 σ [LSB]</th>
+<th>Q̂ [LSB²]</th>
+<th>t = 10 / 14 / 18</th>
+<th>판단</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.35</td>
+<td>0.41</td>
+<td>7.3 / 34 / 91</td>
+<td>위험</td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>0.67</td>
+<td>1.2 / 2.1 / 3.5</td>
+<td>위험</td>
+</tr>
+<tr>
+<td>0.75</td>
+<td>1.29</td>
+<td>0.95 / 0.94 / 1.06</td>
+<td>정상</td>
+</tr>
+<tr>
+<td>1.0</td>
+<td>2.17</td>
+<td>1.00 / 0.95 / 1.07</td>
+<td>정상</td>
+</tr>
+<tr>
+<td>2.0</td>
+<td>8.17</td>
+<td>1.00 / 0.98 / 0.97</td>
+<td>정상</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Q_MIN = 4는 위험 구간(≤ 0.7)보다 약 6배, 정상 경계(1.3)보다 약 3배 위입니다. LSB는 CIR 정수 값의 한 칸(고정소수점이면 양자화 간격)입니다.</li>
+<li>정상 동작에서는 걸리지 않아야 합니다. LLS 덤프의 반올림 잡음 몫(1/6 LSB² ÷ Q̂_e)은 1.6e-5로, 위험 구간의 몫(0.25 이상)보다 네 자릿수 작습니다. silicon에서 Q̂_e가 이 경계에 가까우면 Q_MIN을 낮추지 말고 CIR 출력 시프트를 줄입니다.</li>
+<li>Q̂_e를 Q_MIN으로 올려 계산하는 방법은 오수락 쪽으로는 안전하지만 비정상 상태를 숨기고 그 프래그먼트를 조용히 버리게 되므로 쓰지 않습니다.</li>
+</ul>
+<p><strong>포화 처리 (SAT)</strong></p>
+<div class="codeblock"><div class="code-bar"><span class="lang">의사 코드</span><button type="button" class="copy">복사</button></div><pre class="code"><code>for k = 0..255:
+    SAT &gt; 0 이고 (|x[k]| ≥ SAT 또는 |y[k]| ≥ SAT) 이면:
+        ws0 ≤ k ≤ ws1 (신호 창)  → FF_SAT_SIG     정보만, 판정은 함
+        그 밖 (잡음 탭)          → FF_SAT_NOISE   판정 불가
+</code></pre></div>
+<ul>
+<li><strong>SAT는 데이터가 아니라 CIR 출력 형식에서 정하는 상수입니다.</strong> 부호 있는 N비트 정수면 2^(N−1) − 1(16비트면 32767)입니다. HW가 CIR 누적기의 포화 플래그를 주면 코드값 비교 대신 그것을 씁니다. 0이면 검사하지 않습니다. 한 프래그먼트에 두 플래그가 함께 붙을 수 있습니다.</li>
+<li><strong>잡음 탭 포화는 판정 불가입니다.</strong> Q̂_e와 π_e를 그 탭에서 재므로, 잘리면 잡음 추정이 틀어져 χ²₂ 보장이 없습니다. 잡음 탭이 포화될 정도면 강한 간섭, AGC 이상, 신호 창 밖의 신호 같은 비정상 상태이기도 합니다.</li>
+<li><strong>신호 창 탭만 포화되면 정보 플래그만 남깁니다.</strong> H0(틀린 키, 재밍)에서는 에너지가 위상마다 모든 탭에 고르게 퍼지므로, 신호 창 탭이 포화될 만큼이면 잡음 탭도 포화되어 위 규칙으로 판정 불가가 됩니다. 신호 창에서만 포화되는 것은 맞는 키의 센 피크(H1)일 때이고, 그때 Λ̂는 문턱보다 훨씬 커서 판정이 바뀌지 않습니다.</li>
+<li><strong>잘린 탭의 Λ̂가 작아진다고 볼 수는 없습니다.</strong> 원형 잡음에서는 작아지지만, 비원형 잡음에서 한 성분만 잘리면 T²가 커질 수 있습니다. 예: π = 0.90 + j0.39 (|π| = 0.98)에서 (x, y) = (3, 1)·SAT가 (1, 1)·SAT로 잘리면 T²가 23.7에서 61.7로 2.6배가 됩니다(원형 잡음이면 20에서 4로 작아짐). 그래서 신호 창 포화를 판정에 쓰는 근거는 위의 "H0면 잡음 탭도 포화된다"입니다.</li>
+<li>LLS 단계 B에는 포화 조건이 없었습니다. LLS 덤프에 포화가 있는지는 가장 센 H0 덤프에서 |x|, |y|의 최댓값이 여러 번 반복되는지로 봅니다(반복되면 그 값이 포화 코드).</li>
+</ul>
+<div class="codeblock"><div class="code-bar"><span class="lang">MATLAB</span><button type="button" class="copy">복사</button></div><pre class="code"><code>R = rif_cir_analyze('D:/rif/h0_awgn/c32_m40_j1/bin', 'Plot', 'none', 'Quiet', true, 'Chip', 'fixed');
+v = [abs(real(R.C(:))); abs(imag(R.C(:)))];
+fprintf('max |x|,|y| = <span class="cm">%d, 그 값이 나온 횟수 = %d\n', max(v), sum(v == max(v)));</span>
+</code></pre></div>
+<p><strong>판정 불가와 하한 실패의 패킷 처리</strong></p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>용도</th>
+<th>판정 불가 m개</th>
+<th>하한 실패 m개</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>보안 판단</td>
+<td>폐기 (<code>PKT_REJECT_INVALID</code>)</td>
+<td>폐기 (<code>PKT_REJECT_FLOOR</code>)</td>
+</tr>
+<tr>
+<td>일반 용도</td>
+<td>m ≤ m_max면 빼고 kv = K − m개로 판정, 문턱 T[kv][0]</td>
+<td>빼고 한 번만 다시 판정, 문턱 T[kv][m] (C(kv, m) 보정). 남은 것도 하한 검사</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>판정 불가는 C(K, m) 보정이 없습니다.</strong> 그 프래그먼트 자신의 잡음 탭이나 입력 상태만 보고 정한 것이라, 남은 kv개의 합은 H0에서 그대로 χ²_{2kv}입니다.</li>
+<li><strong>하한 실패는 값을 보고 빼므로 보정합니다</strong>(결정 7). 다시 판정은 먼저 T[kv][0]을 넘은 패킷에서만 일어나므로, 다시 판정을 더해도 패킷 오수락은 T[kv][0]의 목표(10⁻⁶ / 1.5) 안에 있습니다.</li>
+<li>두 경우를 합쳐 뺀 수가 m_max를 넘으면 폐기합니다. 하한 실패로 3개 이상 빼야 하면 폐기합니다(문턱표 크기).</li>
+<li>K = 1 구성에는 하한 검사가 없고, 판정 불가면 쓸 프래그먼트가 없어 <code>PKT_REJECT_NODATA</code>입니다.</li>
+</ul>
+<p>문턱표 T[kv][m] (W = 57, 이동 후보 1개, 10⁻⁶, 여유 1.5, 올림). 이동 후보가 여러 개면 <code>rif_init</code>이 같은 식으로 계산합니다(남은 수 1이면 이동 후보 수를 곱하지 않음).</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>kv \ m</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>36.53</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>42.75</td>
+<td>37.92</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>48.03</td>
+<td>45.05</td>
+<td>38.73</td>
+</tr>
+<tr>
+<td>4</td>
+<td>52.82</td>
+<td>51.03</td>
+<td>46.49</td>
+</tr>
+<tr>
+<td>5</td>
+<td>57.31</td>
+<td>56.42</td>
+<td>53.01</td>
+</tr>
+<tr>
+<td>6</td>
+<td>61.57</td>
+<td>61.43</td>
+<td>58.86</td>
+</tr>
+<tr>
+<td>7</td>
+<td>65.66</td>
+<td>66.15</td>
+<td>64.28</td>
+</tr>
+<tr>
+<td>8</td>
+<td>69.61</td>
+<td>70.67</td>
+<td>69.39</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>그 밖에</strong></p>
+<ul>
+<li><strong>같은 값의 최댓값:</strong> 참조 코드(MATLAB <code>max</code>)는 앞 탭을, 이동 후보도 앞의 후보를 고릅니다. 비교에 <code>&gt;</code>를 써서 맞춥니다.</li>
+<li><strong>반올림 규칙:</strong> 이동 후보의 탭 이동 <code>round(d·f)</code>는 MATLAB처럼 0.5를 0에서 먼 쪽으로 올립니다(C <code>lroundf</code>).</li>
+</ul>
+<h3 id="sec-5-6">5.6 자주 틀리는 곳</h3>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>실수</th>
+<th>결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>잡음 모멘트를 위상 구분 없이 평균</td>
+<td>위상별 잡음 세기 차이(D)를 놓쳐 오검출이 늘어남</td>
+</tr>
+<tr>
+<td>Π̂(π)를 빼고 원형 잡음으로 계산</td>
+<td>잔여 CFO가 작을 때 오검출이 늘어남</td>
+</tr>
+<tr>
+<td>잡음 탭에 신호 창 탭이나 멀티패스 꼬리가 섞임</td>
+<td>Q̂가 커져 감도 손해, π가 틀어짐</td>
+</tr>
+<tr>
+<td>잡음 탭 수를 줄임</td>
+<td>추정 잡음 때문에 문턱 상승 (n = 10이면 약 7 dB)</td>
+</tr>
+<tr>
+<td>모멘트를 패킷의 여러 프래그먼트에서 모음</td>
+<td>감도 0.4~1.4 dB 손해 (결정 9)</td>
+</tr>
+<tr>
+<td>n_e를 모든 위상에 25로 씀</td>
+<td>e = 7은 24. Λ̂ 분포가 조금 어긋남</td>
+</tr>
+<tr>
+<td>T²를 그대로 더함 (χ²₂ 환산 생략)</td>
+<td>합의 꼬리가 두꺼워 오수락이 목표를 넘음</td>
+</tr>
+<tr>
+<td>문턱을 내림으로 저장</td>
+<td>오수락 증가</td>
+</tr>
+<tr>
+<td>Λ̂의 합으로 신호 크기를 추정해 비중심 χ² 표를 씀</td>
+<td>강한 신호에서 하한이 틀림 (4.5절)</td>
+</tr>
+</tbody>
+</table></div></div></section>
+<section id="sec-6" aria-labelledby="sec-6-h"><div class="sec-head"><span class="no">6</span><h2 id="sec-6-h">검증된 성능 (LLS 단계 B, 2026-11-16)</h2></div><div class="md"><p><strong>감도 (AWGN, 패킷 소프트, 하한 1, 이동 후보 0)</strong></p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>RIF 길이</th>
+<th>32</th>
+<th>64</th>
+<th>128</th>
+<th>256</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>K = 8 L90 [dBm]</td>
+<td>−116.76</td>
+<td>−119.69</td>
+<td>−122.08</td>
+<td>−121.61</td>
+</tr>
+<tr>
+<td>K = 8 L99 [dBm]</td>
+<td>−115.33</td>
+<td>−118.08</td>
+<td>−120.25</td>
+<td>−120.30</td>
+</tr>
+<tr>
+<td>K = 4 L90</td>
+<td>−114.23</td>
+<td>−117.16</td>
+<td>−119.38</td>
+<td>−119.15</td>
+</tr>
+<tr>
+<td>K = 2 L90</td>
+<td>−111.26</td>
+<td>−114.11</td>
+<td>−116.45</td>
+<td>−116.19</td>
+</tr>
+<tr>
+<td>K = 1 L90</td>
+<td>−107.04</td>
+<td>−110.01</td>
+<td>−112.23</td>
+<td>−111.95</td>
+</tr>
+<tr>
+<td>참고: Z 프래그먼트 L90</td>
+<td>−111.90</td>
+<td>−114.76</td>
+<td>−117.13</td>
+<td>−116.76</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>모델과의 차이: K = 8은 0.2 dB 안, K = 1·2·4는 모델보다 0.3~0.8 dB 좋음.</li>
+<li>위치 정확도(AWGN, 피크 125 ± 3): 98% 이상(B-1R 1.000).</li>
+<li>멀티패스(주거 LOS, 32심볼, K = 8): L90 −109.07, L99 −104.50 dBm (AWGN보다 6.5~7.7 dB 나쁨. 탭 하나로 보는 판정기의 한계).</li>
+</ul>
+<p><strong>오수락</strong></p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>시험</th>
+<th>조건</th>
+<th>결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B-H0</td>
+<td>AWGN 23개 조건 (32~256심볼, −40 ~ −120 dBm)</td>
+<td>수락 0, 소프트 꼬리 비율 0.97 / 0.92 (1e-2 / 1e-3)</td>
+</tr>
+<tr>
+<td>B-H0-4</td>
+<td>같은 채널 멀티패스, −40·−82 dBm, 각 30,000개</td>
+<td>수락 0, 꼬리 비율 0.95~1.15</td>
+</tr>
+<tr>
+<td>B-H0-3</td>
+<td>잔여 CFO 0, 32·256심볼</td>
+<td>수락 0, Λ̂ 꼬리 −82 dBm 0.97~1.06, −40 dBm 0.20~0.77 (보수적)</td>
+</tr>
+<tr>
+<td>B-1R</td>
+<td>K = 1·2·4, 165,000개</td>
+<td>수락 0, 쌍 상관 ≤ 0.028</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>감시 항목 (선택 확장):</strong> B-1R RIF 4개 −40 dBm 128·256심볼의 깊은 꼬리(t = 32에서 비율 2.41 / 1.81), B-H0-3 잔여 CFO 0의 양의 쌍 상관(256심볼 −40 dBm +0.077).</p></div></section>
+<section id="sec-7" aria-labelledby="sec-7-h"><div class="sec-head"><span class="no">7</span><h2 id="sec-7-h">F/W 구현 확인 절차</h2></div><div class="md"><h3 id="sec-7-1">7.1 참조 코드와 값 비교 (호스트에서, LLS 덤프)</h3>
+<p>F/W 함수(C)를 호스트에서 LLS 2열 덤프에 돌리고 MATLAB 결과와 비교합니다.</p>
+<div class="codeblock"><div class="code-bar"><span class="lang">MATLAB</span><button type="button" class="copy">복사</button></div><pre class="code"><code>R = rif_cir_analyze('D:/rif/h1_awgn/c32_m110_j1/bin', 'Plot', 'none', 'Quiet', true, 'Chip', 'fixed');
+P = rif_packet(R, 'FragPerPacket', 8);        <span class="cm">% 소프트, 10^-6, 여유 1.5, 하한 1, 이동 후보 0</span>
+<span class="cm">% 프래그먼트 i:  R.Lam_W(:, i)  = Λ̂_f[119..175],  R.Lmax(i), R.kL(i) = 최대값과 탭</span>
+<span class="cm">% 패킷 q:       P.stat(q) = S*,  P.kSel(q) = 피크 탭,  P.valid(q) = 수락,  P.T = 문턱</span>
+</code></pre></div>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>비교</th>
+<th>기준</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Λ̂_f[k] (57탭 × 모든 프래그먼트)</td>
+<td>float32: 최대 차이 ≤ 1e-3, ln 표: ≤ 0.01</td>
+</tr>
+<tr>
+<td>프래그먼트 최대 탭</td>
+<td>같음 (값이 거의 같은 탭은 예외)</td>
+</tr>
+<tr>
+<td>S*, 피크 탭, 수락</td>
+<td>같음 (|S* − T| &lt; 0.05인 패킷은 예외로 따로 봄)</td>
+</tr>
+</tbody>
+</table></div>
+<p>덤프 세트: <code>h0_awgn</code>(수락 0), <code>h1_awgn</code>(감도), <code>h0_cfo0</code>(π 상한 경로), <code>h0_mp</code>·<code>h1_mp</code>(멀티패스).</p>
+<h3 id="sec-7-2">7.2 통계 확인 (F/W 출력으로)</h3>
+<ul>
+<li>H0 탭 꼬리 비율 <code>P(Λ̂ ≥ t) / e^(−t/2)</code>, t = 10·14: AWGN에서 0.8~1.2 (LLS 0.8~1.1).</li>
+<li>H0 패킷 소프트 합 꼬리 <code>P(S ≥ t) / (W · P(χ²_{2K} &gt; t))</code>, 1e-2·1e-3: 1 근처.</li>
+<li>H1 패킷 L90: 6장 표 ±0.3 dB.</li>
+</ul>
+<h3 id="sec-7-3">7.3 silicon에서 할 일</h3>
+<ul>
+<li>패킷 안 피크 이동을 B-0처럼 재고(강한 신호, 프래그먼트별 피크 탭의 기울기와 잔차) 4.2절 표로 이동 후보를 정합니다. 후보가 늘면 4.3절 표의 N_d 열을 씁니다.</li>
+<li>silicon CIR의 W_s 위치(기대 피크 탭)와 잡음 탭에 신호가 없는지 확인합니다.</li>
+<li>반올림 잡음의 몫과 Q̂_e 최솟값(5.5절)을 확인합니다.</li>
+<li>CIR 출력 비트폭(또는 HW 포화 플래그)으로 포화 코드 SAT를 정하고, 센 맞는 키 신호(근거리)와 센 간섭에서 <code>FF_SAT_SIG</code>·<code>FF_SAT_NOISE</code>가 얼마나 생기는지 봅니다(5.5절 "포화 처리").</li>
+</ul></div></section>
+<section id="sec-8" aria-labelledby="sec-8-h"><div class="sec-head"><span class="no">8</span><h2 id="sec-8-h">미정 항목 (F/W 관점)</h2></div><div class="md"><div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>항목</th>
+<th>상태</th>
+<th>관련</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>이동 후보 (silicon 오프셋 처리)</td>
+<td>미정</td>
+<td>결정 5</td>
+</tr>
+<tr>
+<td>일관성 검사 안 3의 Λ̂ 영역 LUT</td>
+<td>제안(4.5절), 도구 구현과 LLS 재측정 필요</td>
+<td>결정 6</td>
+</tr>
+<tr>
+<td>걸린 프래그먼트 처리의 세부 (최대 m, 설정, 플래그 형식)</td>
+<td>미정</td>
+<td>결정 7</td>
+</tr>
+<tr>
+<td>예외 처리 규칙 (Q_MIN = 4 LSB², 잡음 탭 포화, 판정 불가 제외)</td>
+<td>제안 (5.5절, 시뮬레이션 근거). LLS·silicon에서 Q̂_e 분포와 포화 빈도 확인 필요</td>
+<td>5.5절</td>
+</tr>
+<tr>
+<td>고정소수점 비트폭 (FPU가 없을 때)</td>
+<td>미정</td>
+<td>설계 문서 10장</td>
+</tr>
+<tr>
+<td>BPRF (주기 16)</td>
+<td>검증 안 됨</td>
+<td>설계 문서 10장</td>
+</tr>
+<tr>
+<td>거리 ≠ 0의 W_s 배치</td>
+<td>타이밍 불확실성만큼 넓힘 (2배면 약 0.25 dB)</td>
+<td>설계 문서 10장</td>
+</tr>
+<tr>
+<td>첫 경로 탐색 (ToA)</td>
+<td>별도 과제</td>
+<td>4.7절</td>
+</tr>
+</tbody>
+</table></div></div></section>
+<section id="appx-a" aria-labelledby="appx-a-h"><div class="sec-head"><span class="no">부록 A</span><h2 id="appx-a-h">참조 코드 위치</h2></div><div class="md"><div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>내용</th>
+<th>파일</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>위상별 잡음 모멘트 (Q̂, Π̂를 탭마다 펼침)</td>
+<td><code>rif_cir_analyze.m</code> 170~194행 (<code>'Moments', 'cir'</code> 분기)</td>
+</tr>
+<tr>
+<td>백색화 T²와 π 상한</td>
+<td><code>rif_cir_analyze.m</code> 474행 <code>lambda_stat</code></td>
+</tr>
+<tr>
+<td>χ²₂ 환산 <code>(n−1)·log1p(T²/n)</code></td>
+<td><code>rif_cir_analyze.m</code> 196행</td>
+</tr>
+<tr>
+<td>소프트 합, 이동 후보, 문턱</td>
+<td><code>rif_packet.m</code> 115행 (<code>case 'soft'</code>), 219행 <code>soft_threshold</code>, 207행 <code>chi2tail</code></td>
+</tr>
+<tr>
+<td>하한 검사</td>
+<td><code>rif_packet.m</code> 147행</td>
+</tr>
+<tr>
+<td>근거</td>
+<td><code>LAMBDA_PATCH_DESIGN.md</code> 8장(Λ̂), 9장(패킷), <a href="lamhat.html"><code>docs/lamhat.html</code></a>, <a href="glr.html"><code>docs/glr.html</code></a></td>
+</tr>
+</tbody>
+</table></div></div></section>
+<section id="appx-b" aria-labelledby="appx-b-h"><div class="sec-head"><span class="no">부록 B</span><h2 id="appx-b-h">C 구현 (예외 처리 포함, float32, HPRF)</h2></div><div class="md"><ul>
+<li><strong>호출 순서:</strong> 설정마다 <code>rif_init</code> 1번(문턱표, 위상별 n_e, K = 1의 T² 문턱 계산) → 프래그먼트마다 <code>rif_fragment</code> → 패킷마다 <code>rif_packet</code>. 없는 프래그먼트는 <code>rif_fragment(ctx, NULL, NULL, &amp;fr[f])</code>로 넣습니다.</li>
+<li><strong>입력:</strong> <code>x[k]</code>, <code>y[k]</code>는 그 프래그먼트 RIF CIR 탭 k의 실수부와 허수부입니다(2열 덤프의 1열과 2열, k = 0..255). 스케일 보정은 하지 않습니다.</li>
+<li><strong>출력:</strong> 패킷 상태(<code>PKT_*</code>), 피크 탭, 선택한 이동 후보, S*, 비교한 문턱, 쓴 프래그먼트 수, 프래그먼트별 플래그(<code>FF_*</code>)와 선택 경로의 Λ̂.</li>
+<li><strong>확인 (2026-11-17):</strong> <code>gcc -std=c99 -Wall -Wextra -Wpedantic</code> 경고 없음. 아래 14개 경우를 참조 코드(<code>rif_cir_analyze</code> Λ̂, <code>rif_packet</code> 소프트)의 Python 이식본과 비교해 모두 맞았습니다. LLS 덤프와 MATLAB으로는 아직 돌리지 않았습니다(7.1절).</li>
+</ul>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>경우</th>
+<th>결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H1 / H0 (K = 8)</td>
+<td>수락 / 불합격. Λ̂ 차이 ≤ 7e-6, S*·피크 탭 일치</td>
+</tr>
+<tr>
+<td>피크 이동 0.3탭/프래그먼트, 이동 후보 9개</td>
+<td>S* 103.7 (후보 0만이면 51.3), 선택 d = 2/7, 문턱 75.02</td>
+</tr>
+<tr>
+<td>K = 1 로그 없는 판정</td>
+<td>160개 프래그먼트(문턱 이상 97개)에서 Λ̂ ≥ T 판정, 피크 탭, Λ̂ 모두 일치</td>
+</tr>
+<tr>
+<td>한 위상 잡음 탭이 모두 0</td>
+<td>일반: 7개로 수락(문턱 65.66). 보안: 판정 불가로 폐기</td>
+</tr>
+<tr>
+<td>프래그먼트 누락 1 / 3 / 8개</td>
+<td>7개로 수락 / m_max 초과 폐기 / 쓸 데이터 없음</td>
+</tr>
+<tr>
+<td>선택 경로에서 Λ̂ = 0인 바꿔치기 프래그먼트</td>
+<td>일반: 빼고 다시 판정해 수락(문턱 70.67). 보안: 하한 실패 폐기</td>
+</tr>
+<tr>
+<td>잡음 탭 포화 / 신호 창 탭 포화</td>
+<td>판정 불가로 빼고 수락 / 정보 플래그만, 수락</td>
+</tr>
+<tr>
+<td>κ = 1 (잔여 CFO 0)</td>
+<td>모든 프래그먼트에 상한 플래그, Λ̂ 상대 차이 ≤ 1e-5</td>
+</tr>
+<tr>
+<td>피크가 탭 119 (창 시작)</td>
+<td><code>edge</code> = 1</td>
+</tr>
+<tr>
+<td>K = 2에서 1개 누락</td>
+<td>1개로 수락(문턱 36.53)</td>
+</tr>
+<tr>
+<td>설정 오류 5종</td>
+<td>각각 <code>RIF_ECFG_WIN</code>, <code>_NOISE</code>, <code>_K</code>, <code>_DRIFT</code>, <code>_PARAM</code></td>
+</tr>
+</tbody>
+</table></div>
+<div class="codeblock"><div class="code-bar"><span class="lang">C</span><button type="button" class="copy">복사</button></div><pre class="code"><code><span class="cm">/* ======================================================================
+ * CIR 추정 Λ̂ 패킷 판정 (고정 칩, HPRF, float32)
+ *   참조: rif_cir_analyze(..., 'Chip', 'fixed') -&gt; rif_packet(R) (소프트, 10^-6, 여유 1.5, 하한 1)
+ *   호출 순서: rif_init (설정마다 1번) -&gt; rif_fragment (프래그먼트마다) -&gt; rif_packet (패킷마다)
+ * ====================================================================== */</span>
+#include &lt;math.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;string.h&gt;
+
+#define NT      256              <span class="cm">/* CIR 탭 수 */</span>
+#define P       8                <span class="cm">/* 다상 성분 수 e = k % 8 (HPRF). BPRF 16은 검증 안 됨 */</span>
+#define K_MAX   8                <span class="cm">/* 패킷당 최대 프래그먼트 수 */</span>
+#define ND_MAX  16               <span class="cm">/* 이동 후보 최대 수 */</span>
+#define M_TAB   2                <span class="cm">/* 다시 판정할 때 뺄 수 있는 최대 개수 (문턱표 크기) */</span>
+
+<span class="cm">/* ---------------------------------------------------------------- 설정 */</span>
+typedef struct {
+    int     ws0, ws1;            <span class="cm">/* 신호 창 [119, 175] (덤프 탭 번호 기준) */</span>
+    int     K;                   <span class="cm">/* 패킷당 프래그먼트 수 1, 2, 4, 8 */</span>
+    int     nd;                  <span class="cm">/* 이동 후보 수 (LLS: 1) */</span>
+    float   d[ND_MAX];           <span class="cm">/* 이동 후보 [탭/프래그먼트] (LLS: {0}) */</span>
+    double  pfa;                 <span class="cm">/* 패킷 오수락 목표 1e-6 */</span>
+    double  margin;              <span class="cm">/* 문턱 여유 1.5 */</span>
+    float   rho_max;             <span class="cm">/* |π| 상한 0.98 */</span>
+    float   floor_lam;           <span class="cm">/* 하한 검사 1.0 (결정 6 안 3이면 F(λ̂) LUT로 교체) */</span>
+    float   q_min;               <span class="cm">/* 잡음 바닥 최솟값 4.0 [LSB^2] (5.5절) */</span>
+    int32_t cir_sat;             <span class="cm">/* 포화 코드: 부호 있는 N비트면 2^(N-1)-1, |x| 또는 |y| &gt;= 이 값이면 포화 (0 = 검사 안 함) */</span>
+    int     secure;              <span class="cm">/* 1 = 보안 판단(걸리면 폐기), 0 = 일반 용도(빼고 다시 판정) */</span>
+    int     m_max;               <span class="cm">/* 일반 용도에서 뺄 수 있는 최대 개수 (K=8: 2, K=2·4: 1, K=1: 0) */</span>
+} rif_cfg_t;
+
+<span class="cm">/* 설정에서 미리 계산하는 값 */</span>
+typedef struct {
+    rif_cfg_t c;
+    int     W;                   <span class="cm">/* 신호 창 탭 수 (57) */</span>
+    int     n_e[P];              <span class="cm">/* 위상별 잡음 탭 수 (25 x 7, e = 7은 24) */</span>
+    float   T[K_MAX + 1][M_TAB + 1];   <span class="cm">/* T[kv][m]: kv개 중 m개를 값을 보고 뺀 뒤의 문턱 (0.01 올림) */</span>
+    float   t2_single[P];        <span class="cm">/* K = 1: 위상별 T² 문턱 (로그 없는 판정) */</span>
+} rif_ctx_t;
+
+enum {                           <span class="cm">/* rif_init 반환값 */</span>
+    RIF_OK          =  0,
+    RIF_ECFG_WIN    = -1,        <span class="cm">/* 신호 창이 0..255 밖이거나 ws0 &gt; ws1 */</span>
+    RIF_ECFG_NOISE  = -2,        <span class="cm">/* 어떤 위상의 잡음 탭이 5개 미만 (참조 코드와 같은 하한) */</span>
+    RIF_ECFG_K      = -3,        <span class="cm">/* K가 1..K_MAX 밖 */</span>
+    RIF_ECFG_DRIFT  = -4,        <span class="cm">/* 이동 후보 수가 1..ND_MAX 밖 */</span>
+    RIF_ECFG_PARAM  = -5         <span class="cm">/* pfa, margin, rho_max, q_min, m_max 범위 오류 */</span>
+};
+
+<span class="cm">/* 프래그먼트 플래그 */</span>
+#define FF_MISSING    0x0001     <span class="cm">/* CIR 없음 (수신 실패, 시간 초과)              -&gt; 판정 불가 */</span>
+#define FF_LOWNOISE   0x0002     <span class="cm">/* 어떤 위상의 Q̂_e &lt; q_min (0, NaN 포함)        -&gt; 판정 불가 */</span>
+#define FF_SAT_NOISE  0x0004     <span class="cm">/* 잡음 탭 포화                                  -&gt; 판정 불가 */</span>
+#define FF_NUMERIC    0x0008     <span class="cm">/* T² 또는 Λ̂가 NaN/Inf                          -&gt; 판정 불가 */</span>
+#define FF_INVALID    (FF_MISSING | FF_LOWNOISE | FF_SAT_NOISE | FF_NUMERIC)
+#define FF_SAT_SIG    0x0010     <span class="cm">/* 신호 창 탭만 포화 (정보: 맞는 키의 센 피크. H0면 잡음 탭도 포화되어 FF_SAT_NOISE) */</span>
+#define FF_RHO_CLAMP  0x0020     <span class="cm">/* |π_e| 상한 적용 (정보: 잔여 CFO ≈ 0, 보수적) */</span>
+#define FF_FLOOR      0x0040     <span class="cm">/* 선택 경로에서 Λ̂ &lt; 하한 */</span>
+#define FF_DROPPED    0x0080     <span class="cm">/* 패킷 판정에서 뺌 */</span>
+
+typedef struct {
+    uint16_t flags;
+    float    lam[NT];            <span class="cm">/* Λ̂[ws0 + j], j = 0..W-1 (K &gt;= 2) */</span>
+    int      single_tap;         <span class="cm">/* K = 1: argmax Λ̂의 창 안 인덱스 (-1 = 없음) */</span>
+    float    single_lam;         <span class="cm">/* K = 1: 그 Λ̂ */</span>
+    int      single_pass;        <span class="cm">/* K = 1: 로그 없는 판정 결과 (1 = 문턱 이상) */</span>
+} rif_frag_t;
+
+typedef enum {
+    PKT_ACCEPT = 0,              <span class="cm">/* 수락 (K개 모두 사용) */</span>
+    PKT_ACCEPT_REDUCED,          <span class="cm">/* 수락 (일부를 빼고 판정, 일반 용도만) */</span>
+    PKT_REJECT_THRESHOLD,        <span class="cm">/* 소프트 합 &lt; 문턱: 맞는 키 신호 없음 */</span>
+    PKT_REJECT_FLOOR,            <span class="cm">/* 하한 검사 실패 (보안 판단, 또는 다시 판정도 실패) */</span>
+    PKT_REJECT_INVALID,          <span class="cm">/* 판정 불가 프래그먼트 (보안 판단, 또는 m_max 초과) */</span>
+    PKT_REJECT_NODATA            <span class="cm">/* 쓸 수 있는 프래그먼트 없음 */</span>
+} rif_status_t;
+
+typedef struct {
+    rif_status_t status;
+    int      peak_tap;           <span class="cm">/* 피크 탭 ws0 + j* (-1 = 없음). 소프트 합의 argmax, 첫 경로 아님 */</span>
+    float    d_sel;              <span class="cm">/* 선택한 이동 후보 */</span>
+    float    s_best;             <span class="cm">/* S* */</span>
+    float    thr;                <span class="cm">/* 마지막으로 비교한 문턱 */</span>
+    int      k_used;             <span class="cm">/* 마지막 판정에 쓴 프래그먼트 수 */</span>
+    int      edge;               <span class="cm">/* 1 = 피크가 신호 창 끝 탭 (창 배치 확인 필요) */</span>
+    uint16_t flags[K_MAX];       <span class="cm">/* 프래그먼트별 플래그 (무결성 보고) */</span>
+    float    lam_peak[K_MAX];    <span class="cm">/* 선택 경로의 프래그먼트별 Λ̂ (쓰지 않은 것은 NAN) */</span>
+} rif_pkt_t;
+
+<span class="cm">/* ---------------------------------------------------------------- 문턱 (설정 때 1번, double) */</span>
+static double chi2tail(double T, int K)          <span class="cm">/* P(χ²_2K &gt; T) = e^(-T/2) Σ_{i&lt;K} (T/2)^i / i! */</span>
+{
+    double h = T / 2, term = 1, s = 1;
+    for (int i = 1; i &lt; K; i++) { term *= h / i; s += term; }
+    return exp(-h) * s;
+}
+
+static float soft_threshold(int K, double nhyp, double target)   <span class="cm">/* nhyp·P(χ²_2K &gt; T) = target, 0.01 올림 */</span>
+{
+    double lo = 0, hi = 2.0 * K + 400;
+    for (int it = 0; it &lt; 200; it++) {
+        double mid = 0.5 * (lo + hi);
+        if (nhyp * chi2tail(mid, K) &gt; target) lo = mid; else hi = mid;
+    }
+    return (float)(ceil(hi * 100 - 1e-9) / 100);
+}
+
+static double n_choose_k(int n, int k)
+{
+    double r = 1;
+    for (int i = 1; i &lt;= k; i++) r = r * (n - k + i) / i;
+    return r;
+}
+
+int rif_init(rif_ctx_t *ctx, const rif_cfg_t *c)
+{
+    memset(ctx, 0, sizeof *ctx);
+    ctx-&gt;c = *c;
+    if (c-&gt;ws0 &lt; 0 || c-&gt;ws1 &gt;= NT || c-&gt;ws0 &gt; c-&gt;ws1) return RIF_ECFG_WIN;
+    ctx-&gt;W = c-&gt;ws1 - c-&gt;ws0 + 1;
+    for (int k = 0; k &lt; NT; k++)
+        if (k &lt; c-&gt;ws0 || k &gt; c-&gt;ws1) ctx-&gt;n_e[k % P]++;
+    for (int e = 0; e &lt; P; e++)
+        if (ctx-&gt;n_e[e] &lt; 5) return RIF_ECFG_NOISE;          <span class="cm">/* 25 미만이면 문턱 상승이 큼 (n = 10이면 약 7 dB) */</span>
+    if (c-&gt;K &lt; 1 || c-&gt;K &gt; K_MAX) return RIF_ECFG_K;
+    if (c-&gt;nd &lt; 1 || c-&gt;nd &gt; ND_MAX) return RIF_ECFG_DRIFT;
+    if (!(c-&gt;pfa &gt; 0 &amp;&amp; c-&gt;pfa &lt; 1) || !(c-&gt;margin &gt;= 1) || !(c-&gt;rho_max &gt; 0 &amp;&amp; c-&gt;rho_max &lt; 1) ||
+        !(c-&gt;q_min &gt; 0) || c-&gt;m_max &lt; 0 || c-&gt;m_max &gt;= c-&gt;K)
+        return RIF_ECFG_PARAM;
+
+    double target = c-&gt;pfa / c-&gt;margin;
+    for (int kv = 1; kv &lt;= c-&gt;K; kv++)                      <span class="cm">/* kv: 판정 불가를 뺀 뒤 남은 수 */</span>
+        for (int m = 0; m &lt;= M_TAB &amp;&amp; m &lt; kv; m++) {         <span class="cm">/* m: 하한 실패로 뺀 수 (결정 7: C(kv, m) 보정) */</span>
+            int kr = kv - m;                                 <span class="cm">/* 실제로 더하는 수 */</span>
+            double nhyp = (double)ctx-&gt;W * (kr &gt;= 2 ? c-&gt;nd : 1) * n_choose_k(kv, m);
+            ctx-&gt;T[kv][m] = soft_threshold(kr, nhyp, target);
+        }
+    for (int e = 0; e &lt; P; e++) {                            <span class="cm">/* K = 1: Λ̂ &gt;= T  &lt;=&gt;  T² &gt;= n (e^(T/(n-1)) - 1) */</span>
+        double n = ctx-&gt;n_e[e];
+        ctx-&gt;t2_single[e] = (float)(n * (exp(ctx-&gt;T[1][0] / (n - 1)) - 1));
+    }
+    return RIF_OK;
+}
+
+<span class="cm">/* ---------------------------------------------------------------- 프래그먼트 하나 */</span>
+<span class="cm">/* x, y: CIR 실수부·허수부 (덤프 1·2열), k = 0..255. NULL이면 없는 프래그먼트 */</span>
+void rif_fragment(const rif_ctx_t *ctx, const int32_t *x, const int32_t *y, rif_frag_t *fr)
+{
+    const rif_cfg_t *c = &amp;ctx-&gt;c;
+    float sq[P] = {0}, sr[P] = {0}, si[P] = {0}, ca[P], cb[P], cc[P];
+
+    memset(fr, 0, sizeof *fr);
+    fr-&gt;single_tap = -1;
+    fr-&gt;single_lam = NAN;
+    if (!x || !y) { fr-&gt;flags |= FF_MISSING; return; }
+
+    <span class="cm">/* 1) 잡음 모멘트: 위상 e별로 신호 창 밖 탭만 누적, 포화 검사 */</span>
+    for (int k = 0; k &lt; NT; k++) {
+        int in = (k &gt;= c-&gt;ws0 &amp;&amp; k &lt;= c-&gt;ws1);
+        if (c-&gt;cir_sat &gt; 0 &amp;&amp; (x[k] &gt;= c-&gt;cir_sat || x[k] &lt;= -c-&gt;cir_sat ||
+                               y[k] &gt;= c-&gt;cir_sat || y[k] &lt;= -c-&gt;cir_sat))
+            fr-&gt;flags |= in ? FF_SAT_SIG : FF_SAT_NOISE;
+        if (in) continue;
+        float a = (float)x[k], b = (float)y[k];
+        int e = k % P;
+        sq[e] += a * a + b * b;                              <span class="cm">/* Σ |C|²  */</span>
+        sr[e] += a * a - b * b;                              <span class="cm">/* Σ Re C² */</span>
+        si[e] += 2.0f * a * b;                               <span class="cm">/* Σ Im C² */</span>
+    }
+    if (fr-&gt;flags &amp; FF_SAT_NOISE) return;                    <span class="cm">/* 잡음 탭이 잘리면 Q̂·π를 믿을 수 없음 */</span>
+
+    <span class="cm">/* 2) 위상별 계수 + 잡음 바닥 검사 */</span>
+    for (int e = 0; e &lt; P; e++) {
+        float n = (float)ctx-&gt;n_e[e];
+        if (!(sq[e] &gt;= c-&gt;q_min * n)) { fr-&gt;flags |= FF_LOWNOISE; return; }   <span class="cm">/* 0, 너무 작음, NaN */</span>
+        float u = sr[e] / sq[e], v = si[e] / sq[e];          <span class="cm">/* π_e = Π̂_e / Q̂_e = u + j v */</span>
+        float r2 = u * u + v * v, rm2 = c-&gt;rho_max * c-&gt;rho_max;
+        if (r2 &gt; rm2) {                                      <span class="cm">/* 크기만 rho_max로 (방향 유지) */</span>
+            float s = c-&gt;rho_max / sqrtf(r2);
+            u *= s; v *= s; r2 = rm2;
+            fr-&gt;flags |= FF_RHO_CLAMP;
+        }
+        float g = 2.0f * n / (sq[e] * (1.0f - r2));         <span class="cm">/* 2 / (Q̂_e (1 - |π_e|²)), Q̂_e = sq / n */</span>
+        ca[e] = g * (1.0f - u);
+        cb[e] = g * (1.0f + u);
+        cc[e] = -2.0f * g * v;
+    }
+
+    <span class="cm">/* 3a) K = 1: 로그 없는 판정. 위상 안에서는 Λ̂가 T²에 단조라 위상별 최대 T²만 보면 됨 */</span>
+    if (c-&gt;K == 1) {
+        float t2max[P];
+        int jmax[P];
+        for (int e = 0; e &lt; P; e++) { t2max[e] = -1.0f; jmax[e] = -1; }
+        for (int j = 0; j &lt; ctx-&gt;W; j++) {
+            int k = c-&gt;ws0 + j, e = k % P;
+            float a = (float)x[k], b = (float)y[k];
+            float t2 = ca[e] * a * a + cb[e] * b * b + cc[e] * a * b;
+            if (!isfinite(t2)) { fr-&gt;flags |= FF_NUMERIC; return; }
+            if (t2 &gt; t2max[e]) { t2max[e] = t2; jmax[e] = j; }
+        }
+        float best = -1.0f;
+        for (int e = 0; e &lt; P; e++) {
+            if (jmax[e] &lt; 0) continue;                       <span class="cm">/* 창 안에 이 위상의 탭이 없음 */</span>
+            if (t2max[e] &gt;= ctx-&gt;t2_single[e]) fr-&gt;single_pass = 1;
+            float n = (float)ctx-&gt;n_e[e];
+            float l = (n - 1.0f) * log1pf(t2max[e] / n);    <span class="cm">/* 출력용 로그 (최대 8번) */</span>
+            if (l &gt; best || (l == best &amp;&amp; jmax[e] &lt; fr-&gt;single_tap)) { best = l; fr-&gt;single_tap = jmax[e]; }
+        }
+        fr-&gt;single_lam = best;
+        return;
+    }
+
+    <span class="cm">/* 3b) K &gt;= 2: 신호 창 모든 탭의 Λ̂ */</span>
+    for (int j = 0; j &lt; ctx-&gt;W; j++) {
+        int k = c-&gt;ws0 + j, e = k % P;
+        float a = (float)x[k], b = (float)y[k];
+        float t2 = ca[e] * a * a + cb[e] * b * b + cc[e] * a * b;     <span class="cm">/* 백색화 */</span>
+        float n = (float)ctx-&gt;n_e[e];
+        float l = (n - 1.0f) * log1pf(t2 / n);                        <span class="cm">/* H0에서 정확히 χ²₂ */</span>
+        if (!isfinite(l)) { fr-&gt;flags |= FF_NUMERIC; return; }
+        fr-&gt;lam[j] = l;
+    }
+}
+
+<span class="cm">/* ---------------------------------------------------------------- 패킷 */</span>
+<span class="cm">/* 경로 탐색: 쓰는 프래그먼트(use[f])로 이동 후보 d와 탭 j마다 S = Σ_f Λ̂_f[j + round(d·f)]의 최대.
+ * 경로의 탭이 하나라도 신호 창 밖이면 건너뜀. 같은 값이면 앞의 d, 앞의 j (참조 코드와 같음) */</span>
+static float best_path(const rif_ctx_t *ctx, const rif_frag_t *fr, const int *use, int *jb, int *ib)
+{
+    const rif_cfg_t *c = &amp;ctx-&gt;c;
+    float best = -INFINITY;
+    *jb = -1; *ib = 0;
+    for (int i = 0; i &lt; c-&gt;nd; i++) {
+        int sh[K_MAX], lo = 0, hi = ctx-&gt;W - 1;
+        for (int f = 0; f &lt; c-&gt;K; f++) {
+            sh[f] = (int)lroundf(c-&gt;d[i] * (float)f);       <span class="cm">/* MATLAB round(d (f-1)), f는 1부터 */</span>
+            if (!use[f]) continue;
+            if (-sh[f] &gt; lo) lo = -sh[f];
+            if (ctx-&gt;W - 1 - sh[f] &lt; hi) hi = ctx-&gt;W - 1 - sh[f];
+        }
+        for (int j = lo; j &lt;= hi; j++) {
+            float s = 0.0f;
+            for (int f = 0; f &lt; c-&gt;K; f++)
+                if (use[f]) s += fr[f].lam[j + sh[f]];
+            if (s &gt; best) { best = s; *jb = j; *ib = i; }
+        }
+    }
+    return best;
+}
+
+static void fill_path(const rif_ctx_t *ctx, const rif_frag_t *fr, const int *use,
+                      int jb, int ib, float s, float thr, int kused, rif_pkt_t *out)
+{
+    const rif_cfg_t *c = &amp;ctx-&gt;c;
+    out-&gt;s_best = s; out-&gt;thr = thr; out-&gt;k_used = kused;
+    out-&gt;peak_tap = jb &gt;= 0 ? c-&gt;ws0 + jb : -1;
+    out-&gt;d_sel = c-&gt;d[ib];
+    out-&gt;edge = (jb == 0 || jb == ctx-&gt;W - 1);
+    for (int f = 0; f &lt; c-&gt;K; f++)
+        out-&gt;lam_peak[f] = (use[f] &amp;&amp; jb &gt;= 0) ? fr[f].lam[jb + (int)lroundf(c-&gt;d[ib] * (float)f)] : NAN;
+}
+
+<span class="cm">/* fr[0..K-1]: 시간 순 프래그먼트 (없는 것은 rif_fragment(NULL)로 FF_MISSING) */</span>
+void rif_packet(const rif_ctx_t *ctx, const rif_frag_t *fr, rif_pkt_t *out)
+{
+    const rif_cfg_t *c = &amp;ctx-&gt;c;
+    int K = c-&gt;K, use[K_MAX], m_inv = 0, jb, ib;
+
+    memset(out, 0, sizeof *out);
+    out-&gt;peak_tap = -1; out-&gt;s_best = NAN; out-&gt;thr = NAN; out-&gt;d_sel = c-&gt;d[0];
+    for (int f = 0; f &lt; K_MAX; f++) out-&gt;lam_peak[f] = NAN;
+    for (int f = 0; f &lt; K; f++) {
+        out-&gt;flags[f] = fr[f].flags;
+        use[f] = !(fr[f].flags &amp; FF_INVALID);
+        if (!use[f]) m_inv++;
+    }
+
+    <span class="cm">/* (가) 판정 불가 프래그먼트: 자기 잡음 탭만 보고 정한 것이라 남은 합은 그대로 χ²_2kv (C 보정 없음) */</span>
+    int kv = K - m_inv;
+    if (kv == 0) { out-&gt;status = PKT_REJECT_NODATA; return; }
+    if (m_inv &gt; 0) {
+        if (c-&gt;secure || m_inv &gt; c-&gt;m_max) { out-&gt;status = PKT_REJECT_INVALID; return; }
+        for (int f = 0; f &lt; K; f++) if (!use[f]) out-&gt;flags[f] |= FF_DROPPED;
+    }
+
+    <span class="cm">/* (나) K = 1 구성: 로그 없는 판정, 하한 검사 없음 */</span>
+    if (K == 1) {
+        out-&gt;k_used = 1; out-&gt;thr = ctx-&gt;T[1][0];
+        out-&gt;s_best = fr[0].single_lam; out-&gt;lam_peak[0] = fr[0].single_lam;
+        out-&gt;peak_tap = c-&gt;ws0 + fr[0].single_tap;
+        out-&gt;edge = (fr[0].single_tap == 0 || fr[0].single_tap == ctx-&gt;W - 1);
+        out-&gt;status = fr[0].single_pass ? PKT_ACCEPT : PKT_REJECT_THRESHOLD;
+        return;
+    }
+
+    <span class="cm">/* (다) 소프트 합과 문턱 */</span>
+    float s = best_path(ctx, fr, use, &amp;jb, &amp;ib);
+    fill_path(ctx, fr, use, jb, ib, s, ctx-&gt;T[kv][0], kv, out);
+    if (jb &lt; 0 || !(s &gt;= ctx-&gt;T[kv][0])) { out-&gt;status = PKT_REJECT_THRESHOLD; return; }
+
+    <span class="cm">/* (라) 하한 검사: 선택 경로에서 쓰는 프래그먼트가 모두 Λ̂ &gt;= 하한 */</span>
+    int m_fl = 0;
+    for (int f = 0; f &lt; K; f++)
+        if (use[f] &amp;&amp; !(out-&gt;lam_peak[f] &gt;= c-&gt;floor_lam)) { out-&gt;flags[f] |= FF_FLOOR; m_fl++; }
+    if (m_fl == 0) { out-&gt;status = m_inv ? PKT_ACCEPT_REDUCED : PKT_ACCEPT; return; }
+
+    <span class="cm">/* (마) 하한 실패 (결정 7): 보안 판단은 폐기, 일반 용도는 걸린 것을 빼고 한 번만 다시 판정.
+     *      값을 보고 빼므로 문턱에 C(kv, m) 보정 (T[kv][m_fl]) */</span>
+    if (c-&gt;secure || m_inv + m_fl &gt; c-&gt;m_max || m_fl &gt; M_TAB || kv - m_fl &lt; 1) {
+        out-&gt;status = PKT_REJECT_FLOOR; return;
+    }
+    for (int f = 0; f &lt; K; f++)
+        if (out-&gt;flags[f] &amp; FF_FLOOR) { use[f] = 0; out-&gt;flags[f] |= FF_DROPPED; }
+    s = best_path(ctx, fr, use, &amp;jb, &amp;ib);
+    fill_path(ctx, fr, use, jb, ib, s, ctx-&gt;T[kv][m_fl], kv - m_fl, out);
+    if (jb &lt; 0 || !(s &gt;= ctx-&gt;T[kv][m_fl])) { out-&gt;status = PKT_REJECT_FLOOR; return; }
+    for (int f = 0; f &lt; K; f++)
+        if (use[f] &amp;&amp; !(out-&gt;lam_peak[f] &gt;= c-&gt;floor_lam)) { out-&gt;status = PKT_REJECT_FLOOR; return; }
+    out-&gt;status = PKT_ACCEPT_REDUCED;
+}
+</code></pre></div></div></section></main>
+  </div>
+
+  <footer class="foot">
+    <p>원본은 저장소의 <code>lambda_patch/FW_GUIDE.md</code>입니다(커밋 360df1b 2026-11-17 기준). 식과 상수는 MATLAB 참조 구현 <code>rif_cir_analyze(..., 'Chip', 'fixed')</code> → <code>rif_packet</code>과 같습니다.</p>
+    <ul>
+      <li><a href="lls.html">LLS 검증 결과</a></li>
+      <li><a href="lamhat.html">Λ̂ 판정기 원리</a></li>
+      <li><a href="glr.html">Λ·Λ̂ 우도비 유도</a></li>
+      <li><a href="consistency.html">RIF 일관성 검사 비교</a></li>
+      <li><a href="checklist.html">RIF 검증 체크리스트</a></li>
+      <li><a href="index.html">RIF Λ 판정기</a></li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(function () {
+  /* copy buttons on code blocks */
+  document.querySelectorAll('.codeblock').forEach(function (blk) {
+    var btn = blk.querySelector('.copy'), pre = blk.querySelector('pre');
+    if (!btn || !pre) return;
+    btn.addEventListener('click', function () {
+      var text = pre.textContent;
+      function done(msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = '복사'; }, 1600); }
+      function fallback() {
+        try {
+          var r = document.createRange(); r.selectNodeContents(pre);
+          var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+          done('선택됨: Ctrl+C');
+        } catch (e) { done('복사 안 됨'); }
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { done('복사됨'); }, fallback);
+        } else { fallback(); }
+      } catch (e) { fallback(); }
+    });
+  });
+  /* highlight the current section in the side contents */
+  var links = {};
+  document.querySelectorAll('.side a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  if (!('IntersectionObserver' in window)) return;
+  var cur = null;
+  var io = new IntersectionObserver(function (ents) {
+    ents.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      var a = links[en.target.id];
+      if (!a) return;
+      if (cur) cur.classList.remove('on');
+      a.classList.add('on'); cur = a;
+    });
+  }, {rootMargin: '0px 0px -70% 0px'});
+  document.querySelectorAll('main section').forEach(function (s) { io.observe(s); });
+})();
+</script>
+<script>
+(function () {
+  /* theme toggle: system -> light -> dark */
+  var themeBtn = document.getElementById('theme-btn');
+  function themeLabel() {
+    var t = document.documentElement.getAttribute('data-theme');
+    themeBtn.textContent = '테마: ' + (t === 'light' ? '라이트' : t === 'dark' ? '다크' : '시스템');
+  }
+  themeBtn.addEventListener('click', function () {
+    var t = document.documentElement.getAttribute('data-theme');
+    var next = t === null ? 'light' : t === 'light' ? 'dark' : null;
+    if (next) document.documentElement.setAttribute('data-theme', next); else document.documentElement.removeAttribute('data-theme');
+    try { if (next) localStorage.setItem('rif-theme', next); else localStorage.removeItem('rif-theme'); } catch (e) {}
+    themeLabel();
+  });
+  themeLabel();
+})();
+</script>
+</body>
+</html>

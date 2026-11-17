@@ -1,6 +1,6 @@
 # RIF Λ 판정기 해설 페이지 (GitHub Pages)
 
-정적 페이지 열두 개입니다. 빌드 과정이 없고, 위젯의 시뮬레이션과 그래프는 브라우저에서 돕니다.
+정적 페이지 열세 개입니다. 빌드 과정이 없고, 위젯의 시뮬레이션과 그래프는 브라우저에서 돕니다.
 
 | 파일 | 내용 |
 |---|---|
@@ -9,6 +9,7 @@
 | `consistency.html` | RIF 일관성 검사 비교: 네 가지 정상 폐기율 안의 폐기, 바꿔치기 탐지, 감도 손해(L90·L99) (결정 6) |
 | `checklist.html` | RIF 검증 체크리스트: 단계 A~D의 시험 명령, 기대값, 합격 기준과 항목별 상태·결과 메모. Pages판은 claude.ai 공유 기록의 사본(빌드할 때 넣음)을 읽기 전용으로 보여 주고, claude.ai판은 함께 보는 사람과 기록을 공유합니다 |
 | `lls.html` | LLS 검증 결과: 현재 LLS(2열 CIR 덤프)로 한 CIR 추정 Λ̂ 패킷 판정의 단계 B 결과. 시험별 판정, 감도(검출 확률 곡선, RIF 길이·개수별 L90·L99), 오검출(패킷 꼬리 비율, 프래그먼트 오검출률, 기존 Z의 패킷 안 몰림), 주거 LOS 멀티패스, 잔여 CFO 0, 일관성 검사, 감시 항목. 그래프는 브라우저에서 그리며 값에 마우스를 올리면 수치가 나옵니다 |
+| `fw-guide.html` | RIF Λ̂ 판정기 F/W 구현 가이드: 고정 칩(프래그먼트마다 RIF CIR만 얻음)에서 CIR 추정 Λ̂ 패킷 판정을 F/W로 옮길 때의 식, 설정값, 문턱표, 예외 처리, 정밀도 예산, 확인 절차와 C 구현(부록 B). `../lambda_patch/FW_GUIDE.md`를 변환한 것이고 내용은 같습니다 |
 | `length.html` | RIF 길이별 합성 시험: `run_synthetic_test`가 32심볼로 고정된 이유, 길이(32·64·128·256)를 지원할 때 정답이 바뀌는 판정(94개 판정 지도), 고칠 곳과 순서 |
 | `length-verify.html` | RIF 길이 지원 검증 기록: 바꾼 것(커밋), 길이에 따라 움직이는 정답(L90, Z 판정기 통계, κ, 이동 탐색), MATLAB 5·6단계 FAIL의 원인과 해결, H0 꼬리·상관 판정 탐색기 |
 | `pooled.html` | Λ̂ 모멘트 모으기: CIR 추정 Λ̂의 Q̂·Π̂를 패킷의 1·2·4·8개 프래그먼트에서 모아 추정할 때의 Pfa(H0 꼬리 비율)와 소프트 패킷 L90·L99, RIF 길이 32·64·128·256 (통계 모델) |
@@ -29,7 +30,7 @@
 | 주기정상(cyclostationary) 잡음 (잡음 바닥이 8탭 주기로 변하는 구조), 위상별 바닥 프로파일 | 빗, 빗 모양, 빗 구조, 빗 프로파일 | 검사 이름 `mp20: … (comb filled …)` |
 
 페이지들은 바닥글에서 서로 링크됩니다. 결정과 재검토 조건은 `../lambda_patch/DECISIONS.md`에 있습니다.
-`basis.html`, `consistency.html`, `checklist.html`, `length.html`, `length-verify.html`, `pooled.html`, `score.html`, `lamhat.html`, `glr.html`, `lls.html`, `seminar.html`은 작업 폴더의 원본에서 만든 결과물이라 직접 고치지 않습니다. `lls.html`의 데이터는 `../lambda_patch/results/stage_b/notes/*.csv`입니다.
+`basis.html`, `consistency.html`, `checklist.html`, `length.html`, `length-verify.html`, `pooled.html`, `score.html`, `lamhat.html`, `glr.html`, `lls.html`, `fw-guide.html`, `seminar.html`은 작업 폴더의 원본에서 만든 결과물이라 직접 고치지 않습니다. `lls.html`의 데이터는 `../lambda_patch/results/stage_b/notes/*.csv`이고, `fw-guide.html`의 원본은 `../lambda_patch/FW_GUIDE.md`입니다(가이드를 고친 뒤 다시 변환).
 외부로 나가는 요청은 Google Fonts 하나뿐이며, 사내망에서 막혀도 렌더링을 막지 않고 시스템 글꼴(맑은 고딕 등)로 표시됩니다.
 Λ̂·Π̂·Σ̂·κ̂·λ̂·Q̂의 햇(결합 부호 U+0302)은 Google Fonts에 없고, 시스템 글꼴은 그리스 문자 위에 햇을 얹지 못해 Chrome·Edge에서 ^가 글자 옆에 위첨자처럼 보였습니다(2026-11-03). 그래서 각 페이지의 CSS에 IBM Plex Sans/Mono(SIL OFL 1.1)에서 그리스 문자, Q, U+0302만 뽑아 그리스 문자에 햇 위치를 넣은 작은 글꼴(`RIF Greek`, `RIF Q`, `RIF Q Mono`, 페이지당 약 27 KB)을 넣어 두었습니다. 밑줄 기호 c̲·R̲·a̲는 `<u>` 밑줄로 씁니다.
 
