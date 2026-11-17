@@ -45,6 +45,8 @@ flowchart LR
   H -- 예 --> OK["합격: j*, S*"]
 ```
 
+예외 처리(프래그먼트 누락, 잡음 바닥, 포화, NaN, 하한 실패 뒤 다시 판정, 설정 오류), 이동 후보 d, K = 1의 로그 없는 판정까지 넣은 코드는 **부록 B**이고, 예외별 처리 규칙은 5.5절입니다.
+
 ---
 
 ## 1. 왜 이 판정기인가
@@ -74,6 +76,10 @@ flowchart LR
 | K | 1 / 2 / 4 / 8 | 패킷당 RIF 프래그먼트 수 (NumRIF = 4 → 8) | B-H1 (8개), B-1R (1·2·4개) |
 | 이동 후보 d | LLS: {0} | 패킷 안 피크 이동 탐색 | silicon 미정 (4.2절, 결정 5) |
 | 하한 F_floor | 1 (임시) | 선택 경로에서 프래그먼트별 최소 Λ̂ | B-F·B-S. 결정 6 안 3으로 바꿀 예정 (4.5절) |
+| 잡음 바닥 최솟값 Q_MIN | 4 LSB² | 위상별 Q̂_e가 이보다 작으면 판정 불가 | 정수 CIR 시뮬레이션 (5.5절, 제안) |
+| 포화 코드 | CIR 출력 비트폭의 최댓값 | 잡음 탭이 포화되면 판정 불가 | 제안 (5.5절). 0이면 검사 안 함 |
+| 용도 | 보안 판단 / 일반 용도 | 걸렸을 때 폐기 / 빼고 다시 판정 | 결정 7 (세션 설정) |
+| m_max | K = 8: 2, K = 2·4: 1, K = 1: 0 | 일반 용도에서 뺄 수 있는 최대 프래그먼트 수 | 결정 7 제안 |
 
 **신호 창과 잡음 탭을 정할 때**
 
@@ -132,7 +138,7 @@ T²[k] = a_e x[k]² + b_e y[k]² + c_e x[k] y[k]
 - 이 변환은 Hotelling 꼬리를 정확히 χ²₂로 바꿉니다. 그래서 K개의 합이 H0에서 χ²_{2K}를 따르고, 패킷 문턱을 닫힌 식(4.3절)으로 정할 수 있습니다. 변환하지 않은 T²를 더하면 꼬리가 두꺼워 같은 문턱에서 오수락이 목표를 넘습니다.
 - Λ̂는 잡음 통계까지 추정하는 문제의 일반화 우도비 2·ln GLR = (n+1)·ln(1 + T²/n)의 (n−1)/(n+1)배입니다(`docs/glr.html`).
 - 신호가 강하면 로그 때문에 값이 눌립니다(예: T² = 1000이면 Λ̂ ≈ 89). 판정은 문턱 근처만 중요하므로 문제없지만, 신호 크기 추정에 Λ̂를 그대로 쓰면 안 됩니다(4.5절).
-- **K = 1이면 로그가 필요 없습니다.** `Λ̂ ≥ T` ⇔ `T² ≥ n_e (e^(T/(n_e−1)) − 1)`이므로 위상별 T² 문턱(T = 36.53에서 n_e = 25: 89.54, n_e = 24: 93.48)과 비교하면 됩니다.
+- **K = 1이면 로그가 필요 없습니다.** `Λ̂ ≥ T` ⇔ `T² ≥ n_e (e^(T/(n_e−1)) − 1)`이므로 위상별 T² 문턱(T = 36.53에서 n_e = 25: 89.55, n_e = 24: 93.49, 올림)과 비교하면 됩니다. 위상 안에서는 Λ̂가 T²에 단조이므로 피크 위치와 출력용 Λ̂도 위상별 최대 T² 8개만 로그를 취하면 정확히 나옵니다(부록 B).
 
 ### 3.5 F/W에 유리한 성질
 
@@ -148,7 +154,7 @@ T²[k] = a_e x[k]² + b_e y[k]² + c_e x[k] y[k]
 
 - 한 수신기의 한 거리 측정에 쓰는 RIF 프래그먼트 K개(시간 순 f = 1..K)가 한 패킷입니다. NumRIF = 4면 K = 8입니다.
 - STS가 심볼마다 바뀌어 H0에서 프래그먼트는 서로 독립입니다(B-0: 쌍 상관 +0.006, 기준 ±0.0125).
-- 패킷의 프래그먼트가 K개보다 적으면(누락) 그 패킷은 판정하지 않습니다(참조 코드는 버림). 남은 개수로 판정하려면 그 개수의 문턱을 써야 합니다.
+- 패킷의 프래그먼트가 K개보다 적으면(누락) 참조 코드는 그 패킷을 버립니다. F/W는 없는 프래그먼트를 판정 불가로 표시하고, 보안 판단이면 폐기, 일반 용도면 남은 개수의 문턱으로 판정합니다(5.5절).
 
 ### 4.2 소프트 합과 이동 후보
 
@@ -298,11 +304,68 @@ W · N_d · C(K, m) · P(χ²_{2(K−m)} > T_{K,m}) = PfaTarget / Margin
 - 저장: Λ̂_f[57] × K (K = 8, float32이면 1,824바이트). 하한·일관성 검사와 빼고 다시 판정(4.6절)에 프래그먼트별 값이 필요하므로 합만 누적하지 말고 K×57을 남깁니다.
 - 시점: 프래그먼트 처리는 그 CIR이 나오면 바로 하고, 패킷 판정은 마지막 프래그먼트 뒤에 합니다.
 
-### 5.5 예외 처리 (권장, 미검증)
+### 5.5 예외 처리 (제안: 시뮬레이션 근거, LLS·silicon 미확인)
 
-- **Q̂_e가 0이거나 너무 작음** (CIR이 비었거나 잘림, 포화): 참조 코드는 `max(Q, realmin)`이라 신호 창에 값이 있으면 Λ̂가 매우 커집니다. F/W는 Q̂_e가 최솟값보다 작으면 그 프래그먼트를 **판정 불가**로 두고 패킷을 수락하지 않는 쪽이 안전합니다.
-- **반올림 잡음:** 정수 CIR의 반올림 잡음은 |C|²로 약 1/6 LSB²입니다. silicon CIR에서 그 몫(1/6 ÷ Q̂_e)이 LLS(1.6e-5)처럼 충분히 작은지 확인합니다. 크면 CIR 출력 스케일(시프트)을 조정합니다.
-- **같은 값의 최댓값:** 참조 코드(MATLAB `max`)는 앞 탭을 고릅니다. 비교에 `>`를 써서 맞춥니다.
+부록 B의 코드가 아래 규칙대로 처리합니다.
+
+| 경우 | 검사 위치 | 플래그 | 처리 |
+|---|---|---|---|
+| CIR 없음 (수신 실패, 시간 초과, 패킷의 프래그먼트 수 부족) | 프래그먼트 입력 | `FF_MISSING` | 판정 불가 |
+| 어느 위상이든 Q̂_e < Q_MIN (0, NaN 포함) | 모멘트 누적 뒤 | `FF_LOWNOISE` | 판정 불가 |
+| 잡음 탭 포화 (\|x\| 또는 \|y\| ≥ 포화 코드) | 모멘트 누적 중 | `FF_SAT_NOISE` | 판정 불가 |
+| T² 또는 Λ̂가 NaN/Inf (고정소수점이면 누산기 포화도) | 신호 창 계산 | `FF_NUMERIC` | 판정 불가 |
+| 신호 창 탭 포화 | 모멘트 누적 중 | `FF_SAT_SIG` | 정보만. 잘린 탭은 Λ̂가 작아지는 쪽(보수적)이라 판정은 함 |
+| \|π_e\| > 0.98 | 위상 계수 | `FF_RHO_CLAMP` | 정보만. 잔여 CFO ≈ 0의 정상 경로 (3.2절) |
+| 선택 경로에서 Λ̂_f < 하한 | 패킷 | `FF_FLOOR` | 보안 판단: 폐기. 일반 용도: 빼고 한 번 다시 판정 |
+| 피크가 신호 창 끝 탭 | 패킷 | `edge` | 정보만. 창 배치(타이밍) 확인 |
+| 설정 오류 (창 범위, 위상당 잡음 탭 < 5, K, 이동 후보 수, 인자 범위) | 설정 | `RIF_ECFG_*` | 판정하지 않음 |
+
+**잡음 바닥 최솟값 Q_MIN = 4 LSB²**
+
+- 참조 코드는 `max(Q, realmin)`이라, 한 위상의 잡음 탭이 모두 0이고 신호 창 탭에 값이 있으면 Λ̂가 거의 무한대가 됩니다(오수락). 0이 아니어도 너무 작으면 반올림 때문에 잡음이 몇 개의 정수 값만 가져 χ²₂ 전제가 깨집니다.
+- 정수 CIR 시뮬레이션 (원형 가우스 잡음, 프래그먼트 20,000개, H0 탭 꼬리 비율 `P(Λ̂ ≥ t) / e^(−t/2)`):
+
+| 성분당 잡음 σ [LSB] | Q̂ [LSB²] | t = 10 / 14 / 18 | 판단 |
+|---|---|---|---|
+| 0.35 | 0.41 | 7.3 / 34 / 91 | 위험 |
+| 0.5 | 0.67 | 1.2 / 2.1 / 3.5 | 위험 |
+| 0.75 | 1.29 | 0.95 / 0.94 / 1.06 | 정상 |
+| 1.0 | 2.17 | 1.00 / 0.95 / 1.07 | 정상 |
+| 2.0 | 8.17 | 1.00 / 0.98 / 0.97 | 정상 |
+
+- Q_MIN = 4는 위험 구간(≤ 0.7)보다 약 6배, 정상 경계(1.3)보다 약 3배 위입니다. LSB는 CIR 정수 값의 한 칸(고정소수점이면 양자화 간격)입니다.
+- 정상 동작에서는 걸리지 않아야 합니다. LLS 덤프의 반올림 잡음 몫(1/6 LSB² ÷ Q̂_e)은 1.6e-5로, 위험 구간의 몫(0.25 이상)보다 네 자릿수 작습니다. silicon에서 Q̂_e가 이 경계에 가까우면 Q_MIN을 낮추지 말고 CIR 출력 시프트를 줄입니다.
+- Q̂_e를 Q_MIN으로 올려 계산하는 방법은 오수락 쪽으로는 안전하지만 비정상 상태를 숨기고 그 프래그먼트를 조용히 버리게 되므로 쓰지 않습니다.
+
+**판정 불가와 하한 실패의 패킷 처리**
+
+| 용도 | 판정 불가 m개 | 하한 실패 m개 |
+|---|---|---|
+| 보안 판단 | 폐기 (`PKT_REJECT_INVALID`) | 폐기 (`PKT_REJECT_FLOOR`) |
+| 일반 용도 | m ≤ m_max면 빼고 kv = K − m개로 판정, 문턱 T[kv][0] | 빼고 한 번만 다시 판정, 문턱 T[kv][m] (C(kv, m) 보정). 남은 것도 하한 검사 |
+
+- **판정 불가는 C(K, m) 보정이 없습니다.** 그 프래그먼트 자신의 잡음 탭이나 입력 상태만 보고 정한 것이라, 남은 kv개의 합은 H0에서 그대로 χ²_{2kv}입니다.
+- **하한 실패는 값을 보고 빼므로 보정합니다**(결정 7). 다시 판정은 먼저 T[kv][0]을 넘은 패킷에서만 일어나므로, 다시 판정을 더해도 패킷 오수락은 T[kv][0]의 목표(10⁻⁶ / 1.5) 안에 있습니다.
+- 두 경우를 합쳐 뺀 수가 m_max를 넘으면 폐기합니다. 하한 실패로 3개 이상 빼야 하면 폐기합니다(문턱표 크기).
+- K = 1 구성에는 하한 검사가 없고, 판정 불가면 쓸 프래그먼트가 없어 `PKT_REJECT_NODATA`입니다.
+
+문턱표 T[kv][m] (W = 57, 이동 후보 1개, 10⁻⁶, 여유 1.5, 올림). 이동 후보가 여러 개면 `rif_init`이 같은 식으로 계산합니다(남은 수 1이면 이동 후보 수를 곱하지 않음).
+
+| kv \ m | 0 | 1 | 2 |
+|---|---|---|---|
+| 1 | 36.53 | | |
+| 2 | 42.75 | 37.92 | |
+| 3 | 48.03 | 45.05 | 38.73 |
+| 4 | 52.82 | 51.03 | 46.49 |
+| 5 | 57.31 | 56.42 | 53.01 |
+| 6 | 61.57 | 61.43 | 58.86 |
+| 7 | 65.66 | 66.15 | 64.28 |
+| 8 | 69.61 | 70.67 | 69.39 |
+
+**그 밖에**
+
+- **같은 값의 최댓값:** 참조 코드(MATLAB `max`)는 앞 탭을, 이동 후보도 앞의 후보를 고릅니다. 비교에 `>`를 써서 맞춥니다.
+- **반올림 규칙:** 이동 후보의 탭 이동 `round(d·f)`는 MATLAB처럼 0.5를 0에서 먼 쪽으로 올립니다(C `lroundf`).
 
 ### 5.6 자주 틀리는 곳
 
@@ -392,6 +455,7 @@ P = rif_packet(R, 'FragPerPacket', 8);        % 소프트, 10^-6, 여유 1.5, �
 | 이동 후보 (silicon 오프셋 처리) | 미정 | 결정 5 |
 | 일관성 검사 안 3의 Λ̂ 영역 LUT | 제안(4.5절), 도구 구현과 LLS 재측정 필요 | 결정 6 |
 | 걸린 프래그먼트 처리의 세부 (최대 m, 설정, 플래그 형식) | 미정 | 결정 7 |
+| 예외 처리 규칙 (Q_MIN = 4 LSB², 잡음 탭 포화, 판정 불가 제외) | 제안 (5.5절, 시뮬레이션 근거). LLS·silicon에서 Q̂_e 분포와 포화 빈도 확인 필요 | 5.5절 |
 | 고정소수점 비트폭 (FPU가 없을 때) | 미정 | 설계 문서 10장 |
 | BPRF (주기 16) | 검증 안 됨 | 설계 문서 10장 |
 | 거리 ≠ 0의 W_s 배치 | 타이밍 불확실성만큼 넓힘 (2배면 약 0.25 dB) | 설계 문서 10장 |
@@ -410,82 +474,346 @@ P = rif_packet(R, 'FragPerPacket', 8);        % 소프트, 10^-6, 여유 1.5, �
 | 하한 검사 | `rif_packet.m` 147행 |
 | 근거 | `LAMBDA_PATCH_DESIGN.md` 8장(Λ̂), 9장(패킷), `docs/lamhat.html`, `docs/glr.html` |
 
-## 부록 B. C 의사 코드 (float32, W_s = [119, 175], HPRF)
+## 부록 B. C 구현 (예외 처리 포함, float32, HPRF)
+
+- **호출 순서:** 설정마다 `rif_init` 1번(문턱표, 위상별 n_e, K = 1의 T² 문턱 계산) → 프래그먼트마다 `rif_fragment` → 패킷마다 `rif_packet`. 없는 프래그먼트는 `rif_fragment(ctx, NULL, NULL, &fr[f])`로 넣습니다.
+- **입력:** `x[k]`, `y[k]`는 그 프래그먼트 RIF CIR 탭 k의 실수부와 허수부입니다(2열 덤프의 1열과 2열, k = 0..255). 스케일 보정은 하지 않습니다.
+- **출력:** 패킷 상태(`PKT_*`), 피크 탭, 선택한 이동 후보, S*, 비교한 문턱, 쓴 프래그먼트 수, 프래그먼트별 플래그(`FF_*`)와 선택 경로의 Λ̂.
+- **확인 (2026-11-17):** `gcc -std=c99 -Wall -Wextra -Wpedantic` 경고 없음. 아래 14개 경우를 참조 코드(`rif_cir_analyze` Λ̂, `rif_packet` 소프트)의 Python 이식본과 비교해 모두 맞았습니다. LLS 덤프와 MATLAB으로는 아직 돌리지 않았습니다(7.1절).
+
+| 경우 | 결과 |
+|---|---|
+| H1 / H0 (K = 8) | 수락 / 불합격. Λ̂ 차이 ≤ 7e-6, S*·피크 탭 일치 |
+| 피크 이동 0.3탭/프래그먼트, 이동 후보 9개 | S* 103.7 (후보 0만이면 51.3), 선택 d = 2/7, 문턱 75.02 |
+| K = 1 로그 없는 판정 | 160개 프래그먼트(문턱 이상 97개)에서 Λ̂ ≥ T 판정, 피크 탭, Λ̂ 모두 일치 |
+| 한 위상 잡음 탭이 모두 0 | 일반: 7개로 수락(문턱 65.66). 보안: 판정 불가로 폐기 |
+| 프래그먼트 누락 1 / 3 / 8개 | 7개로 수락 / m_max 초과 폐기 / 쓸 데이터 없음 |
+| 선택 경로에서 Λ̂ = 0인 바꿔치기 프래그먼트 | 일반: 빼고 다시 판정해 수락(문턱 70.67). 보안: 하한 실패 폐기 |
+| 잡음 탭 포화 / 신호 창 탭 포화 | 판정 불가로 빼고 수락 / 정보 플래그만, 수락 |
+| κ = 1 (잔여 CFO 0) | 모든 프래그먼트에 상한 플래그, Λ̂ 상대 차이 ≤ 1e-5 |
+| 피크가 탭 119 (창 시작) | `edge` = 1 |
+| K = 2에서 1개 누락 | 1개로 수락(문턱 36.53) |
+| 설정 오류 5종 | 각각 `RIF_ECFG_WIN`, `_NOISE`, `_K`, `_DRIFT`, `_PARAM` |
 
 ```c
+/* ======================================================================
+ * CIR 추정 Λ̂ 패킷 판정 (고정 칩, HPRF, float32)
+ *   참조: rif_cir_analyze(..., 'Chip', 'fixed') -> rif_packet(R) (소프트, 10^-6, 여유 1.5, 하한 1)
+ *   호출 순서: rif_init (설정마다 1번) -> rif_fragment (프래그먼트마다) -> rif_packet (패킷마다)
+ * ====================================================================== */
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 
-#define NT      256
-#define PER     8
-#define WS0     119
-#define WS1     175
-#define W       (WS1 - WS0 + 1)          /* 57 */
-#define RHO_MAX 0.98f
-#define Q_MIN   1.0f                     /* 잡음 바닥 최솟값 [LSB^2], silicon에서 정함 (5.5절) */
+#define NT      256              /* CIR 탭 수 */
+#define P       8                /* 다상 성분 수 e = k % 8 (HPRF). BPRF 16은 검증 안 됨 */
+#define K_MAX   8                /* 패킷당 최대 프래그먼트 수 */
+#define ND_MAX  16               /* 이동 후보 최대 수 */
+#define M_TAB   2                /* 다시 판정할 때 뺄 수 있는 최대 개수 (문턱표 크기) */
 
-/* 위상별 잡음 탭 수: k가 W_s 밖이고 k mod 8 = e인 탭 (W_s를 바꾸면 다시 셈) */
-static const int N_E[PER] = {25, 25, 25, 25, 25, 25, 25, 24};
+/* ---------------------------------------------------------------- 설정 */
+typedef struct {
+    int     ws0, ws1;            /* 신호 창 [119, 175] (덤프 탭 번호 기준) */
+    int     K;                   /* 패킷당 프래그먼트 수 1, 2, 4, 8 */
+    int     nd;                  /* 이동 후보 수 (LLS: 1) */
+    float   d[ND_MAX];           /* 이동 후보 [탭/프래그먼트] (LLS: {0}) */
+    double  pfa;                 /* 패킷 오수락 목표 1e-6 */
+    double  margin;              /* 문턱 여유 1.5 */
+    float   rho_max;             /* |π| 상한 0.98 */
+    float   floor_lam;           /* 하한 검사 1.0 (결정 6 안 3이면 F(λ̂) LUT로 교체) */
+    float   q_min;               /* 잡음 바닥 최솟값 4.0 [LSB^2] (5.5절) */
+    int32_t cir_sat;             /* |x| 또는 |y| >= cir_sat 이면 포화 (0 = 검사 안 함) */
+    int     secure;              /* 1 = 보안 판단(걸리면 폐기), 0 = 일반 용도(빼고 다시 판정) */
+    int     m_max;               /* 일반 용도에서 뺄 수 있는 최대 개수 (K=8: 2, K=2·4: 1, K=1: 0) */
+} rif_cfg_t;
 
-/* 프래그먼트 하나: CIR (x, y) -> lam[0..W-1] = Λ̂[119..175].  0이면 판정 불가 */
-int rif_lamhat_fragment(const int32_t *x, const int32_t *y, float *lam)
+/* 설정에서 미리 계산하는 값 */
+typedef struct {
+    rif_cfg_t c;
+    int     W;                   /* 신호 창 탭 수 (57) */
+    int     n_e[P];              /* 위상별 잡음 탭 수 (25 x 7, e = 7은 24) */
+    float   T[K_MAX + 1][M_TAB + 1];   /* T[kv][m]: kv개 중 m개를 값을 보고 뺀 뒤의 문턱 (0.01 올림) */
+    float   t2_single[P];        /* K = 1: 위상별 T² 문턱 (로그 없는 판정) */
+} rif_ctx_t;
+
+enum {                           /* rif_init 반환값 */
+    RIF_OK          =  0,
+    RIF_ECFG_WIN    = -1,        /* 신호 창이 0..255 밖이거나 ws0 > ws1 */
+    RIF_ECFG_NOISE  = -2,        /* 어떤 위상의 잡음 탭이 5개 미만 (참조 코드와 같은 하한) */
+    RIF_ECFG_K      = -3,        /* K가 1..K_MAX 밖 */
+    RIF_ECFG_DRIFT  = -4,        /* 이동 후보 수가 1..ND_MAX 밖 */
+    RIF_ECFG_PARAM  = -5         /* pfa, margin, rho_max, q_min, m_max 범위 오류 */
+};
+
+/* 프래그먼트 플래그 */
+#define FF_MISSING    0x0001     /* CIR 없음 (수신 실패, 시간 초과)              -> 판정 불가 */
+#define FF_LOWNOISE   0x0002     /* 어떤 위상의 Q̂_e < q_min (0, NaN 포함)        -> 판정 불가 */
+#define FF_SAT_NOISE  0x0004     /* 잡음 탭 포화                                  -> 판정 불가 */
+#define FF_NUMERIC    0x0008     /* T² 또는 Λ̂가 NaN/Inf                          -> 판정 불가 */
+#define FF_INVALID    (FF_MISSING | FF_LOWNOISE | FF_SAT_NOISE | FF_NUMERIC)
+#define FF_SAT_SIG    0x0010     /* 신호 창 탭 포화 (정보: Λ̂가 작아지는 쪽이라 판정은 함) */
+#define FF_RHO_CLAMP  0x0020     /* |π_e| 상한 적용 (정보: 잔여 CFO ≈ 0, 보수적) */
+#define FF_FLOOR      0x0040     /* 선택 경로에서 Λ̂ < 하한 */
+#define FF_DROPPED    0x0080     /* 패킷 판정에서 뺌 */
+
+typedef struct {
+    uint16_t flags;
+    float    lam[NT];            /* Λ̂[ws0 + j], j = 0..W-1 (K >= 2) */
+    int      single_tap;         /* K = 1: argmax Λ̂의 창 안 인덱스 (-1 = 없음) */
+    float    single_lam;         /* K = 1: 그 Λ̂ */
+    int      single_pass;        /* K = 1: 로그 없는 판정 결과 (1 = 문턱 이상) */
+} rif_frag_t;
+
+typedef enum {
+    PKT_ACCEPT = 0,              /* 수락 (K개 모두 사용) */
+    PKT_ACCEPT_REDUCED,          /* 수락 (일부를 빼고 판정, 일반 용도만) */
+    PKT_REJECT_THRESHOLD,        /* 소프트 합 < 문턱: 맞는 키 신호 없음 */
+    PKT_REJECT_FLOOR,            /* 하한 검사 실패 (보안 판단, 또는 다시 판정도 실패) */
+    PKT_REJECT_INVALID,          /* 판정 불가 프래그먼트 (보안 판단, 또는 m_max 초과) */
+    PKT_REJECT_NODATA            /* 쓸 수 있는 프래그먼트 없음 */
+} rif_status_t;
+
+typedef struct {
+    rif_status_t status;
+    int      peak_tap;           /* 피크 탭 ws0 + j* (-1 = 없음). 소프트 합의 argmax, 첫 경로 아님 */
+    float    d_sel;              /* 선택한 이동 후보 */
+    float    s_best;             /* S* */
+    float    thr;                /* 마지막으로 비교한 문턱 */
+    int      k_used;             /* 마지막 판정에 쓴 프래그먼트 수 */
+    int      edge;               /* 1 = 피크가 신호 창 끝 탭 (창 배치 확인 필요) */
+    uint16_t flags[K_MAX];       /* 프래그먼트별 플래그 (무결성 보고) */
+    float    lam_peak[K_MAX];    /* 선택 경로의 프래그먼트별 Λ̂ (쓰지 않은 것은 NAN) */
+} rif_pkt_t;
+
+/* ---------------------------------------------------------------- 문턱 (설정 때 1번, double) */
+static double chi2tail(double T, int K)          /* P(χ²_2K > T) = e^(-T/2) Σ_{i<K} (T/2)^i / i! */
 {
-    float sq[PER] = {0}, sr[PER] = {0}, si[PER] = {0};
-    float ca[PER], cb[PER], cc[PER];
+    double h = T / 2, term = 1, s = 1;
+    for (int i = 1; i < K; i++) { term *= h / i; s += term; }
+    return exp(-h) * s;
+}
 
-    for (int k = 0; k < NT; k++) {                     /* 1) 잡음 모멘트 */
-        if (k >= WS0 && k <= WS1) continue;
-        float a = (float)x[k], b = (float)y[k];
-        int e = k & (PER - 1);
-        sq[e] += a * a + b * b;
-        sr[e] += a * a - b * b;
-        si[e] += 2.0f * a * b;
+static float soft_threshold(int K, double nhyp, double target)   /* nhyp·P(χ²_2K > T) = target, 0.01 올림 */
+{
+    double lo = 0, hi = 2.0 * K + 400;
+    for (int it = 0; it < 200; it++) {
+        double mid = 0.5 * (lo + hi);
+        if (nhyp * chi2tail(mid, K) > target) lo = mid; else hi = mid;
     }
-    for (int e = 0; e < PER; e++) {                    /* 2) 위상별 계수 */
-        float n = (float)N_E[e];
-        if (sq[e] < Q_MIN * n) return 0;
-        float u = sr[e] / sq[e], v = si[e] / sq[e];    /* π_e = Π̂_e / Q̂_e */
-        float r2 = u * u + v * v;
-        if (r2 > RHO_MAX * RHO_MAX) {
-            float s = RHO_MAX / sqrtf(r2);
-            u *= s; v *= s; r2 = RHO_MAX * RHO_MAX;
+    return (float)(ceil(hi * 100 - 1e-9) / 100);
+}
+
+static double n_choose_k(int n, int k)
+{
+    double r = 1;
+    for (int i = 1; i <= k; i++) r = r * (n - k + i) / i;
+    return r;
+}
+
+int rif_init(rif_ctx_t *ctx, const rif_cfg_t *c)
+{
+    memset(ctx, 0, sizeof *ctx);
+    ctx->c = *c;
+    if (c->ws0 < 0 || c->ws1 >= NT || c->ws0 > c->ws1) return RIF_ECFG_WIN;
+    ctx->W = c->ws1 - c->ws0 + 1;
+    for (int k = 0; k < NT; k++)
+        if (k < c->ws0 || k > c->ws1) ctx->n_e[k % P]++;
+    for (int e = 0; e < P; e++)
+        if (ctx->n_e[e] < 5) return RIF_ECFG_NOISE;          /* 25 미만이면 문턱 상승이 큼 (n = 10이면 약 7 dB) */
+    if (c->K < 1 || c->K > K_MAX) return RIF_ECFG_K;
+    if (c->nd < 1 || c->nd > ND_MAX) return RIF_ECFG_DRIFT;
+    if (!(c->pfa > 0 && c->pfa < 1) || !(c->margin >= 1) || !(c->rho_max > 0 && c->rho_max < 1) ||
+        !(c->q_min > 0) || c->m_max < 0 || c->m_max >= c->K)
+        return RIF_ECFG_PARAM;
+
+    double target = c->pfa / c->margin;
+    for (int kv = 1; kv <= c->K; kv++)                      /* kv: 판정 불가를 뺀 뒤 남은 수 */
+        for (int m = 0; m <= M_TAB && m < kv; m++) {         /* m: 하한 실패로 뺀 수 (결정 7: C(kv, m) 보정) */
+            int kr = kv - m;                                 /* 실제로 더하는 수 */
+            double nhyp = (double)ctx->W * (kr >= 2 ? c->nd : 1) * n_choose_k(kv, m);
+            ctx->T[kv][m] = soft_threshold(kr, nhyp, target);
         }
-        float g = 2.0f * n / (sq[e] * (1.0f - r2));    /* 2 / (Q̂_e (1 − |π|²)), Q̂_e = sq / n */
+    for (int e = 0; e < P; e++) {                            /* K = 1: Λ̂ >= T  <=>  T² >= n (e^(T/(n-1)) - 1) */
+        double n = ctx->n_e[e];
+        ctx->t2_single[e] = (float)(n * (exp(ctx->T[1][0] / (n - 1)) - 1));
+    }
+    return RIF_OK;
+}
+
+/* ---------------------------------------------------------------- 프래그먼트 하나 */
+/* x, y: CIR 실수부·허수부 (덤프 1·2열), k = 0..255. NULL이면 없는 프래그먼트 */
+void rif_fragment(const rif_ctx_t *ctx, const int32_t *x, const int32_t *y, rif_frag_t *fr)
+{
+    const rif_cfg_t *c = &ctx->c;
+    float sq[P] = {0}, sr[P] = {0}, si[P] = {0}, ca[P], cb[P], cc[P];
+
+    memset(fr, 0, sizeof *fr);
+    fr->single_tap = -1;
+    fr->single_lam = NAN;
+    if (!x || !y) { fr->flags |= FF_MISSING; return; }
+
+    /* 1) 잡음 모멘트: 위상 e별로 신호 창 밖 탭만 누적, 포화 검사 */
+    for (int k = 0; k < NT; k++) {
+        int in = (k >= c->ws0 && k <= c->ws1);
+        if (c->cir_sat > 0 && (x[k] >= c->cir_sat || x[k] <= -c->cir_sat ||
+                               y[k] >= c->cir_sat || y[k] <= -c->cir_sat))
+            fr->flags |= in ? FF_SAT_SIG : FF_SAT_NOISE;
+        if (in) continue;
+        float a = (float)x[k], b = (float)y[k];
+        int e = k % P;
+        sq[e] += a * a + b * b;                              /* Σ |C|²  */
+        sr[e] += a * a - b * b;                              /* Σ Re C² */
+        si[e] += 2.0f * a * b;                               /* Σ Im C² */
+    }
+    if (fr->flags & FF_SAT_NOISE) return;                    /* 잡음 탭이 잘리면 Q̂·π를 믿을 수 없음 */
+
+    /* 2) 위상별 계수 + 잡음 바닥 검사 */
+    for (int e = 0; e < P; e++) {
+        float n = (float)ctx->n_e[e];
+        if (!(sq[e] >= c->q_min * n)) { fr->flags |= FF_LOWNOISE; return; }   /* 0, 너무 작음, NaN */
+        float u = sr[e] / sq[e], v = si[e] / sq[e];          /* π_e = Π̂_e / Q̂_e = u + j v */
+        float r2 = u * u + v * v, rm2 = c->rho_max * c->rho_max;
+        if (r2 > rm2) {                                      /* 크기만 rho_max로 (방향 유지) */
+            float s = c->rho_max / sqrtf(r2);
+            u *= s; v *= s; r2 = rm2;
+            fr->flags |= FF_RHO_CLAMP;
+        }
+        float g = 2.0f * n / (sq[e] * (1.0f - r2));         /* 2 / (Q̂_e (1 - |π_e|²)), Q̂_e = sq / n */
         ca[e] = g * (1.0f - u);
         cb[e] = g * (1.0f + u);
         cc[e] = -2.0f * g * v;
     }
-    for (int j = 0; j < W; j++) {                      /* 3) 신호 창: T² -> Λ̂ */
-        int k = WS0 + j, e = k & (PER - 1);
+
+    /* 3a) K = 1: 로그 없는 판정. 위상 안에서는 Λ̂가 T²에 단조라 위상별 최대 T²만 보면 됨 */
+    if (c->K == 1) {
+        float t2max[P];
+        int jmax[P];
+        for (int e = 0; e < P; e++) { t2max[e] = -1.0f; jmax[e] = -1; }
+        for (int j = 0; j < ctx->W; j++) {
+            int k = c->ws0 + j, e = k % P;
+            float a = (float)x[k], b = (float)y[k];
+            float t2 = ca[e] * a * a + cb[e] * b * b + cc[e] * a * b;
+            if (!isfinite(t2)) { fr->flags |= FF_NUMERIC; return; }
+            if (t2 > t2max[e]) { t2max[e] = t2; jmax[e] = j; }
+        }
+        float best = -1.0f;
+        for (int e = 0; e < P; e++) {
+            if (jmax[e] < 0) continue;                       /* 창 안에 이 위상의 탭이 없음 */
+            if (t2max[e] >= ctx->t2_single[e]) fr->single_pass = 1;
+            float n = (float)ctx->n_e[e];
+            float l = (n - 1.0f) * log1pf(t2max[e] / n);    /* 출력용 로그 (최대 8번) */
+            if (l > best || (l == best && jmax[e] < fr->single_tap)) { best = l; fr->single_tap = jmax[e]; }
+        }
+        fr->single_lam = best;
+        return;
+    }
+
+    /* 3b) K >= 2: 신호 창 모든 탭의 Λ̂ */
+    for (int j = 0; j < ctx->W; j++) {
+        int k = c->ws0 + j, e = k % P;
         float a = (float)x[k], b = (float)y[k];
-        float t2 = ca[e] * a * a + cb[e] * b * b + cc[e] * a * b;
-        float n = (float)N_E[e];
-        lam[j] = (n - 1.0f) * log1pf(t2 / n);
+        float t2 = ca[e] * a * a + cb[e] * b * b + cc[e] * a * b;     /* 백색화 */
+        float n = (float)ctx->n_e[e];
+        float l = (n - 1.0f) * log1pf(t2 / n);                        /* H0에서 정확히 χ²₂ */
+        if (!isfinite(l)) { fr->flags |= FF_NUMERIC; return; }
+        fr->lam[j] = l;
     }
-    return 1;
 }
 
-/* 패킷: lam[f][j] (f = 0..K-1), 이동 후보 0 (LLS 조건). 1이면 수락 */
-int rif_packet_soft(const float lam[][W], int K, float T, float floor_lam,
-                    int *peak_tap, float *s_best)
+/* ---------------------------------------------------------------- 패킷 */
+/* 경로 탐색: 쓰는 프래그먼트(use[f])로 이동 후보 d와 탭 j마다 S = Σ_f Λ̂_f[j + round(d·f)]의 최대.
+ * 경로의 탭이 하나라도 신호 창 밖이면 건너뜀. 같은 값이면 앞의 d, 앞의 j (참조 코드와 같음) */
+static float best_path(const rif_ctx_t *ctx, const rif_frag_t *fr, const int *use, int *jb, int *ib)
 {
-    float best = -1.0f;
-    int jb = 0;
-    for (int j = 0; j < W; j++) {                      /* 4) 소프트 합의 최댓값 (같으면 앞 탭) */
-        float s = 0.0f;
-        for (int f = 0; f < K; f++) s += lam[f][j];
-        if (s > best) { best = s; jb = j; }
+    const rif_cfg_t *c = &ctx->c;
+    float best = -INFINITY;
+    *jb = -1; *ib = 0;
+    for (int i = 0; i < c->nd; i++) {
+        int sh[K_MAX], lo = 0, hi = ctx->W - 1;
+        for (int f = 0; f < c->K; f++) {
+            sh[f] = (int)lroundf(c->d[i] * (float)f);       /* MATLAB round(d (f-1)), f는 1부터 */
+            if (!use[f]) continue;
+            if (-sh[f] > lo) lo = -sh[f];
+            if (ctx->W - 1 - sh[f] < hi) hi = ctx->W - 1 - sh[f];
+        }
+        for (int j = lo; j <= hi; j++) {
+            float s = 0.0f;
+            for (int f = 0; f < c->K; f++)
+                if (use[f]) s += fr[f].lam[j + sh[f]];
+            if (s > best) { best = s; *jb = j; *ib = i; }
+        }
     }
-    *peak_tap = WS0 + jb;
-    *s_best = best;
-    if (best < T) return 0;                            /* 5) 문턱 */
-    for (int f = 0; f < K; f++)                        /*    하한 검사 (안 3이면 F(λ̂) LUT) */
-        if (lam[f][jb] < floor_lam) return 0;
-    return 1;
+    return best;
 }
 
-/* 문턱 상수 (W = 57, N_d = 1, 10^-6, 여유 1.5, 올림): K = 1, 2, 4, 8 */
-static const float T_SOFT[9] = {0, 36.53f, 42.75f, 0, 52.82f, 0, 0, 0, 69.61f};
-```
+static void fill_path(const rif_ctx_t *ctx, const rif_frag_t *fr, const int *use,
+                      int jb, int ib, float s, float thr, int kused, rif_pkt_t *out)
+{
+    const rif_cfg_t *c = &ctx->c;
+    out->s_best = s; out->thr = thr; out->k_used = kused;
+    out->peak_tap = jb >= 0 ? c->ws0 + jb : -1;
+    out->d_sel = c->d[ib];
+    out->edge = (jb == 0 || jb == ctx->W - 1);
+    for (int f = 0; f < c->K; f++)
+        out->lam_peak[f] = (use[f] && jb >= 0) ? fr[f].lam[jb + (int)lroundf(c->d[ib] * (float)f)] : NAN;
+}
 
-이동 후보를 쓰면 4)에서 후보 d마다 `j + lroundf(d * f)`(f = 0..K−1) 탭을 더하고, 경로가 W_s 밖으로 나가는 j는 건너뜁니다. 하한 검사도 선택한 경로의 탭에서 봅니다.
+/* fr[0..K-1]: 시간 순 프래그먼트 (없는 것은 rif_fragment(NULL)로 FF_MISSING) */
+void rif_packet(const rif_ctx_t *ctx, const rif_frag_t *fr, rif_pkt_t *out)
+{
+    const rif_cfg_t *c = &ctx->c;
+    int K = c->K, use[K_MAX], m_inv = 0, jb, ib;
+
+    memset(out, 0, sizeof *out);
+    out->peak_tap = -1; out->s_best = NAN; out->thr = NAN; out->d_sel = c->d[0];
+    for (int f = 0; f < K_MAX; f++) out->lam_peak[f] = NAN;
+    for (int f = 0; f < K; f++) {
+        out->flags[f] = fr[f].flags;
+        use[f] = !(fr[f].flags & FF_INVALID);
+        if (!use[f]) m_inv++;
+    }
+
+    /* (가) 판정 불가 프래그먼트: 자기 잡음 탭만 보고 정한 것이라 남은 합은 그대로 χ²_2kv (C 보정 없음) */
+    int kv = K - m_inv;
+    if (kv == 0) { out->status = PKT_REJECT_NODATA; return; }
+    if (m_inv > 0) {
+        if (c->secure || m_inv > c->m_max) { out->status = PKT_REJECT_INVALID; return; }
+        for (int f = 0; f < K; f++) if (!use[f]) out->flags[f] |= FF_DROPPED;
+    }
+
+    /* (나) K = 1 구성: 로그 없는 판정, 하한 검사 없음 */
+    if (K == 1) {
+        out->k_used = 1; out->thr = ctx->T[1][0];
+        out->s_best = fr[0].single_lam; out->lam_peak[0] = fr[0].single_lam;
+        out->peak_tap = c->ws0 + fr[0].single_tap;
+        out->edge = (fr[0].single_tap == 0 || fr[0].single_tap == ctx->W - 1);
+        out->status = fr[0].single_pass ? PKT_ACCEPT : PKT_REJECT_THRESHOLD;
+        return;
+    }
+
+    /* (다) 소프트 합과 문턱 */
+    float s = best_path(ctx, fr, use, &jb, &ib);
+    fill_path(ctx, fr, use, jb, ib, s, ctx->T[kv][0], kv, out);
+    if (jb < 0 || !(s >= ctx->T[kv][0])) { out->status = PKT_REJECT_THRESHOLD; return; }
+
+    /* (라) 하한 검사: 선택 경로에서 쓰는 프래그먼트가 모두 Λ̂ >= 하한 */
+    int m_fl = 0;
+    for (int f = 0; f < K; f++)
+        if (use[f] && !(out->lam_peak[f] >= c->floor_lam)) { out->flags[f] |= FF_FLOOR; m_fl++; }
+    if (m_fl == 0) { out->status = m_inv ? PKT_ACCEPT_REDUCED : PKT_ACCEPT; return; }
+
+    /* (마) 하한 실패 (결정 7): 보안 판단은 폐기, 일반 용도는 걸린 것을 빼고 한 번만 다시 판정.
+     *      값을 보고 빼므로 문턱에 C(kv, m) 보정 (T[kv][m_fl]) */
+    if (c->secure || m_inv + m_fl > c->m_max || m_fl > M_TAB || kv - m_fl < 1) {
+        out->status = PKT_REJECT_FLOOR; return;
+    }
+    for (int f = 0; f < K; f++)
+        if (out->flags[f] & FF_FLOOR) { use[f] = 0; out->flags[f] |= FF_DROPPED; }
+    s = best_path(ctx, fr, use, &jb, &ib);
+    fill_path(ctx, fr, use, jb, ib, s, ctx->T[kv][m_fl], kv - m_fl, out);
+    if (jb < 0 || !(s >= ctx->T[kv][m_fl])) { out->status = PKT_REJECT_FLOOR; return; }
+    for (int f = 0; f < K; f++)
+        if (use[f] && !(out->lam_peak[f] >= c->floor_lam)) { out->status = PKT_REJECT_FLOOR; return; }
+    out->status = PKT_ACCEPT_REDUCED;
+}
+```
